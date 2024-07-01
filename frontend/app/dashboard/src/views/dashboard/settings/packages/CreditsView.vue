@@ -1,6 +1,6 @@
 <template>
     <div class="st-view">
-        <STNavigationBar title="Jouw tegoed geschiedenis" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Jouw tegoed geschiedenis" />
         
         <main>
             <h1>
@@ -17,15 +17,15 @@
                         {{ credit.description }}
                     </h3>
                     <p class="style-description">
-                        {{ credit.createdAt | dateTime }}
+                        {{ formatDateTime(credit.createdAt) }}
                     </p>
 
                     <p v-if="credit.expireAt !== null" class="style-description">
-                        Vervalt op {{ credit.expireAt | dateTime }}
+                        Vervalt op {{ formatDateTime(credit.expireAt) }}
                         <span v-if="isExpired(credit)" class="style-tag error">Vervallen</span>
                     </p>
-                    <template slot="right">
-                        {{ credit.change | priceChange }}
+                    <template #right>
+                        {{ formatPriceChange(credit.change) }}
                     </template>
                 </STListItem>
             </STList>
@@ -38,7 +38,7 @@ import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { BackButton,STList, STListItem, STNavigationBar, STToolbar } from "@stamhoofd/components"
 import { STBillingStatus, STCredit } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {

@@ -2,7 +2,10 @@
     <div>
         <STList class="payment-selection-list">
             <STListItem v-for="paymentMethod in sortedPaymentMethods" :key="paymentMethod" :selectable="true" element-name="label" class="right-stack left-center">
-                <Radio slot="left" v-model="selectedPaymentMethod" name="choose-payment-method" :value="paymentMethod" />
+                <template #left>
+                    <Radio v-model="selectedPaymentMethod" name="choose-payment-method" :value="paymentMethod" />
+                </template>
+
                 <h2 :class="{ 'style-title-list': !!getDescription(paymentMethod) }">
                     {{ getName(paymentMethod) }}
 
@@ -13,16 +16,18 @@
                 </p>
 
                 <div v-if="paymentMethod == 'Payconiq'" class="payment-app-banner">
-                    <img class="payment-app-logo" src="~@stamhoofd/assets/images/partners/payconiq/app.svg">
-                    <img class="payment-app-logo" src="~@stamhoofd/assets/images/partners/kbc/app.svg">
-                    <img class="payment-app-logo" src="~@stamhoofd/assets/images/partners/ing/app.svg">
-                    <img class="payment-app-logo" src="~@stamhoofd/assets/images/partners/belfius/app.svg">
-                    <img class="payment-app-logo" src="~@stamhoofd/assets/images/partners/bnp/app.png">
-                    <img class="payment-app-logo" src="~@stamhoofd/assets/images/partners/hello-bank/app.png">
-                    <img class="payment-app-logo" src="~@stamhoofd/assets/images/partners/argenta/app.png">
+                    <img class="payment-app-logo" src="@stamhoofd/assets/images/partners/payconiq/app.svg">
+                    <img class="payment-app-logo" src="@stamhoofd/assets/images/partners/kbc/app.svg">
+                    <img class="payment-app-logo" src="@stamhoofd/assets/images/partners/ing/app.svg">
+                    <img class="payment-app-logo" src="@stamhoofd/assets/images/partners/belfius/app.svg">
+                    <img class="payment-app-logo" src="@stamhoofd/assets/images/partners/bnp/app.png">
+                    <img class="payment-app-logo" src="@stamhoofd/assets/images/partners/hello-bank/app.png">
+                    <img class="payment-app-logo" src="@stamhoofd/assets/images/partners/argenta/app.png">
                 </div>
 
-                <img v-if="getLogo(paymentMethod) && (!$isMobile || paymentMethod !== 'Payconiq')" slot="right" :src="getLogo(paymentMethod)" class="payment-method-logo" :class="paymentMethod.toLowerCase()">
+                <template #right>
+                    <img v-if="getLogo(paymentMethod) && (!$isMobile || paymentMethod !== 'Payconiq')" :src="getLogo(paymentMethod)" class="payment-method-logo" :class="paymentMethod.toLowerCase()">
+                </template>
             </STListItem>
         </STList>
     </div>
@@ -34,7 +39,7 @@ import bancontactLogo from "@stamhoofd/assets/images/partners/bancontact/logo.sv
 import idealLogo from "@stamhoofd/assets/images/partners/ideal/logo.svg";
 import { LoadingButton, Radio, STErrorsDefault, STList, STListItem, STNavigationBar, STToolbar } from "@stamhoofd/components";
 import { Country, Organization, PaymentMethod, PaymentMethodHelper } from "@stamhoofd/structures";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {

@@ -6,7 +6,9 @@
 
         <STList>
             <STListItem v-for="checkoutMethod in checkoutMethods" :key="checkoutMethod.id" :selectable="true" element-name="label" class="right-stack left-center">
-                <Radio slot="left" v-model="selectedMethod" name="choose-checkout-method" :value="checkoutMethod" />
+                <template #left>
+                    <Radio v-model="selectedMethod" name="choose-checkout-method" :value="checkoutMethod" />
+                </template>
                 <h2 class="style-title-list">
                     {{ getTypeName(checkoutMethod.type) }}: {{ checkoutMethod.name }}
                 </h2>
@@ -14,7 +16,7 @@
                     {{ checkoutMethod.description || checkoutMethod.address || "" }}
                 </p>
                 <p v-if="checkoutMethod.timeSlots.timeSlots.length == 1" class="style-description-small">
-                    {{ checkoutMethod.timeSlots.timeSlots[0].date | date | capitalizeFirstLetter }} tussen {{ checkoutMethod.timeSlots.timeSlots[0].startTime | minutes }} - {{ checkoutMethod.timeSlots.timeSlots[0].endTime | minutes }}
+                    {{ capitalizeFirstLetter(formatDate(checkoutMethod.timeSlots.timeSlots[0].date)) }} tussen {{ formatMinutes(checkoutMethod.timeSlots.timeSlots[0].startTime) }} - {{ formatMinutes(checkoutMethod.timeSlots.timeSlots[0].endTime) }}
                 </p>
 
                 <template v-if="checkoutMethod.timeSlots.timeSlots.length == 1">
@@ -32,7 +34,7 @@ import { ErrorBox, Radio, SaveView, STErrorsDefault, STList, STListItem } from "
 import { UrlHelper } from '@stamhoofd/networking';
 import { CheckoutMethod, CheckoutMethodType } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
 import { CheckoutManager } from '../../classes/CheckoutManager';
 import { WebshopManager } from '../../classes/WebshopManager';
@@ -61,7 +63,7 @@ export default class CheckoutMethodSelectionView extends Mixins(NavigationMixin)
     CheckoutManager = CheckoutManager
 
     get webshop() {
-        return WebshopManager.webshop
+        return this.$webshopManager.webshop
     }
 
     get checkoutMethods() {
@@ -69,8 +71,8 @@ export default class CheckoutMethodSelectionView extends Mixins(NavigationMixin)
     }
 
     get selectedMethod(): CheckoutMethod {
-        if (this.CheckoutManager.checkout.checkoutMethod) {
-            const search = this.CheckoutManager.checkout.checkoutMethod.id
+        if (this.$checkoutManager.checkout.checkoutMethod) {
+            const search = this.$checkoutManager.checkout.checkoutMethod.id
             const f = this.webshop.meta.checkoutMethods.find(c => c.id == search)
             if (f) {
                 return f
@@ -80,8 +82,8 @@ export default class CheckoutMethodSelectionView extends Mixins(NavigationMixin)
     }
 
     set selectedMethod(method: CheckoutMethod) {
-        CheckoutManager.checkout.checkoutMethod = method
-        CheckoutManager.saveCheckout()
+        this.$checkoutManager.checkout.checkoutMethod = method
+        this.$checkoutManager.saveCheckout()
     }
 
     getTypeName(type: CheckoutMethodType) {
@@ -103,7 +105,7 @@ export default class CheckoutMethodSelectionView extends Mixins(NavigationMixin)
         this.errorBox = null
 
         try {
-            await CheckoutStepsManager.goNext(CheckoutStepType.Method, this)
+            await CheckoutStepsManager.for(this.$checkoutManager).goNext(CheckoutStepType.Method, this)
         } catch (e) {
             console.error(e)
             this.errorBox = new ErrorBox(e)

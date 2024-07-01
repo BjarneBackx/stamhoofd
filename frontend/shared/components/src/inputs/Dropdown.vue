@@ -8,17 +8,14 @@
 
 <script lang="ts">
 import { NavigationMixin } from '@simonbackx/vue-app-navigation';
-import { Component, Mixins,Prop } from "vue-property-decorator";
+import { Component, Mixins,Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
-    "model": {
-        "prop": "value",
-        "event": "change"
-    },
+    emits: ["update:modelValue"]
 })
 export default class Dropdown extends Mixins(NavigationMixin) {
     @Prop({})
-        value: any
+        modelValue: any
 
     @Prop({ default: undefined })
         autocomplete?: string
@@ -27,11 +24,11 @@ export default class Dropdown extends Mixins(NavigationMixin) {
         name?: string
 
     get mappedValue() {
-        return this.value
+        return this.modelValue
     }
 
     set mappedValue(val: any) {
-        this.$emit("change", val)
+        this.$emit("update:modelValue", val)
     }
 }
 </script>

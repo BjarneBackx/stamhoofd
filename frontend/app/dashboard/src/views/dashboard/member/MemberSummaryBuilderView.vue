@@ -1,6 +1,6 @@
 <template>
     <div class="st-view member-summary-view">
-        <STNavigationBar title="Exporteren naar PDF" :dismiss="canDismiss" />
+        <STNavigationBar title="Exporteren naar PDF" />
 
         <main>
             <h1>
@@ -23,7 +23,9 @@
 
             <STList>
                 <STListItem v-for="(property, index) of memberProperties" :key="index" :selectable="true" element-name="label">
-                    <Checkbox slot="left" v-model="property.selected" />
+                    <template #left>
+                        <Checkbox v-model="property.selected" />
+                    </template>
                     {{ property.name }}
                 </STListItem>
             </STList>
@@ -41,7 +43,9 @@
 
             <STList>
                 <STListItem v-for="(property, index) of groupProperties" :key="index" :selectable="true" element-name="label">
-                    <Checkbox slot="left" v-model="property.selected" />
+                    <template #left>
+                        <Checkbox v-model="property.selected" />
+                    </template>
                     {{ property.name }}
                 </STListItem>
             </STList>
@@ -73,9 +77,9 @@ import { Group, Member, MemberWithRegistrations, ParentTypeHelper, RecordCategor
 import { Formatter } from '@stamhoofd/utility';
 // Keep for types only
 import PDFKit from "pdfkit"
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
+
 
 const mm = 2.834666666666667 // = 1 mm
 
@@ -195,7 +199,7 @@ export default class MemberSummaryBuilderView extends Mixins(NavigationMixin) {
             name: this.$i18n.t("shared.inputs.mobile.label").toString(), 
             getValue: (member) => member.details.phone
         }),
-        ...(OrganizationManager.organization.meta.recordsConfiguration.parents !== null ?  [
+        ...(this.$organization.meta.recordsConfiguration.parents !== null ?  [
             new SummaryMemberProperty({
                 name: "Ouders", 
                 getValues: (member) => {
@@ -205,7 +209,7 @@ export default class MemberSummaryBuilderView extends Mixins(NavigationMixin) {
                 }
             })
         ] : []),
-        ...(OrganizationManager.organization.meta.recordsConfiguration.emergencyContacts !== null ?  [
+        ...(this.$organization.meta.recordsConfiguration.emergencyContacts !== null ?  [
             new SummaryMemberProperty({
                 name: "Noodcontact", 
                 getValues: (member) => {
@@ -282,7 +286,7 @@ export default class MemberSummaryBuilderView extends Mixins(NavigationMixin) {
 
     get recordCategories(): RecordCategory[] {
         // TODO: only show the record categories that are relevant for the given member (as soon as we implement filters)
-        return OrganizationManager.organization.meta.recordsConfiguration.recordCategories.flatMap(category => {
+        return this.$organization.meta.recordsConfiguration.recordCategories.flatMap(category => {
             if (category.childCategories.length > 0) {
                 return category.childCategories
             }

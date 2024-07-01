@@ -1,6 +1,6 @@
 <template>
     <div class="st-view webshop-statistics-view background">
-        <STNavigationBar :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar />
     
         <main>
             <h1>
@@ -59,7 +59,7 @@
                         <h3>{{ info.name }}</h3>
                         <p v-if="info.description" class="style-description-small pre-wrap" v-text="info.description" />
 
-                        <template slot="right">
+                        <template #right>
                             <p class="style-price-big">
                                 {{ loading ? '-' : info.amount }}
                             </p>
@@ -85,7 +85,7 @@ import { GraphViewConfiguration } from "@stamhoofd/components/src/views/GraphVie
 import { AppManager, UrlHelper } from '@stamhoofd/networking';
 import { Category, Graph, GraphData, Order, OrderStatus, ProductType, TicketPrivate, WebshopTicketType } from "@stamhoofd/structures";
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import { WebshopManager } from '../WebshopManager';
 
@@ -610,12 +610,12 @@ export default class WebshopStatisticsView extends Mixins(NavigationMixin) {
 
         this.reviewTimer = setTimeout(() => {
             if (!this.loading && (this.totalOrders > 10 || this.totalRevenue > 50000)) {
-                AppManager.shared.markReviewMoment()
+                AppManager.shared.markReviewMoment(this.$context)
             }
         }, 5*1000)
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         if (this.reviewTimer) {
             clearTimeout(this.reviewTimer)
         }

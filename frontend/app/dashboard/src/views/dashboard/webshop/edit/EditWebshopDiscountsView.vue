@@ -18,7 +18,7 @@
                 <p v-if="getDiscountTitle(discount).footnote" class="style-description-small pre-wrap" v-text="getDiscountTitle(discount).footnote"/>
 
 
-                <template slot="right">
+                <template #right>
                     <span class="icon arrow-right-small gray" />
                 </template>
             </STListItem>
@@ -39,7 +39,9 @@
         <div v-else>
             <STList v-if="patchedDiscountCodes.length || allowDiscountCodeEntry">
                 <STListItem :selectable="true" element-name="label">
-                    <Checkbox slot="left" v-model="allowDiscountCodeEntry" />
+                    <template #left>
+                        <Checkbox v-model="allowDiscountCodeEntry" />
+                    </template>
 
                     <h3 class="style-title-list">
                         Sta invullen van kortingscodes toe
@@ -50,7 +52,7 @@
                 </STListItem>
 
                 <STListItem v-for="discountCode of patchedDiscountCodes" :key="discountCode.id" class="right-description right-stack left-center" :selectable="true" @click="editDiscountCode(discountCode)">
-                    <span class="icon label" slot="left" />
+                    <template #left><span class="icon label" /></template>
 
                     <h3 class="style-title-list">
                         <span class="style-discount-code">{{discountCode.code}}</span>
@@ -62,7 +64,7 @@
                         {{discountCode.usageCount}} keer gebruikt
                     </p>
                    
-                    <template slot="right">
+                    <template #right>
                         <span class="icon arrow-right-small gray" />
                     </template>
                 </STListItem>
@@ -86,7 +88,7 @@ import { Checkbox, SaveView, Spinner, STErrorsDefault, STInputBox, STList, STLis
 import { SessionManager, UrlHelper } from '@stamhoofd/networking';
 import { Discount, DiscountCode, PrivateWebshop, Version, WebshopMetaData } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 import EditDiscountCodeView from "./discounts/EditDiscountCodeView.vue";
 import EditDiscountView from "./discounts/EditDiscountView.vue";
 
@@ -124,7 +126,7 @@ export default class EditWebshopDiscountsView extends Mixins(EditWebshopMixin) {
     async fetchDiscountCodes() {
         this.fetchingDiscountCodes = true;
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: 'GET',
                 path: `/webshop/${this.webshop.id}/discount-codes`,
                 decoder: new ArrayDecoder(DiscountCode as Decoder<DiscountCode>)
@@ -141,7 +143,7 @@ export default class EditWebshopDiscountsView extends Mixins(EditWebshopMixin) {
     }
     
     get organization() {
-        return SessionManager.currentSession!.organization!
+        return this.$context
     }
 
     get defaultDiscounts() {
@@ -263,7 +265,7 @@ export default class EditWebshopDiscountsView extends Mixins(EditWebshopMixin) {
             return;
         }
 
-        const response = await SessionManager.currentSession!.authenticatedServer.request({
+        const response = await this.$context.authenticatedServer.request({
             method: 'PATCH',
             path: `/webshop/${this.webshop.id}/discount-codes`,
             body: this.patchDiscountCodes,

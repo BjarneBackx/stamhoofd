@@ -1,6 +1,6 @@
 <template>
     <form class="st-view filter-editor" @submit.prevent="applyFilter">
-        <STNavigationBar :title="title" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar :title="title" />
 
         <main>
             <h1>
@@ -15,24 +15,28 @@
             <button v-if="editingFilter.filters.length > 0" slot="right" class="button secundary full" type="button" @click="resetFilter()">
                 Resetten
             </button>
-            <button slot="right" class="button primary full" type="button" @click="applyFilter">
+            <template #right><button class="button primary full" type="button" @click="applyFilter">
                 Toepassen
-            </button>
+            </button></template>
         </STToolbar>
     </form>
 </template>
 
 <script lang="ts">
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { BackButton, FilterGroupView, STNavigationBar, STToolbar } from "@stamhoofd/components";
 import { Filter, FilterDefinition, FilterGroup, Organization } from "@stamhoofd/structures";
-import { Component, Mixins, Prop, Watch } from "vue-property-decorator";
+import { Component, Mixins, Prop, Watch } from "@simonbackx/vue-app-navigation/classes";
 
+import Checkbox from "../../inputs/Checkbox.vue";
+import STList from "../../layout/STList.vue";
+import STListItem from "../../layout/STListItem.vue";
+import STNavigationBar from "../../navigation/STNavigationBar.vue";
+import STToolbar from "../../navigation/STToolbar.vue";
+import FilterGroupView from "./FilterGroupView.vue";
 
 @Component({
     components: {
         STNavigationBar,
-        BackButton,
         FilterGroupView,
         STToolbar
     },

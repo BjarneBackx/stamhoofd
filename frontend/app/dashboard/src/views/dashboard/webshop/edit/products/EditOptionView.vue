@@ -25,7 +25,9 @@
 
         <STList>
             <STListItem :selectable="true" element-name="label">
-                <Checkbox slot="left" v-model="useStock" />
+                <template #left>
+                    <Checkbox v-model="useStock" />
+                </template>
 
                 <h3 class="style-title-list">
                     Beperk het beschikbare aantal stuks (waarvan nu {{ usedStock }} verkocht of gereserveerd)
@@ -62,7 +64,7 @@ import { AutoEncoderPatchType, patchContainsChanges } from '@simonbackx/simple-e
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, Checkbox,ErrorBox, NumberInput, PriceInput, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Validator } from "@stamhoofd/components";
 import { Option, OptionMenu, Version } from "@stamhoofd/structures";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {

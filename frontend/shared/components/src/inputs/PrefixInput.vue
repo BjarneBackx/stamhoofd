@@ -7,11 +7,10 @@
             ref="input"
             v-model="internalValue"
             type="text"
-            spellcheck="false"
+            :spellcheck="false"
             autocorrect="off"
             autocomplete="off"
             autocapitalize="none"
-            @input="internalValue = $event.target.value"
             @focus="onFocus"
             @blur="onBlur"
         >
@@ -19,27 +18,31 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from "vue-property-decorator";
+import { Component, Prop, Vue } from "@simonbackx/vue-app-navigation/classes";
 
-@Component
+@Component({
+    emits: {
+        'update:modelValue': (_value: string) => true
+    }
+})
 export default class PrefixInput extends Vue {
     valid = true;
 
     /** Price in cents */
     @Prop({ default: "" })
-    value!: string
+        modelValue!: string
 
     @Prop({ default: "" })
-    prefix!: string
+        prefix!: string
 
     @Prop({ default: "" })
-    placeholder!: string
+        placeholder!: string
 
     @Prop({ default: true })
-    fadePrefix!: boolean
+        fadePrefix!: boolean
 
     @Prop({ default: null })
-    focusPrefix!: string | null
+        focusPrefix!: string | null
 
     focussed = false
 
@@ -54,20 +57,20 @@ export default class PrefixInput extends Vue {
     }
 
     get internalValue() {
-        return this.value
+        return this.modelValue
     }
 
     set internalValue(val: string) {
-        this.$emit("input", val)
+        this.$emit('update:modelValue', val)
     }
 }
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang="scss">
-@use "~@stamhoofd/scss/base/variables.scss" as *;
+@use "@stamhoofd/scss/base/variables.scss" as *;
 
-.prefix-input {
+.input.prefix-input {
     position: relative;
     display: grid;
     grid-template-columns: auto 1fr;

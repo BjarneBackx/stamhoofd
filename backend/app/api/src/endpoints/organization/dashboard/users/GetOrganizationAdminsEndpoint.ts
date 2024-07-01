@@ -24,21 +24,15 @@ export class GetOrganizationAdminsEndpoint extends Endpoint<Params, Query, Body,
 
     async handle(_: DecodedRequest<Params, Query, Body>) {
         const organization = await Context.setOrganizationScope();
-        const {user} = await Context.authenticate()
+        await Context.authenticate()
 
         // Fast throw first (more in depth checking for patches later)
-        if (!Context.auth.canManageAdmins()) {
+        if (!await Context.auth.canManageAdmins(organization.id)) {
             throw Context.auth.error()
         }
 
         // Get all admins
-        let admins = await User.where({ organizationId: organization.id, permissions: { sign: "!=", value: null }})
-
-        // Hide internal users
-        admins = STAMHOOFD.environment === 'production' ? admins.filter(a => a.id === user.id || !((a.email.endsWith('@stamhoofd.be') || a.email.endsWith('@stamhoofd.nl')) && a.firstName == 'Stamhoofd')) : admins
-
-        // Hide api accounts
-        admins = admins.filter(a => !a.isApiUser)
+        const admins = await User.getAdmins([organization.id])
 
         return new Response(OrganizationAdmins.create({
             users: admins.map(a => UserStruct.create({...a, hasAccount: a.hasAccount()})),

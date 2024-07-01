@@ -10,7 +10,7 @@
 
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
+import { Component, Vue } from "@simonbackx/vue-app-navigation/classes";
 
 import Spinner from "../Spinner.vue";
 
@@ -24,8 +24,8 @@ export default class LoadingView extends Vue {
 </script>
 
 <style lang="scss">
-@use '~@stamhoofd/scss/base/variables' as *;
-@use '~@stamhoofd/scss/base/text-styles';
+@use '@stamhoofd/scss/base/variables' as *;
+@use '@stamhoofd/scss/base/text-styles';
 
 .loading-view {
     position: absolute;
@@ -64,7 +64,7 @@ export default class LoadingView extends Vue {
         }
     }
 
-    &.fade-enter /* .fade-leave-active below version 2.1.8 */ {
+    &.fade-enter-from /* .fade-leave-active below version 2.1.8 */ {
         > .spinner-container {
             opacity: 0;
         }

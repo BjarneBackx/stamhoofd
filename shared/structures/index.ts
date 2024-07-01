@@ -1,5 +1,7 @@
 // Latest version of the structures
-export {Version} from './src/Version'
+export { Version } from './src/Version'
+
+export * from "./src/PriceBreakdown"
 
 // General
 export * from "./src/addresses/Address"
@@ -27,6 +29,7 @@ export * from "./src/PaymentMethod"
 export * from "./src/PaymentProvider"
 export * from "./src/PaymentStatus"
 export * from "./src/Permissions"
+export * from "./src/Platform"
 export * from "./src/Policy"
 export * from "./src/RegisterCodeStatus"
 export * from "./src/RichText"
@@ -35,6 +38,13 @@ export * from "./src/StripeAccount"
 export * from "./src/Token"
 export * from "./src/UmbrellaOrganization"
 export * from "./src/User"
+export * from "./src/DefaultAgeGroup"
+export * from "./src/MemberResponsibility"
+export * from "./src/members/MemberResponsibilityRecord"
+export * from "./src/RegistrationPeriod"
+
+// UserPermissions
+export * from "./src/UserPermissions"
 
 // Endpoints
 export * from "./src/DNSRecord"
@@ -57,8 +67,6 @@ export * from "./src/endpoints/VerifyEmailRequest"
 export * from "./src/endpoints/WebshopUriAvailabilityResponse"
 
 // Grouping
-export * from "./src/grouping/KeychainedMembers"
-export * from "./src/grouping/KeychainedResponse"
 export * from "./src/grouping/PaginatedResponse"
 
 // Members
@@ -67,11 +75,12 @@ export * from "./src/files/Image"
 export * from "./src/files/Resolution"
 export * from "./src/files/ResolutionRequest"
 export * from "./src/members/EmergencyContact"
-export * from "./src/members/EncryptedMemberWithRegistrations"
 export * from "./src/members/Gender"
 export * from "./src/members/Member"
 export * from "./src/members/MemberDetails"
 export * from "./src/members/MemberWithRegistrations"
+export * from "./src/members/MemberWithRegistrationsBlob"
+export * from "./src/members/ObjectWithRecords"
 export * from "./src/members/OrganizationRecordsConfiguration"
 export * from "./src/members/Parent"
 export * from "./src/members/ParentType"
@@ -80,6 +89,7 @@ export * from "./src/members/PaymentDetailed"
 export * from "./src/members/PaymentGeneral"
 export * from "./src/members/PaymentPatch"
 export * from "./src/members/PaymentWithRegistrations"
+export * from "./src/members/PlatformMember"
 export * from "./src/members/records/LegacyRecord"
 export * from "./src/members/records/LegacyRecordType"
 export * from "./src/members/records/RecordAnswer"
@@ -94,22 +104,25 @@ export * from "./src/members/RegistrationWithMember"
 export * from "./src/members/ReviewTime"
 
 // Register checkout
-export * from "./src/members/checkout/RegisterCart"
-export * from "./src/members/checkout/RegisterCartPriceCalculator"
-export * from './src/members/checkout/RegisterCartValidator';
+export * from "./src/members/checkout/OldRegisterCart"
+export * from "./src/members/checkout/OldRegisterCartPriceCalculator"
+export * from './src/members/checkout/OldRegisterCartValidator'
+export * from "./src/members/checkout/OldRegisterCheckout"
+export * from "./src/members/checkout/OldRegisterItem"
 export * from "./src/members/checkout/RegisterCheckout"
-export * from "./src/members/checkout/RegisterItem"
 export * from "./src/members/checkout/UnknownMemberWithRegistrations"
 
 // Webshop
 export * from "./src/endpoints/WebshopOrdersQuery"
 export * from "./src/endpoints/WebshopTicketsQuery"
-export * from "./src/webshops/CartItem"
 export * from "./src/webshops/Cart"
+export * from "./src/webshops/CartItem"
 export * from "./src/webshops/CartStockHelper"
 export * from "./src/webshops/Category"
 export * from "./src/webshops/Checkout"
 export * from "./src/webshops/Customer"
+export * from "./src/webshops/Discount"
+export * from "./src/webshops/DiscountCode"
 export * from "./src/webshops/Order"
 export * from "./src/webshops/Product"
 export * from "./src/webshops/Ticket"
@@ -117,8 +130,6 @@ export * from "./src/webshops/TransferSettings"
 export * from "./src/webshops/Webshop"
 export * from "./src/webshops/WebshopField"
 export * from "./src/webshops/WebshopMetaData"
-export * from "./src/webshops/Discount"
-export * from "./src/webshops/DiscountCode"
 
 // billing
 export * from "./src/billing/STBillingStatus"
@@ -139,12 +150,12 @@ export * from "./src/email/EmailAddressSettings"
 export * from "./src/email/EmailTemplate"
 
 // Filters
+export * from "./src/filters/new/FilteredRequest"
 export * from "./src/filters/new/InMemoryFilter"
 export * from "./src/filters/new/InMemorySorter"
 export * from "./src/filters/new/Sorters"
 export * from "./src/filters/new/SortList"
 export * from "./src/filters/new/StamhoofdFilter"
-export * from "./src/filters/new/FilteredRequest"
 
 // Filters old
 export * from "./src/filters/ChoicesFilter"
@@ -154,9 +165,10 @@ export * from "./src/filters/FilterGroup"
 export * from "./src/filters/NumberFilter"
 export * from "./src/filters/PropertyFilter"
 export * from "./src/filters/RegistrationsFilter"
-export * from "./src/filters/StringFilter";
+export * from "./src/filters/StringFilter"
 
 // Balance
 export * from "./src/BalanceItem"
 export * from "./src/BalanceItemDetailed"
 export * from "./src/SponsorConfig"
+

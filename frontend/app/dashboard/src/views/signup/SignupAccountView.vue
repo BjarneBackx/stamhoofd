@@ -1,6 +1,6 @@
 <template>
     <form id="signup-account-view" class="st-view" @submit.prevent="goNext">
-        <STNavigationBar title="Maak jouw account" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Maak jouw account" />
 
         <main>
             <h1>
@@ -34,10 +34,10 @@
             <div class="split-inputs">
                 <div>
                     <STInputBox title="Kies een persoonlijk wachtwoord" error-fields="password" :error-box="errorBox">
-                        <input v-model="password" name="new-password" class="input" placeholder="Kies een wachtwoord" autocomplete="new-password" type="password" @input="password = $event.target.value" @change="password = $event.target.value">
+                        <input v-model="password" name="new-password" class="input" placeholder="Kies een wachtwoord" autocomplete="new-password" type="password">
                     </STInputBox>
                     <STInputBox title="Herhaal wachtwoord" error-fields="passwordRepeat" :error-box="errorBox">
-                        <input v-model="passwordRepeat" name="repeat-new-password" class="input" placeholder="Herhaal nieuw wachtwoord" autocomplete="new-password" type="password" @input="passwordRepeat = $event.target.value" @change="passwordRepeat = $event.target.value">
+                        <input v-model="passwordRepeat" name="repeat-new-password" class="input" placeholder="Herhaal nieuw wachtwoord" autocomplete="new-password" type="password">
                     </STInputBox>
                 </div>
 
@@ -75,12 +75,14 @@
 </template>
 
 <script lang="ts">
-import { isSimpleError, isSimpleErrors, SimpleError, SimpleErrors } from '@simonbackx/simple-errors';
-import { ComponentWithProperties,NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { BackButton, CenteredMessage,Checkbox,ConfirmEmailView,EmailInput, ErrorBox, LoadingButton, PasswordStrength, STErrorsDefault, STInputBox, STNavigationBar, STToolbar, Validator } from "@stamhoofd/components"
-import { LoginHelper, Session, Storage } from "@stamhoofd/networking"
+import { SimpleError, SimpleErrors } from '@simonbackx/simple-errors';
+import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
+import { BackButton, Checkbox, ConfirmEmailView, EmailInput, ErrorBox, LoadingButton, PasswordStrength, ReplaceRootEventBus, STErrorsDefault, STInputBox, STNavigationBar, STToolbar, Validator } from "@stamhoofd/components";
+import { LoginHelper, SessionContext, SessionManager, Storage } from "@stamhoofd/networking";
 import { Organization } from '@stamhoofd/structures';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+
+import { getScopedDashboardRoot } from '../../getRootViews';
 
 @Component({
     components: {
@@ -201,15 +203,27 @@ export default class SignupAccountView extends Mixins(NavigationMixin) {
 
             this.loading = false;
 
-            const session = new Session(this.organization.id)
-            this.show(new ComponentWithProperties(ConfirmEmailView, { token, session, email: this.email }))
-
             try {
                 Storage.keyValue.removeItem("savedRegisterCode").catch(console.error)
                 Storage.keyValue.removeItem("savedRegisterCodeDate").catch(console.error)
             } catch (e) {
                 console.error(e)
             }
+
+            const session = new SessionContext(this.organization)
+            await SessionManager.prepareSessionForUsage(session, true);
+            const dashboardContext = await getScopedDashboardRoot(session, {
+                initialPresents: [
+                    {
+                        components: [new ComponentWithProperties(ConfirmEmailView, { token, email: this.email })],
+                        modalDisplayStyle: "popup"
+                    }
+                ]
+            })
+            await this.dismiss({force: true})
+            await ReplaceRootEventBus.sendEvent("replace", dashboardContext);
+
+            // Show popup to confirm e-mail
         } catch (e) {
             this.loading = false
             console.error(e)

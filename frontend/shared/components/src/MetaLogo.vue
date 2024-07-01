@@ -41,8 +41,8 @@
 </template>
 
 <script lang="ts">
+import { Component, Prop, Vue } from "@simonbackx/vue-app-navigation/classes";
 import { DarkMode, Image, OrganizationMetaData, WebshopMetaData } from "@stamhoofd/structures";
-import { Component, Prop, Vue } from "vue-property-decorator";
 
 @Component
 export default class OrganizationLogo extends Vue {

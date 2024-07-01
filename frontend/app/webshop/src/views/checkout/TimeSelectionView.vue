@@ -16,12 +16,14 @@
 
         <STList>
             <STListItem v-for="(slot, index) in timeSlots" :key="index" :selectable="true" element-name="label" class="right-stack left-center">
-                <Radio slot="left" v-model="selectedSlot" name="choose-time-slot" :value="slot" />
+                <template #left>
+                    <Radio v-model="selectedSlot" name="choose-time-slot" :value="slot" />
+                </template>
                 <h2 class="style-title-list">
-                    {{ slot.date | dateWithDay }}
+                    {{ formatDateWithDay(slot.date) }}
                 </h2> 
                 <p class="style-description">
-                    Tussen {{ slot.startTime | minutes }} - {{ slot.endTime | minutes }}
+                    Tussen {{ formatMinutes(slot.startTime) }} - {{ formatMinutes(slot.endTime) }}
                 </p>
 
                 <span v-if="slot.listedRemainingStock === 0" slot="right" class="style-tag error">Volzet</span>
@@ -38,7 +40,7 @@ import { ErrorBox, Radio, SaveView, STErrorsDefault, STList, STListItem } from "
 import { UrlHelper } from '@stamhoofd/networking';
 import { CheckoutMethodType, WebshopTimeSlot } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
 import { CheckoutManager } from '../../classes/CheckoutManager';
 import { WebshopManager } from '../../classes/WebshopManager';
@@ -78,27 +80,27 @@ export default class TimeSelectionView extends Mixins(NavigationMixin){
     }
 
     get checkoutMethod() {
-        return CheckoutManager.checkout.checkoutMethod!
+        return this.$checkoutManager.checkout.checkoutMethod!
     }
 
     get timeSlots(): WebshopTimeSlot[] {
-        return CheckoutManager.checkout.checkoutMethod!.timeSlots.timeSlots.slice().sort(WebshopTimeSlot.sort)
+        return this.$checkoutManager.checkout.checkoutMethod!.timeSlots.timeSlots.slice().sort(WebshopTimeSlot.sort)
     }
 
     get selectedSlot(): WebshopTimeSlot {
-        if (CheckoutManager.checkout.timeSlot) {
-            return this.timeSlots.find(t => t.id == CheckoutManager.checkout.timeSlot!.id) ?? this.timeSlots[0]
+        if (this.$checkoutManager.checkout.timeSlot) {
+            return this.timeSlots.find(t => t.id == this.$checkoutManager.checkout.timeSlot!.id) ?? this.timeSlots[0]
         }
         return this.timeSlots[0]
     }
 
     set selectedSlot(timeSlot: WebshopTimeSlot) {
-        CheckoutManager.checkout.timeSlot = timeSlot
-        CheckoutManager.saveCheckout()
+        this.$checkoutManager.checkout.timeSlot = timeSlot
+        this.$checkoutManager.saveCheckout()
     }
 
     get webshop() {
-        return WebshopManager.webshop
+        return this.$webshopManager.webshop
     }
 
     async goNext() {
@@ -111,7 +113,7 @@ export default class TimeSelectionView extends Mixins(NavigationMixin){
         this.errorBox = null
 
         try {
-            await CheckoutStepsManager.goNext(CheckoutStepType.Time, this)
+            await CheckoutStepsManager.for(this.$checkoutManager).goNext(CheckoutStepType.Time, this)
         } catch (e) {
             console.error(e)
             this.errorBox = new ErrorBox(e)

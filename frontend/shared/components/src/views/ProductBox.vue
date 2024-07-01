@@ -17,7 +17,7 @@
                 <p class="price">
                     {{ priceString }}
 
-                    <span v-if="product.enableInFuture" class="style-tag">Vanaf {{ product.enableAfter | dateTime }}</span>
+                    <span v-if="product.enableInFuture" class="style-tag">Vanaf {{ formatDateTime(product.enableAfter) }}</span>
                     <span v-else-if="!product.isEnabled && !admin" class="style-tag error">Onbeschikbaar</span>
                     <span v-else-if="product.isSoldOut" class="style-tag error">Uitverkocht</span>
                     <span v-else-if="stockText !== null" class="style-tag" :class="stockText.style">{{ stockText.text }}</span>
@@ -41,7 +41,7 @@ import { ComponentWithProperties, NavigationController, NavigationMixin } from "
 import { CartItemView, Checkbox, LoadingView, STList, STListItem, STNavigationBar, STToolbar } from "@stamhoofd/components";
 import { Cart, CartItem, CartStockHelper, Checkout, Product, ProductDateRange, Webshop } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {

@@ -8,7 +8,7 @@
             <STListItem v-for="(filter, index) in filters" :key="filter.id" :selectable="true" class="right-stack" @click="editFilter(index, filter)">
                 <span v-for="(s, i) in filter.styledDescription" :key="i" :class="'styled-description ' + s.style" v-text="s.text" />
 
-                <template slot="right">
+                <template #right>
                     <button class="button icon trash gray" type="button" @click="deleteFilter(index, filter)" />
                     <span class="icon arrow-right-small gray" />
                 </template>
@@ -24,7 +24,7 @@
             <STListItem v-for="(builder, index) in builders" :key="index" :selectable="true" class="right-stack" @click="addFilter(builder)">
                 {{ builder.name }}
 
-                <template slot="left">
+                <template #left>
                     <span class="button icon add gray" />
                 </template>
             </STListItem>
@@ -35,20 +35,18 @@
 
 <script lang="ts">
 import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { Dropdown, STInputBox, STList, STListItem, STNavigationBar } from "@stamhoofd/components";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
+import STList from "../layout/STList.vue";
+import STListItem from "../layout/STListItem.vue";
 import { GroupUIFilter } from "./GroupUIFilter";
 import { UIFilter, UIFilterBuilder } from "./UIFilter";
 import UIFilterEditor from "./UIFilterEditor.vue";
 
 @Component({
     components: {
-        STInputBox,
         STListItem,
         STList,
-        Dropdown,
-        STNavigationBar
     }
 })
 export default class GroupUIFilterView extends Mixins(NavigationMixin)  {

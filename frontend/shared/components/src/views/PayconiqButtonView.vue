@@ -1,7 +1,7 @@
 <template>
     <div class="st-view payconiq-button-view">
         <STNavigationBar title="Payconiq by Bancontact">
-            <button slot="right" class="button icon gray close" type="button" @click="close" />
+            <template #right><button class="button icon gray close" type="button" @click="close" /></template>
         </STNavigationBar>
 
         <main>
@@ -11,10 +11,10 @@
         </main>
 
         <STToolbar>
-            <button slot="right" class="button secundary" type="button" @click="helpMe">
+            <template #right><button class="button secundary" type="button" @click="helpMe">
                 <span class="icon help" />
                 <span>Het lukt niet</span>
-            </button>
+            </button></template>
             <LoadingButton slot="right" :loading="payment && payment.status == 'Pending'">
                 <a :href="paymentUrl" class="button primary open-app">
                     <span class="icon external" /><span>Open de app</span>
@@ -26,7 +26,7 @@
 
 <script lang="ts">
 import { CenteredMessage,EmailInput, LoadingButton, STErrorsDefault, STNavigationBar, STToolbar } from "@stamhoofd/components"
-import { Component, Prop } from "vue-property-decorator";
+import { Component, Prop, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
 import PayconiqBannerView from "./PayconiqBannerView.vue";
 
@@ -39,7 +39,7 @@ import PayconiqBannerView from "./PayconiqBannerView.vue";
         STErrorsDefault
     }
 })
-export default class PayconiqButtonView extends PayconiqBannerView {
+export default class PayconiqButtonView extends Mixins(PayconiqBannerView) {
     @Prop({})
         paymentUrl: string;
 

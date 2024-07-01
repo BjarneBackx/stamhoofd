@@ -9,7 +9,7 @@
             <STListItem v-for="method in webshop.meta.checkoutMethods" :key="method.id" :selectable="true" class="right-stack" @click="editCheckoutMethod(method)">
                 {{ method.typeName }}: {{ method.name }}
 
-                <template slot="right">
+                <template #right>
                     <button class="button icon arrow-up gray" type="button" @click.stop="moveCheckoutUp(method)" />
                     <button class="button icon arrow-down gray" type="button" @click.stop="moveCheckoutDown(method)" />
                     <span class="icon arrow-right-small gray" />
@@ -47,9 +47,9 @@ import { SaveView, STErrorsDefault, STList, STListItem } from "@stamhoofd/compon
 import { UrlHelper } from '@stamhoofd/networking';
 import { AnyCheckoutMethod, CheckoutMethod, PrivateWebshop, WebshopDeliveryMethod, WebshopMetaData, WebshopOnSiteMethod, WebshopTakeoutMethod } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from '../../../../classes/OrganizationManager';
+
 import EditWebshopMixin from './EditWebshopMixin';
 import EditDeliveryMethodView from './locations/EditDeliveryMethodView.vue';
 import EditTakeoutMethodView from './locations/EditTakeoutMethodView.vue';
@@ -73,7 +73,7 @@ export default class EditWebshopCheckoutMethodsView extends Mixins(EditWebshopMi
 
     addOnSiteMethod() {
         const onSiteMethod = WebshopOnSiteMethod.create({
-            address: OrganizationManager.organization.address
+            address: this.$organization.address
         })
        
         const p = PrivateWebshop.patch({})
@@ -94,7 +94,7 @@ export default class EditWebshopCheckoutMethodsView extends Mixins(EditWebshopMi
 
     addTakeoutMethod() {
         const takeoutMethod = WebshopTakeoutMethod.create({
-            address: OrganizationManager.organization.address
+            address: this.$organization.address
         })
        
         const p = PrivateWebshop.patch({})

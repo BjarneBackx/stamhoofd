@@ -62,9 +62,9 @@ import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, ErrorBox, SaveView, STErrorsDefault, STInputBox, Validator } from "@stamhoofd/components";
 import { SessionManager, UrlHelper } from '@stamhoofd/networking';
 import { OpenIDClientConfiguration } from "@stamhoofd/structures";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
+
 
 @Component({
     components: {
@@ -81,7 +81,7 @@ export default class SSOSettingsView extends Mixins(NavigationMixin) {
     ssoConfiguration: OpenIDClientConfiguration | null = null
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get redirectUri() {
@@ -131,7 +131,7 @@ export default class SSOSettingsView extends Mixins(NavigationMixin) {
 
     async loadConfiguration() {
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "GET",
                 path: "/organization/sso",
                 decoder: OpenIDClientConfiguration as Decoder<OpenIDClientConfiguration>,
@@ -149,7 +149,7 @@ export default class SSOSettingsView extends Mixins(NavigationMixin) {
         }
         this.saving = true
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "POST",
                 path: "/organization/sso",
                 decoder: OpenIDClientConfiguration as Decoder<OpenIDClientConfiguration>,
@@ -165,12 +165,12 @@ export default class SSOSettingsView extends Mixins(NavigationMixin) {
         this.saving = false
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
     mounted() {
-        UrlHelper.setUrl("/settings/sso");
+        this.setUrl("/sso");
         this.loadConfiguration().catch(console.error)
     }
 }

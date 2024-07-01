@@ -2,7 +2,9 @@
     <div>
         <STList>
             <STListItem v-for="choice of choices" :key="choice.id" :selectable="true" element-name="label">
-                <Checkbox slot="left" :checked="isChoiceSelected(choice)" @change="setChoiceSelected(choice, $event)" />
+                <template #left>
+                    <Checkbox :model-value="isChoiceSelected(choice)" @update:model-value="setChoiceSelected(choice, $event)" />
+                </template>
                 <h3 class="style-title-list">
                     {{ choice.name }}
                 </h3>
@@ -16,9 +18,12 @@
 
 
 <script lang="ts">
-import { Checkbox, STList, STListItem } from "@stamhoofd/components"
 import { ChoicesFilter,ChoicesFilterChoice } from "@stamhoofd/structures";
-import { Component, Prop,Vue } from "vue-property-decorator";
+import { Component, Prop,Vue } from "@simonbackx/vue-app-navigation/classes";
+
+import Checkbox from "../../inputs/Checkbox.vue";
+import STList from "../../layout/STList.vue";
+import STListItem from "../../layout/STListItem.vue";
 
 @Component({
     components: {

@@ -1,8 +1,8 @@
 <template>
     <LoadingView v-if="loading || !seatingPlan" />
     <div v-else class="st-view webshop-seating-view">
-        <STNavigationBar title="Zaaloverzicht" :pop="canPop" :dismiss="canDismiss">
-            <button v-if="hasFullPermissions" slot="right" class="icon navigation edit button" type="button" @click="editSeatingPlan" />
+        <STNavigationBar title="Zaaloverzicht">
+            <template v-if="hasFullPermissions" #right><button class="icon navigation edit button" type="button" @click="editSeatingPlan" /></template>
         </STNavigationBar>
 
         <main>
@@ -49,9 +49,9 @@ import { ContextMenu, ContextMenuItem, LoadingView, SeatSelectionBox,STNavigatio
 import { SessionManager, UrlHelper } from "@stamhoofd/networking";
 import { PrivateOrder, PrivateOrderWithTickets, PrivateWebshop, Product, ReservedSeat, TicketPrivate } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from '../../../../classes/OrganizationManager';
+
 import EditSeatingPlanView from "../edit/seating/EditSeatingPlanView.vue";
 import { WebshopManager } from '../WebshopManager';
 import OrderView from './OrderView.vue';
@@ -76,7 +76,7 @@ export default class WebshopSeatingView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     loading = false;
@@ -105,7 +105,7 @@ export default class WebshopSeatingView extends Mixins(NavigationMixin) {
         document.title = this.preview.meta.name+" - Zaalplan"
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         this.webshopManager.ordersEventBus.removeListener(this)
         this.webshopManager.ticketsEventBus.removeListener(this)
         this.webshopManager.ticketPatchesEventBus.removeListener(this)
@@ -292,11 +292,11 @@ export default class WebshopSeatingView extends Mixins(NavigationMixin) {
     }
 
     get hasWrite() {
-        const p = SessionManager.currentSession?.user?.permissions
+        const p = this.$context.organizationPermissions
         if (!p) {
             return false
         }
-        return this.preview.privateMeta.permissions.hasWriteAccess(p, OrganizationManager.organization.privateMeta?.roles ?? [])    
+        return this.preview.privateMeta.permissions.hasWriteAccess(p)    
     }
 
     isLoadingOrders = true
@@ -398,7 +398,7 @@ export default class WebshopSeatingView extends Mixins(NavigationMixin) {
 
 
     get hasFullPermissions() {
-        return this.preview.privateMeta.permissions.hasFullAccess(OrganizationManager.user.permissions, this.organization.privateMeta?.roles ?? [])
+        return this.preview.privateMeta.permissions.hasFullAccess(this.$context.organizationPermissions)
     }
 
     reload() {

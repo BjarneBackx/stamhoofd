@@ -13,14 +13,11 @@
 import { ArrayDecoder, Decoder, PatchableArray, PatchableArrayAutoEncoder } from "@simonbackx/simple-encoding";
 import { Request } from "@simonbackx/simple-networking";
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { CenteredMessage, Column, GlobalEventBus, LoadComponent, TableAction, TableView, Toast } from "@stamhoofd/components";
-import { SessionManager, UrlHelper } from "@stamhoofd/networking";
-import { ChoicesFilterChoice, ChoicesFilterDefinition, ChoicesFilterMode, DateFilterDefinition, Filter, FilterDefinition, NumberFilterDefinition, Payment, PaymentGeneral, PaymentMethod, PaymentStatus } from '@stamhoofd/structures';
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
+import { CenteredMessage, Column, GlobalEventBus, LoadComponent, PaymentView, TableAction, TableView, Toast } from "@stamhoofd/components";
+import { UrlHelper } from "@stamhoofd/networking";
+import { Filter, FilterDefinition, Payment, PaymentGeneral, PaymentMethod, PaymentStatus } from '@stamhoofd/structures';
 import { Formatter, Sorter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
-
-import { OrganizationManager } from "../../../classes/OrganizationManager";
-import PaymentView from "./PaymentView.vue";
 
 @Component({
     components: {
@@ -36,7 +33,7 @@ export default class TransferPaymentsView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     mounted() {
@@ -154,7 +151,7 @@ export default class TransferPaymentsView extends Mixins(NavigationMixin) {
     async mail(payments: PaymentGeneral[]) {
         const displayedComponent = await LoadComponent(() => import(/* webpackChunkName: "MailView" */ "../mail/MailView.vue"), {
             payments,
-            defaultReplacements: OrganizationManager.organization.meta.getEmailReplacements()
+            defaultReplacements: this.$organization.meta.getEmailReplacements()
         });
         this.present(displayedComponent.setDisplayStyle("popup"));
     }
@@ -175,70 +172,7 @@ export default class TransferPaymentsView extends Mixins(NavigationMixin) {
     }
 
     get filterDefinitions(): FilterDefinition<PaymentGeneral, Filter<PaymentGeneral>, any>[] {
-        return [
-            new ChoicesFilterDefinition<PaymentGeneral>({
-                id: "webshops", 
-                name: "Webshops", 
-                choices: this.organization.webshops.map(webshop => new ChoicesFilterChoice(webshop.id, webshop.meta.name)),
-                getValue: (payment) => {
-                    return payment.orders.map(o => o.webshopId)
-                },
-                defaultMode: ChoicesFilterMode.Or
-            }),
-
-            new ChoicesFilterDefinition<PaymentGeneral>({
-                id: "registrations", 
-                name: "Inschrijvingen", 
-                choices: this.organization.getGroupsForPermissions(OrganizationManager.user?.permissions).map(group => new ChoicesFilterChoice(group.id, group.settings.name)),
-                getValue: (payment) => {
-                    return payment.registrations.map(r => r.groupId)
-                },
-                defaultMode: ChoicesFilterMode.Or
-            }),
-
-            new ChoicesFilterDefinition<PaymentGeneral>({
-                id: "paid", 
-                name: "Betaald", 
-                choices: [
-                    new ChoicesFilterChoice("checked", "Betaald"),
-                    new ChoicesFilterChoice("not_checked", "Niet betaald")
-                ],
-                getValue: (payment) => {
-                    return [payment.status == PaymentStatus.Succeeded ? "checked" : "not_checked"]
-                },
-                defaultMode: ChoicesFilterMode.Or
-            }),
-
-            new DateFilterDefinition<PaymentGeneral>({
-                id: "created_at", 
-                name: "Aanmaakdatum", 
-                description: "Datum waarop overschrijving werd aangemaakt in het systeem.",
-                getValue: (payment) => {
-                    return payment.createdAt
-                },
-                time: false
-            }),
-
-            new DateFilterDefinition<PaymentGeneral>({
-                id: "paid_at", 
-                name: "Betaaldatum", 
-                description: "Datum waarop overschrijving als betaald werd gemarkeerd",
-                getValue: (payment) => {
-                    return payment.paidAt ?? new Date(1900, 0, 1)
-                },
-                time: false
-            }),
-
-            new NumberFilterDefinition<PaymentGeneral>({
-                id: "price",
-                name: "Bedrag",
-                currency: true,
-                floatingPoint: true,
-                getValue: (payment) => {
-                    return payment.price
-                }
-            })
-        ]
+        return []
     }
 
     allColumns = ((): Column<PaymentGeneral, any>[] => {
@@ -337,7 +271,7 @@ export default class TransferPaymentsView extends Mixins(NavigationMixin) {
     }
 
     async loadPayments() {
-        const session = SessionManager.currentSession!
+        const session = this.$context
         const response = await session.authenticatedServer.request({
             method: "GET",
             path: "/organization/payments",
@@ -348,7 +282,7 @@ export default class TransferPaymentsView extends Mixins(NavigationMixin) {
         this.setPayments(response.data)
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
@@ -409,7 +343,7 @@ export default class TransferPaymentsView extends Mixins(NavigationMixin) {
             if (!await CenteredMessage.confirm("Ben je zeker?", paid ? "Markeer als betaald" : "Markeer als niet betaald", paid && hasOrder ? "De besteller(s) van bestellingen ontvangen een automatische e-mail." : undefined)) {
                 return;
             }
-            const session = SessionManager.currentSession!
+            const session = this.$context
 
             try {
                 const response = await session.authenticatedServer.request({

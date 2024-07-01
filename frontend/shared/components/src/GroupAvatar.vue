@@ -13,7 +13,7 @@
 <script lang="ts">
 import { Group } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Prop, Vue } from "vue-property-decorator";
+import { Component, Prop, Vue } from "@simonbackx/vue-app-navigation/classes";
 
 @Component
 export default class GroupAvatar extends Vue {
@@ -41,7 +41,7 @@ export default class GroupAvatar extends Vue {
 </script>
 
 <style lang="scss">
-@use '~@stamhoofd/scss/base/variables' as *;
+@use '@stamhoofd/scss/base/variables' as *;
 
 .group-avatar {
     .letter-logo {

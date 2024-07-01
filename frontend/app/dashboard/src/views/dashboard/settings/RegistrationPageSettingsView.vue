@@ -1,6 +1,6 @@
 <template>
     <div id="registration-page-settings-view" class="st-view background">
-        <STNavigationBar title="Jullie ledenportaal" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Jullie ledenportaal" />
 
         <main>
             <h1>Jullie ledenportaal</h1>
@@ -31,12 +31,12 @@
 
             <STList>
                 <STListItem :selectable="true" element-name="a" :href="'https://'+$t('shared.domains.marketing')+'/docs/'" target="_blank">
-                    <span slot="left" class="icon link" />
+                    <template #left><span class="icon link" /></template>
                     Documentatie
                 </STListItem>
 
                 <STListItem :selectable="true" element-name="a" :href="'https://'+$t('shared.domains.marketing')+'/docs/tag/ledenadministratie-instellen/'" target="_blank">
-                    <span slot="left" class="icon link" />
+                    <template #left><span class="icon link" /></template>
                     Ledenadministratie instellen
                 </STListItem>
             </STList>
@@ -48,9 +48,9 @@
 import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { BackButton, LoadingButton, STInputBox, STList, STListItem, STNavigationBar, STToolbar, Tooltip, TooltipDirective } from "@stamhoofd/components";
 import { OrganizationType } from "@stamhoofd/structures";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
+
 
 @Component({
     components: {
@@ -68,7 +68,7 @@ import { OrganizationManager } from "../../../classes/OrganizationManager";
 })
 export default class RegistrationPageSettingsView extends Mixins(NavigationMixin) {
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get isYouth() {
@@ -91,7 +91,7 @@ export default class RegistrationPageSettingsView extends Mixins(NavigationMixin
         this.present(displayedComponent.setDisplayStyle("overlay"));
 
         setTimeout(() => {
-            displayedComponent.vnode?.componentInstance?.$parent?.$emit("pop");
+            (displayedComponent.componentInstance() as any)?.hide?.()
         }, 1000);
     }
 }

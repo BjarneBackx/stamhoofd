@@ -6,16 +6,15 @@
     </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
+<script lang="ts" setup>
+import { useHideTabBar } from '../containers/TabBarController.vue';
 
-@Component
-export default class STButtonToolbar extends Vue {
-}
+useHideTabBar();
 </script>
 
+
 <style lang="scss">
-@use "~@stamhoofd/scss/base/variables.scss" as *;
+@use "@stamhoofd/scss/base/variables.scss" as *;
 
 .st-button-toolbar {
     margin: 0;

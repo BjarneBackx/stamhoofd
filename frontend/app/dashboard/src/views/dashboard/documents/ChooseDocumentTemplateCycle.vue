@@ -1,6 +1,6 @@
 <template>
     <div class="st-view">
-        <STNavigationBar title="Inschrijvingsperiode" :pop="canPop" :dismiss="canDismiss" />
+        <STNavigationBar title="Inschrijvingsperiode" />
 
         <main>
             <h1>Kies een inschrijvingsperiode</h1>
@@ -15,8 +15,7 @@
                         {{ group.getTimeRange(cycle.cycle) }}
                     </p>
 
-                    <span v-if="group.getMemberCount({cycle: cycle.cycle}) !== null" slot="right" class="style-description-small">{{ group.getMemberCount({cycle: cycle.cycle}) }}</span>
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right><span v-if="group.getMemberCount({cycle: cycle.cycle}) !== null" class="style-description-small">{{ group.getMemberCount({cycle: cycle.cycle}) }}</span>                    <span class="icon arrow-right-small gray" /></template>
                 </STListItem>
             </STList>
         </main>
@@ -27,7 +26,7 @@
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { BackButton, STList, STListItem, STNavigationBar, STToolbar } from "@stamhoofd/components";
 import { DocumentTemplateGroup, Group, RecordCategory } from "@stamhoofd/structures";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {

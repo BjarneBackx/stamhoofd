@@ -1,6 +1,6 @@
 <template>
     <div class="st-view order-view">
-        <STNavigationBar :title="'Bestelling #' + order.number" :pop="canPop" :dismiss="canDismiss">
+        <STNavigationBar :title="'Bestelling #' + order.number">
             <template #right>
                 <button v-if="hasPreviousOrder || hasNextOrder" v-tooltip="'Ga naar vorige bestelling'" type="button" class="button navigation icon arrow-up" :disabled="!hasPreviousOrder" @click="goBack" />
                 <button v-if="hasNextOrder || hasPreviousOrder" v-tooltip="'Ga naar volgende bestelling'" type="button" class="button navigation icon arrow-down" :disabled="!hasNextOrder" @click="goNext" />
@@ -32,7 +32,7 @@
                         Totaal te betalen
                     </h3>
                     <p class="style-definition-text">
-                        {{ order.totalToPay | price }}
+                        {{ formatPrice(order.totalToPay) }}
                     </p>
                 </STListItem>
 
@@ -41,7 +41,7 @@
                         Betaald bedrag
                     </h3>
                     <p class="style-definition-text">
-                        {{ order.pricePaid | price }}
+                        {{ formatPrice(order.pricePaid) }}
                     </p>
                 </STListItem>
 
@@ -50,7 +50,7 @@
                         Geplaatst op
                     </h3>
                     <p class="style-definition-text">
-                        {{ order.validAt | dateTime | capitalizeFirstLetter }}
+                        {{ capitalizeFirstLetter(formatDateTime(order.validAt)) }}
                     </p>
                 </STListItem>
 
@@ -62,7 +62,7 @@
                         <span>{{ statusName }}</span>
                         <span v-if="isCanceled" class="icon canceled" />
                     </p>
-                    <span v-if="hasWrite" slot="right" class="icon arrow-down-small gray" />
+                    <template v-if="hasWrite" #right><span class="icon arrow-down-small gray" /></template>
                 </STListItem>
 
                 <STListItem
@@ -81,8 +81,10 @@
                         <span v-else class="icon clock" />
                     </p>
 
-                    <span v-if="order.payments.length > 1" slot="right">{{ payment.price | price }}</span>
-                    <span v-if="hasPaymentsWrite" slot="right" class="icon arrow-right-small gray" />
+                    <template #right v-if="order.payments.length > 1 || hasPaymentsWrite">
+                        <span v-if="order.payments.length > 1">{{ formatPrice(payment.price) }}</span>
+                        <span v-if="hasPaymentsWrite" class="icon arrow-right-small gray" />
+                    </template>
                 </STListItem>
 
                 <STListItem v-if="hasTickets" class="right-description right-stack" :selectable="tickets.length > 0" @click="tickets.length > 0 ? openTickets($event) : null">
@@ -100,21 +102,21 @@
                         <span v-else-if="hasSingleTickets && tickets.length == 0" class="gray">
                             Geen ticket
                         </span>
-                        <span v-else-if="tickets.length == 0" slot="right" class="gray">
+                        <span v-else-if="tickets.length == 0" class="gray">
                             Geen tickets
                         </span>
-                        <span v-else-if="hasSingleTickets && tickets.length == 1 && scannedCount == 1" slot="right">
+                        <span v-else-if="hasSingleTickets && tickets.length == 1 && scannedCount == 1">
                             Gescand
                         </span>
-                        <span v-else-if="hasSingleTickets && tickets.length == 1 && scannedCount == 0" slot="right">
+                        <span v-else-if="hasSingleTickets && tickets.length == 1 && scannedCount == 0">
                             Niet gescand
                         </span>
-                        <span v-else slot="right">
+                        <span v-else>
                             {{ scannedCount }} / {{ tickets.length }} gescand
                         </span>
                     </p>
 
-                    <span v-if="tickets.length > 0" slot="right" class="icon arrow-right-small" />
+                    <template v-if="tickets.length > 0" #right><span class="icon arrow-right-small" /></template>
                 </STListItem>
             </STList>
 
@@ -196,7 +198,7 @@
                         </h3>
 
                         <p class="style-definition-text">
-                            {{ order.data.timeSlot.date | date | capitalizeFirstLetter }}<br>{{ order.data.timeSlot.startTime | minutes }} - {{ order.data.timeSlot.endTime | minutes }}
+                            {{ capitalizeFirstLetter(formatDate(order.data.timeSlot.date)) }}<br>{{ formatMinutes(order.data.timeSlot.startTime) }} - {{ formatMinutes(order.data.timeSlot.endTime) }}
                         </p>
                     </STListItem>
                     <STListItem v-if="order.data.deliveryPrice > 0" class="right-description">
@@ -205,7 +207,7 @@
                         </h3>
 
                         <p class="style-definition-text">
-                            {{ order.data.deliveryPrice | price }}
+                            {{ formatPrice(order.data.deliveryPrice) }}
                         </p>
                     </STListItem>
                 </STList>
@@ -258,7 +260,7 @@
                     </h3>
 
                     <p class="style-definition-text pre-wrap" v-text="order.data.comments" />
-                    <span v-if="hasWrite" slot="right" class="icon edit" />
+                    <template v-if="hasWrite" #right><span class="icon edit" /></template>
                 </STListItem>
             </STList>
 
@@ -274,7 +276,7 @@
                 <h2>
                     {{ category.name }}
                 </h2>
-                <RecordCategoryAnswersBox :category="category" :answers="recordAnswers" :data-permission="true" />
+                <ViewRecordCategoryAnswersBox :category="category" :value="order.data" />
             </div>
 
 
@@ -302,7 +304,7 @@
 
             <hr>
 
-            <CheckoutPriceBreakdown :checkout="order.data" />
+            <PriceBreakdownBox :price-breakdown="order.data.priceBreakown" />
         </main>
     </div>
 </template>
@@ -311,15 +313,11 @@
 import { ArrayDecoder, AutoEncoderPatchType, PatchableArray, PatchableArrayAutoEncoder } from "@simonbackx/simple-encoding";
 import { Request } from "@simonbackx/simple-networking";
 import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { CheckoutPriceBreakdown, CartItemRow, ErrorBox, GlobalEventBus, LoadingButton, LoadingView, LongPressDirective, Radio, RecordCategoryAnswersBox, STErrorsDefault, STList, STListItem, STNavigationBar, STToolbar, TableActionsContextMenu, Toast, TooltipDirective } from "@stamhoofd/components";
-import { SessionManager } from "@stamhoofd/networking";
-import { BalanceItemDetailed, CartItem, OrderStatus, OrderStatusHelper, PaymentGeneral, PaymentMethod, PaymentMethodHelper, PaymentStatus, PrivateOrder, PrivateOrderWithTickets, ProductType, RecordCategory, RecordWarning, TicketPrivate, WebshopTicketType } from '@stamhoofd/structures';
+import { Component, Mixins, Prop, Watch } from "@simonbackx/vue-app-navigation/classes";
+import { PaymentView, EditPaymentView, CartItemRow, PriceBreakdownBox, ErrorBox, GlobalEventBus, LoadingButton, LoadingView, LongPressDirective, Radio, STErrorsDefault, STList, STListItem, STNavigationBar, STToolbar, TableActionsContextMenu, Toast, TooltipDirective, ViewRecordCategoryAnswersBox } from "@stamhoofd/components";
+import { AccessRight, BalanceItemDetailed, CartItem, OrderStatus, OrderStatusHelper, PaymentGeneral, PaymentMethod, PaymentMethodHelper, PaymentStatus, PrivateOrderWithTickets, ProductType, RecordCategory, RecordWarning, TicketPrivate, WebshopTicketType } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop, Watch } from "vue-property-decorator";
 
-import { OrganizationManager } from "../../../../classes/OrganizationManager";
-import EditPaymentView from "../../member/EditPaymentView.vue";
-import PaymentView from "../../payments/PaymentView.vue";
 import { WebshopManager } from "../WebshopManager";
 import { OrderActionBuilder } from "./OrderActionBuilder";
 import OrderTicketsView from "./OrderTicketsView.vue";
@@ -336,9 +334,9 @@ import TicketRow from "./TicketRow.vue";
         STErrorsDefault,
         LoadingView,
         TicketRow,
-        RecordCategoryAnswersBox,
+        ViewRecordCategoryAnswersBox,
         CartItemRow,
-        CheckoutPriceBreakdown
+        PriceBreakdownBox
     },
     filters: {
         price: Formatter.price.bind(Formatter),
@@ -409,7 +407,7 @@ export default class OrderView extends Mixins(NavigationMixin){
     get warnings(): RecordWarning[] {
         const warnings: RecordWarning[] = []
 
-        for (const answer of this.recordAnswers) {
+        for (const answer of this.recordAnswers.values()) {
             warnings.push(...answer.getWarnings())
         }
 
@@ -461,23 +459,27 @@ export default class OrderView extends Mixins(NavigationMixin){
     }
 
     get hasPaymentsWrite() {
-        const p = SessionManager.currentSession?.user?.permissions
+        const p = this.$context.organizationPermissions
         if (!p) {
             return false
         }
-        if (p.canManagePayments(OrganizationManager.organization.privateMeta?.roles ?? [])) {
+        if (p.hasAccessRight(AccessRight.OrganizationManagePayments)) {
             return true
         }
 
-        return this.webshop.privateMeta.permissions.hasWriteAccess(p, OrganizationManager.organization.privateMeta?.roles ?? [])
+        if (p.hasAccessRight(AccessRight.OrganizationFinanceDirector)) {
+            return true
+        }
+
+        return this.webshop.privateMeta.permissions.hasWriteAccess(p)
     }
 
     get hasWrite() {
-        const p = SessionManager.currentSession?.user?.permissions
+        const p = this.$context.organizationPermissions
         if (!p) {
             return false
         }
-        return this.webshop.privateMeta.permissions.hasWriteAccess(p, OrganizationManager.organization.privateMeta?.roles ?? [])
+        return this.webshop.privateMeta.permissions.hasWriteAccess(p)
     }
 
     get hasSingleTickets() {
@@ -494,6 +496,7 @@ export default class OrderView extends Mixins(NavigationMixin){
 
     get actionBuilder() {
         return new OrderActionBuilder({
+            organizationManager: this.$organizationManager,
             webshopManager: this.webshopManager,
             component: this,
         })
@@ -666,7 +669,7 @@ export default class OrderView extends Mixins(NavigationMixin){
         return Promise.resolve()
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         this.webshopManager.ticketsEventBus.removeListener(this)
         this.webshopManager.ticketPatchesEventBus.removeListener(this)
         this.webshopManager.ordersEventBus.removeListener(this)
@@ -687,7 +690,7 @@ export default class OrderView extends Mixins(NavigationMixin){
             return;
         }
 
-        if (!this.isFocused()) {
+        if (!this.isFocused) {
             return
         }
 
@@ -729,7 +732,7 @@ export default class OrderView extends Mixins(NavigationMixin){
     get recordCategories(): RecordCategory[] {
         return RecordCategory.flattenCategoriesForAnswers(
             this.webshop.meta.recordCategories,
-            this.order.data.recordAnswers
+            [...this.order.data.recordAnswers.values()]
         )
     }
 
@@ -754,7 +757,7 @@ export default class OrderView extends Mixins(NavigationMixin){
             saveHandler: async (patch: AutoEncoderPatchType<PaymentGeneral>) => {
                 const arr: PatchableArrayAutoEncoder<PaymentGeneral> = new PatchableArray();
                 arr.addPut(payment.patch(patch))
-                await SessionManager.currentSession!.authenticatedServer.request({
+                await this.$context.authenticatedServer.request({
                     method: 'PATCH',
                     path: '/organization/payments',
                     body: arr,

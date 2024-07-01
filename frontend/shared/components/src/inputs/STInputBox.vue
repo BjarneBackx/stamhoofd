@@ -12,7 +12,7 @@
 
 
 <script lang="ts">
-import { Component, Prop,Vue } from "vue-property-decorator";
+import { Component, Prop,Vue } from "@simonbackx/vue-app-navigation/classes";
 
 import { ErrorBox } from '../errors/ErrorBox';
 import STErrorsInput from '../errors/STErrorsInput.vue';
@@ -36,7 +36,7 @@ export default class STInputBox extends Vue {
 
 
 <style lang="scss">
-@use '~@stamhoofd/scss/base/text-styles.scss';
+@use '@stamhoofd/scss/base/text-styles.scss';
 
 .st-input-box {
     padding: 10px 0;

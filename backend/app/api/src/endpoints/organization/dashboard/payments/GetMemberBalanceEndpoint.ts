@@ -28,19 +28,18 @@ export class GetMemberBalanceEndpoint extends Endpoint<Params, Query, Body, Resp
         const organization = await Context.setOrganizationScope();
         await Context.authenticate()
 
-        if (!Context.auth.hasSomeAccess()) {
+        if (!await Context.auth.hasSomeAccess(organization.id)) {
             throw Context.auth.error()
         } 
 
         const member = (await Member.getWithRegistrations(request.params.id))
-        const groups = await Group.where({ organizationId: organization.id })
 
-        if (!member || !Context.auth.canAccessMember(member, groups)) {
-            throw Context.auth.notFoundOrNoAccess("Geen leden gevonden, of je hebt geen toegang tot deze leden")
+        if (!member || !await Context.auth.hasFinancialMemberAccess(member)) {
+            throw Context.auth.notFoundOrNoAccess("Geen lid gevonden, of je hebt geen toegang tot dit lid")
         }
 
         // Get all balance items for this member or users
-        const balanceItems = await BalanceItem.balanceItemsForUsersAndMembers(member.users.map(u => u.id), [member.id])
+        const balanceItems = await BalanceItem.balanceItemsForUsersAndMembers(organization.id, member.users.map(u => u.id), [member.id])
 
         return new Response(
             await BalanceItem.getMemberStructure(balanceItems)

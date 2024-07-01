@@ -3,7 +3,7 @@ import { SimpleError } from "@simonbackx/simple-errors";
 import { v4 as uuidv4 } from "uuid";
 
 import { ResolutionRequest } from "../../files/ResolutionRequest";
-import { RecordAnswer } from "./RecordAnswer";
+import { RecordAnswer, RecordAnswerDecoder } from "./RecordAnswer";
 
 export enum RecordType {
     /**
@@ -133,13 +133,13 @@ export class RecordSettings extends AutoEncoder {
      * Text: required input
      */
     @field({ decoder: BooleanDecoder })
-    required = false
+    required = true
 
     /**
      * Whether you need permission to collect this information
      */
     @field({ decoder: BooleanDecoder, version: 123 })
-    sensitive = true
+    sensitive = false
 
     /**
      * Only used for checkboxes
@@ -200,8 +200,8 @@ export class RecordSettings extends AutoEncoder {
     @field({ decoder: new ArrayDecoder(ResolutionRequest), optional: true })
     resolutions?: ResolutionRequest[]
 
-    validate(answers: RecordAnswer[]): RecordAnswer | undefined {
-        const answer = answers.find(a => a.settings.id === this.id)
+    validate(answers: Map<string, RecordAnswer>) {
+        const answer = answers.get(this.id)
 
         if (this.required && !answer) {
             throw new SimpleError({
@@ -211,7 +211,9 @@ export class RecordSettings extends AutoEncoder {
             })
         }
 
-        return answer;
+        if (answer) {
+            answer.validate()
+        }
     }
 
     get excelColumns() {
@@ -224,5 +226,12 @@ export class RecordSettings extends AutoEncoder {
             ]
         }
         return [this.name]
+    }
+
+    createDefaultAnswer() {
+        const type = RecordAnswerDecoder.getClassForType(this.type)
+        return type.create({
+            settings: this
+        })
     }
 }

@@ -7,7 +7,7 @@
         <STErrorsDefault :error-box="errorBox" />
 
         <!-- Buttons -->
-        <template slot="buttons">
+        <template #buttons>
             <label v-tooltip="'Bijlage toevoegen'" class="button icon attachment">
                 <input type="file" multiple="multiple" style="display: none;" accept=".pdf, .docx, .xlsx, .png, .jpeg, .jpg, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/pdf, image/jpeg, image/png, image/gif" @change="changedFile">
                 <span v-if="$isMobile && files.length > 0" class="style-bubble">{{ files.length }}</span>
@@ -17,7 +17,7 @@
         </template>
 
         <!-- List -->
-        <template slot="list">
+        <template #list>
             <STListItem v-if="members.length > 0" class="no-padding right-stack">
                 <div class="list-input-box">
                     <span>Aan:</span>
@@ -27,15 +27,15 @@
                         <span class="icon arrow-down-small gray" />
                     </button>
                 </div>
-                <span slot="right" class="style-description-small">{{ recipients.length }}</span>
-                <button v-if="hasToWarnings" slot="right" class="button icon warning yellow" type="button" @click="showToWarnings" />
+                <template #right><span class="style-description-small">{{ recipients.length }}</span></template>
+                <template v-if="hasToWarnings" #right><button class="button icon warning yellow" type="button" @click="showToWarnings" /></template>
             </STListItem>
             <STListItem v-else class="no-padding right-stack">
                 <div class="list-input-box">
                     <span>Aan:</span>
                     <span class="list-input">{{ recipients.length == 1 ? recipients[0].firstName+" "+recipients[0].lastName : recipients.length +" ontvangers" }}</span>
                 </div>
-                <button v-if="hasToWarnings" slot="right" class="button icon warning yellow" type="button" @click="showToWarnings" />
+                <template v-if="hasToWarnings" #right><button class="button icon warning yellow" type="button" @click="showToWarnings" /></template>
             </STListItem>
             <STListItem class="no-padding" element-name="label">
                 <div class="list-input-box">
@@ -56,18 +56,18 @@
                     </div>
                 </div>
 
-                <button v-if="fullAccess" slot="right" class="button text" type="button" @click="manageEmails">
+                <template v-if="fullAccess" #right><button class="button text" type="button" @click="manageEmails">
                     <span class="icon settings" />
-                </button>
+                </button></template>
             </STListItem>
         </template>
 
         <!-- Editor footer -->
-        <template slot="footer">
+        <template #footer>
             <!-- E-mail attachments -->
             <STList v-if="files.length > 0">
                 <STListItem v-for="(file, index) in files" :key="index" class="file-list-item">
-                    <span slot="left" :class="'icon '+getFileIcon(file)" />
+                    <template #left><span :class="'icon '+getFileIcon(file)" /></template>
                     <h3 class="style-title-list" v-text="file.name" />
                     <p class="style-description-small">
                         {{ file.size }}
@@ -100,14 +100,12 @@
 import { ArrayDecoder, Decoder } from '@simonbackx/simple-encoding';
 import { SimpleError } from '@simonbackx/simple-errors';
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins, Prop, Watch } from "@simonbackx/vue-app-navigation/classes";
 import { CenteredMessage, Checkbox, ContextMenu, ContextMenuItem, Dropdown, EditorSmartButton, EditorSmartVariable, EditorView, EmailStyler, ErrorBox, STErrorsDefault, STInputBox, STList, STListItem, Toast, ToastButton, TooltipDirective } from "@stamhoofd/components";
-import { AppManager, SessionManager } from '@stamhoofd/networking';
+import { AppManager } from '@stamhoofd/networking';
 import { EmailAttachment, EmailInformation, EmailRequest, Group, Member, MemberWithRegistrations, Order, PaymentGeneral, PaymentMethod, PaymentMethodHelper, PaymentStatus, PrivateOrder, Recipient, Replacement, WebshopPreview, WebshopTicketType } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop, Watch } from "vue-property-decorator";
 
-import { MemberManager } from '../../../classes/MemberManager';
-import { OrganizationManager } from '../../../classes/OrganizationManager';
 import EmailSettingsView from '../settings/EmailSettingsView.vue';
 import MissingFirstNameView from './MissingFirstNameView.vue';
 
@@ -186,7 +184,7 @@ export default class MailView extends Mixins(NavigationMixin) {
         group!: Group | null
 
     // Make session (organization) reactive
-    reactiveSession = SessionManager.currentSession
+    reactiveSession = this.$context
 
     emailId: string | null = null
     subject = this.defaultSubject ?? ""
@@ -641,7 +639,7 @@ export default class MailView extends Mixins(NavigationMixin) {
         this.checkingBounces = true
 
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "POST",
                 path: "/email/check-bounces",
                 body: [...this.allRecipients.values()].map(r => r.email),
@@ -675,7 +673,7 @@ export default class MailView extends Mixins(NavigationMixin) {
     }
 
     get fullAccess() {
-        return SessionManager.currentSession!.user!.permissions!.hasFullAccess(this.organization.privateMeta?.roles ?? [])
+        return this.$context.organizationAuth.hasFullAccess()
     }
 
     getDefaultEmailId() {
@@ -948,16 +946,11 @@ export default class MailView extends Mixins(NavigationMixin) {
             }
 
             // Check if all the parents + members already have access (and an account) when they should have access
-            MemberManager.updateMembersAccess(this.members).then(() => {
-                // We created some users, so we might check the button again
-                if (this.hasAllUsers && !this.didInsertButton) {
-                    this.insertSignInButton()
-                } else {
-                    console.info("doent insert button")
-                }
-            }).catch(e => {
-                Toast.fromError(e).show()
-            })
+            if (this.hasAllUsers && !this.didInsertButton) {
+                this.insertSignInButton()
+            } else {
+                console.info("doent insert button")
+            }
         } else if (this.orders.length > 0 && !this.didInsertButton) {
             this.insertOrderButton()
         }
@@ -1012,7 +1005,7 @@ export default class MailView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get hasFirstName() {
@@ -1642,7 +1635,7 @@ export default class MailView extends Mixins(NavigationMixin) {
                 defaultReplacements: this.defaultReplacements
             })
 
-            await SessionManager.currentSession!.authenticatedServer.request({
+            await this.$context.authenticatedServer.request({
                 method: "POST",
                 path: "/email",
                 body: emailRequest,
@@ -1651,7 +1644,7 @@ export default class MailView extends Mixins(NavigationMixin) {
             new Toast("Jouw e-mail is verstuurd", "success").show()
 
             // Mark review moment
-            AppManager.shared.markReviewMoment()
+            AppManager.shared.markReviewMoment(this.$context)
         } catch (e) {
             this.errorBox = new ErrorBox(e)
         }

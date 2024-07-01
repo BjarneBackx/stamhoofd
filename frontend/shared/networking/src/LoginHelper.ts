@@ -4,7 +4,7 @@ import { RequestResult } from '@simonbackx/simple-networking';
 import { CreateOrganization, NewUser, Organization, OrganizationAdmins, PollEmailVerificationRequest, PollEmailVerificationResponse, SignupResponse, Token, User, VerifyEmailRequest, Version } from '@stamhoofd/structures';
 
 import { NetworkManager } from './NetworkManager';
-import { Session } from './Session';
+import { SessionContext } from './SessionContext';
 import { SessionManager } from './SessionManager';
 
 export class LoginHelper {
@@ -12,7 +12,7 @@ export class LoginHelper {
      * Resend the email verification email (if it is still valid)
      * @returns stop: close the modal - the token is expired and you need to login again
      */
-    static async retryEmail(session: Session, token: string): Promise<boolean> {
+    static async retryEmail(session: SessionContext, token: string): Promise<boolean> {
         const response = await session.server.request({
             method: "POST",
             path: "/verify-email/retry",
@@ -29,7 +29,7 @@ export class LoginHelper {
             await session.loadFromStorage()
             if (session.canGetCompleted()) {
                 // yay! We are signed in
-                await session.updateData(true)
+                await SessionManager.prepareSessionForUsage(session, false)
                 return true
             }
 
@@ -41,7 +41,7 @@ export class LoginHelper {
     /**
      * Return true when the polling should end + confirmation should stop
      */
-    static async pollEmail(session: Session, token: string): Promise<boolean> {
+    static async pollEmail(session: SessionContext, token: string): Promise<boolean> {
         const response = await session.server.request({
             method: "POST",
             path: "/verify-email/poll",
@@ -52,22 +52,15 @@ export class LoginHelper {
         })
 
         if (!response.data.valid) {
-            // the code has been used or is expired
-
             // Check if we are now logged in (link might have been opened in a new tab)
             await session.loadFromStorage()
-            if (session.canGetCompleted()) {
-                // yay! We are signed in
-                await SessionManager.setCurrentSession(session)
-                return true
-            }
-
+            await SessionManager.prepareSessionForUsage(session, false)
             return true
         }
         return false
     }
 
-    static async verifyEmail(session: Session, code: string, token: string) {
+    static async verifyEmail(session: SessionContext, code: string, token: string) {
         const response = await session.server.request({
             method: "POST",
             path: "/verify-email",
@@ -80,28 +73,15 @@ export class LoginHelper {
         
         try {
             session.preventComplete = true
-
-            console.log("Set token")
-            session.setToken(response.data)
-
-            // Request additional data
-            console.log("Fetching user")
-            await session.fetchUser()
-
-            // if user / organization got cleared due to an invite
-            if (!session.isComplete()) {
-                await session.updateData()
-                // need to wait on this because it changes the permissions
-            }
+            await session.setToken(response.data)
+            await SessionManager.prepareSessionForUsage(session, false)
         } finally {
             session.preventComplete = false
         }
-       
-        await SessionManager.setCurrentSession(session)
     }
 
     static async login(
-        session: Session, 
+        session: SessionContext, 
         email: string, 
         password: string
     ): Promise<{ verificationToken?: string }> {
@@ -129,22 +109,31 @@ export class LoginHelper {
             throw e
         }
 
-        session.setToken(tokenResponse.data)
-        await session.fetchUser()
-
-        // if user / orgaznization got cleared due to an invite
-        if (!session.isComplete()) {
-            await session.updateData(false, false)
-            // need to wait on this because it changes the permissions
+        session.preventComplete = true
+        try {
+            await session.setToken(tokenResponse.data)
+            await session.fetchUser()
+    
+            // if user / orgaznization got cleared due to an invite
+            if (!session.isComplete()) {
+                await session.updateData(false, false)
+                // need to wait on this because it changes the permissions
+            }
+    
+            await SessionManager.prepareSessionForUsage(session)
+            session.preventComplete = false
+        } catch (e) {
+            session.preventComplete = false
+            throw e
         }
-
-        await SessionManager.setCurrentSession(session)
+        
         return {}
     }
 
     static async signUpOrganization(organization: Organization, email: string, password: string, firstName: string | null = null, lastName: string | null = null, registerCode: string | null = null): Promise<string> {
         const user = NewUser.create({
             email,
+            organizationId: organization.id,
             firstName,
             lastName,
             password
@@ -165,8 +154,7 @@ export class LoginHelper {
         return response.data.token
     }
 
-    static async loadAdmins(shouldRetry = true, owner?: any): Promise<OrganizationAdmins> {
-        const session = SessionManager.currentSession!
+    static async loadAdmins(session: SessionContext, shouldRetry = true, owner?: any): Promise<OrganizationAdmins> {
         const response = await session.authenticatedServer.request({
             method: "GET",
             path: "/organization/admins",
@@ -178,7 +166,7 @@ export class LoginHelper {
         return response.data
     }
 
-    static async changePassword(session: Session, password: string, email?: string) {
+    static async changePassword(session: SessionContext, password: string, email?: string) {
         console.log("Change password. Start.")
 
         const patch = NewUser.patch({
@@ -190,7 +178,7 @@ export class LoginHelper {
         return await this.patchUser(session, patch)
     }
 
-    static async patchUser(session: Session, patch: AutoEncoderPatchType<NewUser | User>): Promise<{ verificationToken?: string }> {
+    static async patchUser(session: SessionContext, patch: AutoEncoderPatchType<NewUser | User>): Promise<{ verificationToken?: string }> {
         // Do netwowrk request to create organization
         try {
             await session.authenticatedServer.request({
@@ -220,9 +208,10 @@ export class LoginHelper {
         return {}
     }
 
-    static async signUp(session: Session, email: string, password: string, firstName: string | null = null, lastName: string | null = null): Promise<string> {
+    static async signUp(session: SessionContext, email: string, password: string, firstName: string | null = null, lastName: string | null = null): Promise<string> {
         const user = NewUser.create({
             email,
+            organizationId: session.organization?.id ?? null,
             firstName,
             lastName,
             password

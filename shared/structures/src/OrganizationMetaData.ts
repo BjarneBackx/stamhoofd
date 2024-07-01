@@ -15,12 +15,17 @@ import { PaymentConfiguration } from './PaymentConfiguration';
 import { PaymentMethod } from './PaymentMethod';
 import { UmbrellaOrganization } from './UmbrellaOrganization';
 import { TransferSettings } from './webshops/TransferSettings';
+import { OrganizationTag } from './Platform';
 
 export class OrganizationPackages extends AutoEncoder {
     @field({ decoder: new MapDecoder(new EnumDecoder(STPackageType), STPackageStatus) })
     packages = new Map<STPackageType, STPackageStatus>()
 
     isActive(type: STPackageType) {
+        if (STAMHOOFD.userMode === 'platform') {
+            return true;
+        }
+        
         const status = this.packages.get(type)
         if (!status) {
             return false
@@ -187,6 +192,12 @@ export class OrganizationMetaData extends AutoEncoder {
     type = OrganizationType.Other
 
     /**
+     * Contains the ids of the tags
+     */
+    @field({ decoder: new ArrayDecoder(StringDecoder), version: 260 })
+    tags: string[] = []
+
+    /**
      * Show beta features in this organization
      */
     @field({ decoder: BooleanDecoder, version: 108 })
@@ -198,7 +209,11 @@ export class OrganizationMetaData extends AutoEncoder {
     @field({ decoder: OrganizationModules, version: 48, upgrade: () => OrganizationModules.create({ useMembers: true, useWebshops: true }), field: "modules" })
     modulesOld = OrganizationModules.create({})
 
-    get modules() {
+    /**
+     * @deprecated
+     * Use packages
+     */
+    get modules(): OrganizationPackages {
         return this.packages
     }
 

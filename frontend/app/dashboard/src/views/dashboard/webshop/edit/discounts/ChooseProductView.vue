@@ -1,6 +1,6 @@
 <template>
     <div class="st-view" >
-        <STNavigationBar :title="title" :pop="canPop" :dismiss="canDismiss" />
+        <STNavigationBar :title="title" />
            
         <main>
             <h1>
@@ -20,7 +20,7 @@
                         <p v-if="(product.type == 'Ticket' || product.type == 'Voucher') && product.location" class="style-description-small" v-text="product.location.name" />
                         <p v-if="(product.type == 'Ticket' || product.type == 'Voucher') && product.dateRange" class="style-description-small" v-text="formatDateRange(product.dateRange)" />
 
-                        <span class="icon success primary" v-if="product.id == selectedProductId" slot="right" />
+                        <template v-if="product.id == selectedProductId" #right><span class="icon success primary" /></template>
                     </STListItem>
                 </STList>
             </div>
@@ -34,7 +34,7 @@ import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { STList, STListItem, STNavigationBar } from "@stamhoofd/components";
 import { Category, PrivateWebshop, Product, ProductDateRange } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 
 @Component({

@@ -17,7 +17,7 @@
 
 <script lang="ts">
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { Component, Mixins,Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import Spinner from '../Spinner.vue';
 import { Toast } from './Toast';
@@ -66,7 +66,7 @@ export default class ToastView extends Mixins(NavigationMixin) {
             this.onClose();
         }
         this.isClosing = true
-        this.emitParents("pop", undefined);
+        this.pop();
     }
 
     clickedButton() {
@@ -77,8 +77,8 @@ export default class ToastView extends Mixins(NavigationMixin) {
 </script>
 
 <style lang="scss">
-@use '~@stamhoofd/scss/base/variables' as *;
-@use '~@stamhoofd/scss/base/text-styles' as *;
+@use '@stamhoofd/scss/base/variables' as *;
+@use '@stamhoofd/scss/base/text-styles' as *;
 
 .toast-view-container {
     padding: 5px 0;

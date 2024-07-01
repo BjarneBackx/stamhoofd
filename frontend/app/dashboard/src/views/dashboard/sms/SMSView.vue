@@ -1,10 +1,6 @@
 <template>
     <div class="st-view sms-view">
-        <STNavigationBar title="SMS'en">
-            <template #right>
-                <button class="button icon close gray" type="button" @click="dismiss" />
-            </template>
-        </STNavigationBar>
+        <STNavigationBar title="SMS'en" />
         
 
         <main>
@@ -56,9 +52,9 @@
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, Dropdown, SegmentedControl, STInputBox, STNavigationBar, STNavigationTitle, STToolbar } from "@stamhoofd/components";
 import { Customer, Member } from '@stamhoofd/structures';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../../../registration/src/classes/OrganizationManager";
+
 
 @Component({
     components: {
@@ -90,7 +86,7 @@ export default class SMSView extends Mixins(NavigationMixin) {
     }
 
     get parentsEnabled() {
-        const enabled = OrganizationManager.organization.meta.recordsConfiguration.parents !== null
+        const enabled = this.$organization.meta.recordsConfiguration.parents !== null
         return enabled && this.members.some(member => member.details.parents.length > 0)
     }
 

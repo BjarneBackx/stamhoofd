@@ -1,5 +1,6 @@
 import { Request } from "@simonbackx/simple-networking";
 import { CountFilteredRequest, LimitedFilteredRequest, SortList, StamhoofdFilter } from "@stamhoofd/structures";
+import { onBeforeUnmount, reactive } from "vue";
 
 
 export interface ObjectFetcher<O> {
@@ -7,11 +8,21 @@ export interface ObjectFetcher<O> {
 
     fetchCount(data: CountFilteredRequest): Promise<number>
 
-    destroy(): void
+    destroy?(): void
 }
 
 export type FetchAllOptions = {
     onProgress?: (count: number, total: number) => void
+}
+
+export function useTableObjectFetcher<O extends {id: string}, OF extends ObjectFetcher<O> = ObjectFetcher<O>>(objectFetcher: OF): TableObjectFetcher<O> {
+    const fetcher = reactive(new TableObjectFetcher<O>({objectFetcher})) as any
+
+    onBeforeUnmount(() => {
+        fetcher.destroy()
+    });
+
+    return fetcher;
 }
 
 export class TableObjectFetcher<O extends {id: string}> {
@@ -44,7 +55,7 @@ export class TableObjectFetcher<O extends {id: string}> {
     errorState: Error|null = null;
 
     // todo: add rate limits if scrolling too fast
-    #clearIndex = 0;
+    _clearIndex = 0;
 
     nextRequest: LimitedFilteredRequest|null = null;
 
@@ -53,9 +64,11 @@ export class TableObjectFetcher<O extends {id: string}> {
     }
 
     destroy() {
-        this.#clearIndex += 1;
+        this._clearIndex += 1;
         Request.cancelAll(this.objectFetcher)
-        this.objectFetcher.destroy()
+        if (this.objectFetcher.destroy) {
+            this.objectFetcher.destroy()
+        }
         this.objects = [] // Fast memory cleanup
     }
 
@@ -73,6 +86,14 @@ export class TableObjectFetcher<O extends {id: string}> {
         const results: O[] = []
 
         while (next) {
+            // Override filter
+            // Because the filter could have been changed by the object fetcher, and we don't want to reapply any custom filters
+            // on the already custom filter that we got from the server
+            next.filter = this.filter;
+
+            // Same for sorting
+            next.sort = this.sort;
+            
             const data = await this.objectFetcher.fetch(next)
             next = data.next ?? null;
             results.push(...data.results)
@@ -124,7 +145,7 @@ export class TableObjectFetcher<O extends {id: string}> {
     reset(total = false, filteredCount = false) {
         console.info('Reset')
 
-        this.#clearIndex += 1;
+        this._clearIndex += 1;
         this.objects = []
 
         if (total) {
@@ -239,7 +260,7 @@ export class TableObjectFetcher<O extends {id: string}> {
         this.cancelRetry()
 
         this.fetchingData = true;
-        const currentClearIndex = this.#clearIndex;
+        const currentClearIndex = this._clearIndex;
 
         try {
             const hasFilter = !!this.filter || !!this.searchQuery;
@@ -252,7 +273,7 @@ export class TableObjectFetcher<O extends {id: string}> {
 
                 // Fetch count in parallel
                 this.objectFetcher.fetchCount(new CountFilteredRequest({})).then((c) => {
-                    if (currentClearIndex !== this.#clearIndex) {
+                    if (currentClearIndex !== this._clearIndex) {
                         // Discard old requests
                         return;
                     }
@@ -273,7 +294,7 @@ export class TableObjectFetcher<O extends {id: string}> {
 
                 // Fetch count in parallel
                 this.objectFetcher.fetchCount(new CountFilteredRequest({filter: this.filter, search: this.searchQuery})).then((c) => {
-                    if (currentClearIndex !== this.#clearIndex) {
+                    if (currentClearIndex !== this._clearIndex) {
                         // Discard old requests
                         return;
                     }
@@ -291,9 +312,17 @@ export class TableObjectFetcher<O extends {id: string}> {
 
                 // Override limit
                 this.nextRequest.limit = limit;
+
+                // Override filter
+                // Because the filter could have been changed by the object fetcher, and we don't want to reapply any custom filters
+                // on the already custom filter that we got from the server
+                this.nextRequest.filter = this.filter;
+
+                // Same for sorting
+                this.nextRequest.sort = this.sort;
                 
                 const data = await this.objectFetcher.fetch(this.nextRequest)
-                if (currentClearIndex !== this.#clearIndex) {
+                if (currentClearIndex !== this._clearIndex) {
                     // Discard old requests
                     console.warn('Discarded fetch result')
                     return;
@@ -337,7 +366,7 @@ export class TableObjectFetcher<O extends {id: string}> {
                 console.log('No fetch required.', this.objects.length, '/', this.totalFilteredCount)
             }
         } catch (e) {
-            if (currentClearIndex === this.#clearIndex) {
+            if (currentClearIndex === this._clearIndex) {
                 console.info('Stopped fetching due to error')
                 this.fetchingData = false;
                 this.scheduleRetry(e as Error)

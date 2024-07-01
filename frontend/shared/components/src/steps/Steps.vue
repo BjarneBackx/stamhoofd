@@ -16,7 +16,7 @@
 <script lang="ts">
 import { ComponentWithProperties, NavigationController } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, STNavigationBar } from "@stamhoofd/components"
-import { Component, Prop,Ref,Vue } from "vue-property-decorator";
+import { Component, Prop,Ref,Vue } from "@simonbackx/vue-app-navigation/classes";
 
 import StepsHeader from "./StepsHeader.vue";
 
@@ -65,8 +65,8 @@ export default class Steps extends Vue {
 </script>
 
 <style lang="scss">
-@use '~@stamhoofd/scss/base/variables' as *;
-@use '~@stamhoofd/scss/base/text-styles' as *;
+@use '@stamhoofd/scss/base/variables' as *;
+@use '@stamhoofd/scss/base/text-styles' as *;
 
 .steps-layout {
     min-height: 100vh;

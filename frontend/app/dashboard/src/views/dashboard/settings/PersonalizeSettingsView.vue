@@ -76,7 +76,7 @@
         </template>
 
         <template v-else>
-            <p v-if="enableMemberModule" class="st-list-description">
+            <p v-if="organization.registerUrl && enableMemberModule" class="st-list-description">
                 Jullie ledenportaal is bereikbaar via <a class="button inline-link" :href="organization.registerUrl" target="_blank">{{ organization.registerUrl }}</a>. {{ $t('dashboard.settings.personalize.domainDescriptionSuffixForMemberRegistrations') }}
             </p>
             <p v-else class="st-list-description">
@@ -94,15 +94,13 @@
 </template>
 
 <script lang="ts">
-import { AutoEncoder, AutoEncoderPatchType, patchContainsChanges } from '@simonbackx/simple-encoding';
+import { AutoEncoder, AutoEncoderPatchType, PartialWithoutMethods, patchContainsChanges } from '@simonbackx/simple-encoding';
 import { SimpleErrors } from '@simonbackx/simple-errors';
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 import { CenteredMessage, Checkbox, ColorInput, ErrorBox, ImageInput, SaveView, STErrorsDefault, Toast, Validator } from "@stamhoofd/components";
-import { UrlHelper } from '@stamhoofd/networking';
 import { Image, Organization, OrganizationMetaData, OrganizationPatch, ResolutionFit, ResolutionRequest, Version } from "@stamhoofd/structures";
-import { Component, Mixins } from "vue-property-decorator";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
 import DNSRecordsView from './DNSRecordsView.vue';
 import DomainSettingsView from './DomainSettingsView.vue';
 
@@ -114,18 +112,25 @@ import DomainSettingsView from './DomainSettingsView.vue';
         ImageInput,
         ColorInput,
     },
+    navigation: {
+        title: 'Personaliseren',
+    }
 })
 export default class PersonalizeSettingsView extends Mixins(NavigationMixin) {
     errorBox: ErrorBox | null = null
     validator = new Validator()
     saving = false
-    temp_organization = OrganizationManager.organization
+    temp_organization = this.$organization
     showDomainSettings = true
 
-    organizationPatch: AutoEncoderPatchType<Organization> & AutoEncoder = OrganizationPatch.create({ id: OrganizationManager.organization.id })
+    organizationPatch: AutoEncoderPatchType<Organization> & AutoEncoder = OrganizationPatch.create({})
+    
+    created() {
+        this.organizationPatch.id = this.$organization.id
+    }
 
     get organization() {
-        return OrganizationManager.organization.patch(this.organizationPatch)
+        return this.$organization.patch(this.organizationPatch)
     }
 
     get enableMemberModule() {
@@ -187,40 +192,44 @@ export default class PersonalizeSettingsView extends Mixins(NavigationMixin) {
         ]
     }
 
+    addPatch(patch: PartialWithoutMethods<AutoEncoderPatchType<Organization>>) {
+        this.organizationPatch = this.organizationPatch.patch(Organization.patch(patch))
+    }
+
     get color() {
         return this.organization.meta.color
     }
 
     set color(color: string | null) {
-        if (!this.organizationPatch.meta) {
-            this.$set(this.organizationPatch, "meta", OrganizationMetaData.patch({}))
-        }
-
-        this.$set(this.organizationPatch.meta!, "color", color)
+        this.addPatch({
+            meta: OrganizationMetaData.patch({
+                color: color
+            })
+        })
     }
 
     get squareLogo() {
         return this.organization.meta.squareLogo
     }
 
-    set squareLogo(image: Image | null) {
-        if (!this.organizationPatch.meta) {
-            this.$set(this.organizationPatch, "meta", OrganizationMetaData.patch({}))
-        }
-
-        this.$set(this.organizationPatch.meta!, "squareLogo", image)
+    set squareLogo(squareLogo: Image | null) {
+        this.addPatch({
+            meta: OrganizationMetaData.patch({
+                squareLogo
+            })
+        })
     }
 
     get expandLogo() {
         return this.organization.meta.expandLogo
     }
 
-    set expandLogo(enable: boolean) {
-        if (!this.organizationPatch.meta) {
-            this.$set(this.organizationPatch, "meta", OrganizationMetaData.patch({}))
-        }
-
-        this.$set(this.organizationPatch.meta!, "expandLogo", enable)
+    set expandLogo(expandLogo: boolean) {
+        this.addPatch({
+            meta: OrganizationMetaData.patch({
+                expandLogo
+            })
+        })
     }
 
 
@@ -228,12 +237,12 @@ export default class PersonalizeSettingsView extends Mixins(NavigationMixin) {
         return this.organization.meta.horizontalLogo
     }
 
-    set horizontalLogo(image: Image | null) {
-        if (!this.organizationPatch.meta) {
-            this.$set(this.organizationPatch, "meta", OrganizationMetaData.patch({}))
-        }
-
-        this.$set(this.organizationPatch.meta!, "horizontalLogo", image)
+    set horizontalLogo(horizontalLogo: Image | null) {
+        this.addPatch({
+            meta: OrganizationMetaData.patch({
+                horizontalLogo
+            })
+        })
     }
 
     get isMailOk() {
@@ -268,8 +277,8 @@ export default class PersonalizeSettingsView extends Mixins(NavigationMixin) {
         this.saving = true
 
         try {
-            await OrganizationManager.patch(this.organizationPatch)
-            this.organizationPatch = OrganizationPatch.create({ id: OrganizationManager.organization.id })
+            await this.$organizationManager.patch(this.organizationPatch)
+            this.organizationPatch = OrganizationPatch.create({ id: this.$organization.id })
             new Toast('De wijzigingen zijn opgeslagen', "success green").show()
             this.dismiss({ force: true })
         } catch (e) {
@@ -292,7 +301,7 @@ export default class PersonalizeSettingsView extends Mixins(NavigationMixin) {
     }
 
     get hasChanges() {
-        return patchContainsChanges(this.organizationPatch, OrganizationManager.organization, { version: Version })
+        return patchContainsChanges(this.organizationPatch, this.$organization, { version: Version })
     }
 
     async shouldNavigateAway() {
@@ -300,10 +309,6 @@ export default class PersonalizeSettingsView extends Mixins(NavigationMixin) {
             return true;
         }
         return await CenteredMessage.confirm("Ben je zeker dat je wilt sluiten zonder op te slaan?", "Niet opslaan")
-    }
-   
-    mounted() {
-        UrlHelper.setUrl("/settings/personalize");
     }
 }
 </script>

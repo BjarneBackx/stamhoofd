@@ -1,6 +1,6 @@
 <template>
     <div class="modern st-view table-view background">
-        <STNavigationBar :add-shadow="wrapColumns" :title="title">
+        <STNavigationBar :add-shadow="wrapColumns" :title="title" :disable-pop="true" :disable-dismiss="true">
             <template #left>
                 <button v-if="canLeaveSelectionMode && isMobile && showSelection && !isIOS" type="button" class="button icon navigation close" @click="setShowSelection(false)" />
                 <button v-else-if="canLeaveSelectionMode && showSelection && isIOS" type="button" class="button navigation" @click="setSelectAll(!cachedAllSelected)">
@@ -45,7 +45,7 @@
                 <div class="input-with-buttons">
                     <div>
                         <form class="input-icon-container icon search gray" @submit.prevent="blurFocus">
-                            <input v-model="searchQuery" class="input" name="search" placeholder="Zoeken" type="search" inputmode="search" enterkeyhint="search" autocorrect="off" autocomplete="off" spellcheck="false" autocapitalize="off" @input="searchQuery = $event.target.value">
+                            <input v-model="searchQuery" class="input" name="search" placeholder="Zoeken" type="search" inputmode="search" enterkeyhint="search" autocorrect="off" autocomplete="off" :spellcheck="false" autocapitalize="off">
                         </form>
                     </div>
                     <div>
@@ -62,7 +62,7 @@
                 <div class="inner-size" :style="!wrapColumns ? { height: (totalHeight+50)+'px', width: totalRenderWidth+'px'} : {}">
                     <div class="table-head" @contextmenu.prevent="onTableHeadRightClick($event)">
                         <div v-if="showSelection" class="selection-column">
-                            <Checkbox :checked="cachedAllSelected" @change="setSelectAll($event)" />
+                            <Checkbox :model-value="cachedAllSelected" @update:model-value="setSelectAll($event)" />
                         </div>
 
                         <div class="columns">
@@ -88,8 +88,8 @@
                     <div ref="tableBody" class="table-body" :style="{ height: totalHeight+'px' }">
                         <div v-for="row of visibleRows" :key="row.id" v-long-press="(e) => onRightClickRow(row, e)" class="table-row" :style="{ transform: 'translateY('+row.y+'px)', display: row.currentIndex === null ? 'none' : '' }" @click="onClickRow(row)" @contextmenu.prevent="onRightClickRow(row, $event)">
                             <label v-if="showSelection" class="selection-column" @click.stop>
-                                <Checkbox v-if="row.value" :key="row.value.id" :checked="row.cachedSelectionValue" @change="setSelectionValue(row, $event)" />
-                                <Checkbox v-else :checked="false" />
+                                <Checkbox v-if="row.value" :key="row.value.id" :model-value="row.cachedSelectionValue" @update:model-value="setSelectionValue(row, $event)" />
+                                <Checkbox v-else :model-value="false" />
                             </label>
                             <div v-if="showPrefix" class="prefix-column" :data-style="prefixColumn.getStyleFor(row.value, true)" :data-align="prefixColumn.align">
                                 <span v-if="row.value" v-text="prefixColumn.getFormattedValue(row.value)" />
@@ -134,11 +134,12 @@
 <script lang="ts">
 import { ArrayDecoder, AutoEncoder, BooleanDecoder, Decoder, EnumDecoder, field, NumberDecoder, ObjectData, StringDecoder, VersionBox, VersionBoxDecoder } from "@simonbackx/simple-encoding";
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { BackButton, Checkbox, FilterEditor, LongPressDirective, STButtonToolbar,STNavigationBar, Toast, TooltipDirective } from "@stamhoofd/components";
+import { Component, Mixins, Prop, Watch } from "@simonbackx/vue-app-navigation/classes";
+import { BackButton, Checkbox, FilterEditor, LongPressDirective, STButtonToolbar, STNavigationBar, Toast, TooltipDirective } from "@stamhoofd/components";
 import { Storage } from "@stamhoofd/networking";
 import { Filter, FilterDefinition, Organization, Version } from "@stamhoofd/structures";
 import { v4 as uuidv4 } from "uuid";
-import { Component, Mixins, Prop, Watch } from "vue-property-decorator";
+import { markRaw } from "vue";
 
 import { Column } from "./Column";
 import ColumnSelectorContextMenu from "./ColumnSelectorContextMenu.vue";
@@ -210,7 +211,8 @@ class ColumnConfiguration extends AutoEncoder {
     directives: {
         tooltip: TooltipDirective,
         longPress: LongPressDirective
-    }
+    },
+    emits: ["click", "refresh"],
 })
 export default class TableView<Value extends TableListable> extends Mixins(NavigationMixin) {
     @Prop({ required: true})
@@ -304,7 +306,7 @@ export default class TableView<Value extends TableListable> extends Mixins(Navig
 
     // If the user selects a row, we'll add it in the selectedRows. But if the user selects all rows, 
     // we don't want to add them all, that would be a performance hit. So'ill invert it and only save the unselected values here.
-    markedRows = new Map<string, Value>()
+    markedRows = markRaw(new Map<string, Value>())
 
     /**
      * When true: only the marked rows are selected.
@@ -320,12 +322,13 @@ export default class TableView<Value extends TableListable> extends Mixins(Navig
     isColumnDragActive = false
     dragType: "width" | "order" = "width"
 
-    @Watch("allColumns")
-    onUpdateColumns() {
-        console.log('update columns')
-        this.loadColumnConfiguration().catch(console.error)
-        this.updateVisibleRows()
-    }
+    // Not sure why this was required, but it causes an infinite loop
+    // @Watch("allColumns")
+    // onUpdateColumns() {
+    //     console.log('update columns')
+    //     this.loadColumnConfiguration().catch(console.error)
+    //     this.updateVisibleRows()
+    // }
 
     getEventX(event: any) {
         let x = 0;
@@ -341,7 +344,7 @@ export default class TableView<Value extends TableListable> extends Mixins(Navig
     }
 
     get hasClickListener() {
-        return this.$listeners && this.$listeners.click
+        return !!this.$.vnode.props?.onClick
     }
 
     blurFocus() {
@@ -521,11 +524,11 @@ export default class TableView<Value extends TableListable> extends Mixins(Navig
         } else {
             // We swap columns if the startX of the column moves over the middle of a different column            
             // Calculate how many columns we have moved in the X direction 
-            let startIndex = this.draggingInitialColumns.findIndex(c => c === this.isDraggingColumn)
+            const startIndex = this.draggingInitialColumns.findIndex(c => c === this.isDraggingColumn)
             let columnMoveIndex = 0
             let remainingDifference = difference
             while (Math.sign(remainingDifference) === Math.sign(difference)) {
-                let shouldMove = (remainingDifference < 0) ? -1 : 1
+                const shouldMove = (remainingDifference < 0) ? -1 : 1
                 const column = this.draggingInitialColumns[startIndex + shouldMove + columnMoveIndex]
                 if (!column || column.width === null) {
                     break
@@ -590,7 +593,7 @@ export default class TableView<Value extends TableListable> extends Mixins(Navig
         window.removeEventListener("resize", this.onResize)
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         // Remove event listeners
         this.getScrollElement(this.$refs["table"] as HTMLElement).removeEventListener("scroll", this.onScroll)
         window.removeEventListener("resize", this.onResize)
@@ -703,7 +706,7 @@ export default class TableView<Value extends TableListable> extends Mixins(Navig
         this.updateVisibleRows()
     }
 
-    @Watch("columns")
+    @Watch("columns", {deep: true})
     onColumnsChanged() {
         this.updateRowHeight()
         this.updateVisibleRows()
@@ -935,7 +938,7 @@ export default class TableView<Value extends TableListable> extends Mixins(Navig
                 
                 // We'll make sure we never grow or shrink more than the distribute width
 
-                for (let col of columns) {
+                for (const col of columns) {
                     if (col.width == null) {
                         throw new Error("Impossible. Typescript type checking error")
                     } 
@@ -1046,7 +1049,7 @@ export default class TableView<Value extends TableListable> extends Mixins(Navig
         return this.columns.map(col => `${(col.renderWidth ?? 0)}px`).join(" ")
     }
 
-    @Watch("gridTemplateColumns")
+    @Watch("gridTemplateColumns", {deep: true})
     updateGridSize(val: string) {
         if (!this.wrapColumns) {
             (this.$refs["table"] as HTMLElement).style.setProperty("--table-columns", val);
@@ -1102,7 +1105,7 @@ export default class TableView<Value extends TableListable> extends Mixins(Navig
 
     get sortedValues() {
         const m = (this.sortDirection === SortDirection.Ascending ? 1 : -1)
-        return this.filteredValues.sort((a, b) => {
+        return this.filteredValues.slice().sort((a, b) => {
             const d = this.sortBy.doCompare(a, b) * m
             if (d === 0) {
                 // Use ID to have a stable sort
@@ -1458,6 +1461,7 @@ export default class TableView<Value extends TableListable> extends Mixins(Navig
 
             const value = this.sortedValues[index] ?? null
 
+
             visibleRow.value = value
             visibleRow.y = index * this.rowHeight
             visibleRow.currentIndex = index
@@ -1521,8 +1525,8 @@ export default class TableView<Value extends TableListable> extends Mixins(Navig
 </script>
 
 <style lang="scss">
-@use '~@stamhoofd/scss/base/variables' as *;
-@use '~@stamhoofd/scss/base/text-styles' as *;
+@use '@stamhoofd/scss/base/variables' as *;
+@use '@stamhoofd/scss/base/text-styles' as *;
 
 .table-view {
     --st-vertical-padding: 10px;

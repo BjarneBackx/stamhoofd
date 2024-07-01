@@ -1,6 +1,6 @@
 <template>
     <div class="st-view background">
-        <STNavigationBar :title="pack.meta.name" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar :title="pack.meta.name" />
 
         <main>
             <h1>
@@ -17,7 +17,7 @@
                 <STListItem>
                     Aantal leden
 
-                    <template slot="right">
+                    <template #right>
                         {{ pack.meta.paidAmount }}
                     </template>
                 </STListItem>
@@ -25,16 +25,16 @@
                 <STListItem>
                     Prijs
 
-                    <template slot="right">
-                        {{ pack.meta.unitPrice | price }} / jaar / lid
+                    <template #right>
+                        {{ formatPrice(pack.meta.unitPrice) }} / jaar / lid
                     </template>
                 </STListItem>
 
                 <STListItem>
                     Minimum bedrag per jaar
 
-                    <template slot="right">
-                        {{ pack.meta.minimumAmount * pack.meta.unitPrice | price }} 
+                    <template #right>
+                        {{ formatPrice(pack.meta.minimumAmount * pack.meta.unitPrice) }} 
                         ({{ pack.meta.minimumAmount }} leden)
                     </template>
                 </STListItem>
@@ -42,24 +42,24 @@
                 <STListItem>
                     Vanaf
 
-                    <template slot="right">
-                        {{ pack.meta.startDate | date }}
+                    <template #right>
+                        {{ formatDate(pack.meta.startDate) }}
                     </template>
                 </STListItem>
 
                 <STListItem v-if="pack.validUntil">
                     Geldig tot
 
-                    <template slot="right">
-                        {{ pack.validUntil | date }}
+                    <template #right>
+                        {{ formatDate(pack.validUntil) }}
                     </template>
                 </STListItem>
 
                 <STListItem v-if="pack.removeAt && pack.meta.allowRenew && !isValid">
                     Verlengbaar tot
 
-                    <template slot="right">
-                        {{ pack.removeAt | date }}
+                    <template #right>
+                        {{ formatDate(pack.removeAt) }}
                     </template>
                 </STListItem>
             </STList>
@@ -68,32 +68,32 @@
                 <STListItem>
                     Prijs
 
-                    <template slot="right">
-                        {{ pack.meta.unitPrice | price }} / jaar
+                    <template #right>
+                        {{ formatPrice(pack.meta.unitPrice) }} / jaar
                     </template>
                 </STListItem>
 
                 <STListItem>
                     Vanaf
 
-                    <template slot="right">
-                        {{ pack.meta.startDate | date }}
+                    <template #right>
+                        {{ formatDate(pack.meta.startDate) }}
                     </template>
                 </STListItem>
 
                 <STListItem v-if="pack.validUntil">
                     Geldig tot
 
-                    <template slot="right">
-                        {{ pack.validUntil | date }}
+                    <template #right>
+                        {{ formatDate(pack.validUntil) }}
                     </template>
                 </STListItem>
 
                 <STListItem v-if="pack.removeAt && pack.meta.allowRenew && !isValid">
                     Verlengbaar tot
 
-                    <template slot="right">
-                        {{ pack.removeAt | date }}
+                    <template #right>
+                        {{ formatDate(pack.removeAt) }}
                     </template>
                 </STListItem>
             </STList>
@@ -102,39 +102,39 @@
                 <STListItem>
                     Prijs
 
-                    <template slot="right">
-                        {{ pack.meta.unitPrice | price }}
+                    <template #right>
+                        {{ formatPrice(pack.meta.unitPrice) }}
                     </template>
                 </STListItem>
 
                 <STListItem>
                     Vanaf
 
-                    <template slot="right">
-                        {{ pack.meta.startDate | date }}
+                    <template #right>
+                        {{ formatDate(pack.meta.startDate) }}
                     </template>
                 </STListItem>
 
                 <STListItem v-if="pack.validUntil">
                     Geldig tot
 
-                    <template slot="right">
-                        {{ pack.validUntil | date }}
+                    <template #right>
+                        {{ formatDate(pack.validUntil) }}
                     </template>
                 </STListItem>
 
                 <STListItem v-if="pack.removeAt && pack.meta.allowRenew && !isValid">
                     Verlengbaar tot
 
-                    <template slot="right">
-                        {{ pack.removeAt | date }}
+                    <template #right>
+                        {{ formatDate(pack.removeAt) }}
                     </template>
                 </STListItem>
             </STList>
         </main>
 
         <STToolbar v-if="pack.meta.canDeactivate || pack.shouldHintRenew()">
-            <template slot="right">
+            <template #right>
                 <LoadingButton v-if="pack.meta.canDeactivate" :loading="deactivating">
                     <button class="button secundary" type="button" @click="deactivate">
                         Stopzetten
@@ -157,7 +157,7 @@ import { BackButton, CenteredMessage, ErrorBox, LoadingButton, STErrorsDefault,S
 import { SessionManager } from "@stamhoofd/networking";
 import { STPackage } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import PackageConfirmView from "./PackageConfirmView.vue";
 
@@ -204,11 +204,11 @@ export default class PackageDetailsView extends Mixins(NavigationMixin) {
         this.deactivating = true
 
         try {
-            await SessionManager.currentSession!.authenticatedServer.request({
+            await this.$context.authenticatedServer.request({
                 method: "POST",
                 path: "/billing/deactivate-package/"+this.pack.id,
             })
-            await SessionManager.currentSession!.fetchOrganization()
+            await this.$context.fetchOrganization()
             this.pop({ force: true })
         } catch (e) {
             Toast.fromError(e).show()

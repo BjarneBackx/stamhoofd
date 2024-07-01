@@ -34,7 +34,14 @@
                 <h2>{{ category.name }}</h2>
                 <p v-if="category.description" class="style-description pre-wrap" v-text="category.description" />
 
-                <RecordAnswerInput v-for="record of category.filterRecords(true)" :key="record.id" :record-settings="record" :record-answers="editingAnswers" :validator="validator" />
+                <RecordAnswerInput 
+                    v-for="record of category.filterRecords(patchedDocument)" 
+                    :key="record.id" 
+                    :record="record" 
+                    :answers="patchedDocument.getRecordAnswers()"
+                    @patch="patchAnswers"
+                    :validator="validator" 
+                />
             </div>
 
             <!-- Display all the required linking -->
@@ -47,7 +54,7 @@
                     Deze invoervelden zijn nodig op elk document, maar je moet hier instellen welke gegevens je uit Stamhoofd daarin wilt invullen. Koppel je met meerdere gegevens uit Stamhoofd, dan gaan we de eerste beschikbare op het document invullen. Bv. als er bij het lid zelf geen adres werd ingevuld, neem dan het adres van de eerste ouder.
                 </p>
                 
-                <MultiSelectInput v-for="field of category.getAllRecords()" :key="field.id" class="max" :title="field.name" :error-fields="field.id" :error-box="errorBox" :values="getLinkedFields(field)" :choices="getLinkedFieldsChoices(field)" placeholder="Niet gekoppeld" @input="setLinkedFields(field, $event)" />
+                <MultiSelectInput v-for="field of category.getAllRecords()" :key="field.id" class="max" :title="field.name" :error-fields="field.id" :error-box="errorBox" :model-value="getLinkedFields(field)" :choices="getLinkedFieldsChoices(field)" placeholder="Niet gekoppeld" @update:model-value="setLinkedFields(field, $event)" />
             </div>
 
             <hr>
@@ -61,7 +68,9 @@
                     </h2>
                     <p class="style-description-small pre-wrap" v-text="getGroupDescription(group)" />
 
-                    <button slot="right" class="button icon text trash" type="button" @click="removeGroup(group)" />
+                    <template #right>
+                        <button class="button icon text trash" type="button" @click="removeGroup(group)" />
+                    </template>
                 </STListItem>
             </STList>
             <p>
@@ -79,7 +88,9 @@
 
             <hr>
             <h2>Bedrag</h2>
-            <Checkbox v-model="paidOnly">Enkel aanmaken indien gekoppelde prijs groter is dan 0 euro</Checkbox>
+            <Checkbox v-model="paidOnly">
+                Enkel aanmaken indien gekoppelde prijs groter is dan 0 euro
+            </Checkbox>
         </template>
     </SaveView>
 </template>
@@ -89,13 +100,12 @@ import { ArrayDecoder, Decoder, PatchableArray, PatchableArrayAutoEncoder, patch
 import { SimpleError, SimpleErrors } from "@simonbackx/simple-errors";
 import { Request } from "@simonbackx/simple-networking";
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { Checkbox, CenteredMessage, Dropdown, ErrorBox, FillRecordCategoryView, LoadingButton, MultiSelectInput, NumberInput, RecordAnswerInput, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Toast, Validator } from "@stamhoofd/components";
-import { AppManager, SessionManager } from "@stamhoofd/networking";
-import { Country, DocumentPrivateSettings, DocumentSettings, DocumentTemplateDefinition, DocumentTemplateGroup, DocumentTemplatePrivate, RecordAddressAnswer, RecordAnswer, RecordAnswerDecoder, RecordCategory, RecordSettings, RecordTextAnswer, RecordType, Version } from "@stamhoofd/structures";
+import { Component, Mixins, Prop, Watch } from "@simonbackx/vue-app-navigation/classes";
+import { CenteredMessage, Checkbox, Dropdown, ErrorBox, FillRecordCategoryView, LoadingButton, MultiSelectInput, NumberInput, RecordAnswerInput, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Toast, Validator } from "@stamhoofd/components";
+import { AppManager } from "@stamhoofd/networking";
+import { Country, DocumentPrivateSettings, DocumentSettings, DocumentTemplateDefinition, DocumentTemplateGroup, DocumentTemplatePrivate, PatchAnswers, RecordAddressAnswer, RecordAnswer, RecordAnswerDecoder, RecordCategory, RecordSettings, RecordTextAnswer, RecordType, Version } from "@stamhoofd/structures";
 import { StringCompare } from "@stamhoofd/utility";
-import { Component, Mixins, Prop, Watch } from "vue-property-decorator";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
 import ChooseDocumentTemplateGroup from "./ChooseDocumentTemplateGroup.vue";
 import { fiscal } from "./definitions/fiscal";
 import { participation } from "./definitions/participation";
@@ -140,12 +150,8 @@ export default class EditDocumentTemplateView extends Mixins(NavigationMixin) {
         return this.document.patch(this.patchDocument)
     }
 
-    get definitions() {
-        return RecordCategory.getRecordCategoryDefinitions(this.patchedDocument.privateSettings.templateDefinition.fieldCategories, () => this.editingAnswers)
-    }
-
     get fieldCategories() {
-        return RecordCategory.flattenCategories(this.patchedDocument.privateSettings.templateDefinition.fieldCategories, {} as any, this.definitions, true)
+        return RecordCategory.flattenCategories(this.patchedDocument.privateSettings.templateDefinition.fieldCategories, this.patchedDocument)
     }
 
     get documentFieldCategories() {
@@ -165,6 +171,14 @@ export default class EditDocumentTemplateView extends Mixins(NavigationMixin) {
         this.patchDocument = this.patchDocument.patch({
             settings: DocumentSettings.patch({
                 fieldAnswers: this.editingAnswers as any
+            })
+        })
+    }
+
+    patchAnswers(patch: PatchAnswers) {
+        this.patchDocument = this.patchDocument.patch({
+            settings: DocumentSettings.patch({
+                fieldAnswers: patch
             })
         })
     }
@@ -524,7 +538,7 @@ export default class EditDocumentTemplateView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     getDefaultGlobalData() {
@@ -548,7 +562,7 @@ export default class EditDocumentTemplateView extends Mixins(NavigationMixin) {
         this.loadingHtml = true;
 
         console.log('loadHtml', type)
-        const imported = ((await import(/* webpackChunkName: "attest-html" */ "!!raw-loader!./templates/"+type+".html")).default)
+        const imported = ((await import(/* webpackChunkName: "attest-html" */ "./templates/"+type+".html?raw")).default)
         if (typeof imported !== "string") {
             throw new Error("Imported attest html is not a string")
         }
@@ -560,7 +574,7 @@ export default class EditDocumentTemplateView extends Mixins(NavigationMixin) {
 
     async loadXML(type: string) {
         this.loadingXml = true;
-        const imported = ((await import(/* webpackChunkName: "attest-html" */ "!!raw-loader!./templates/"+type+".xml")).default)
+        const imported = ((await import(/* webpackChunkName: "attest-html" */ "./templates/"+type+".xml?raw")).default)
         if (typeof imported !== "string") {
             throw new Error("Imported attest xml is not a string")
         }
@@ -601,7 +615,7 @@ export default class EditDocumentTemplateView extends Mixins(NavigationMixin) {
 
     recordCategoriesFor(field: RecordSettings) {
         const type = field.type
-        return RecordCategory.filterRecordsWith(OrganizationManager.organization.meta.recordsConfiguration.recordCategories, (record) => record.type == type)
+        return RecordCategory.filterRecordsWith(this.$organization.meta.recordsConfiguration.recordCategories, (record) => record.type == type)
     }
 
     get hasChanges() {
@@ -668,13 +682,13 @@ export default class EditDocumentTemplateView extends Mixins(NavigationMixin) {
     }
 
     getGroupName(group: DocumentTemplateGroup) {
-        const groups = OrganizationManager.organization.groups
+        const groups = this.$organization.groups
         const g = groups.find(g => g.id == group.groupId)
         return g?.settings?.name ?? "Onbekende groep"
     }
 
     getGroupDescription(group: DocumentTemplateGroup) {
-        const groups = OrganizationManager.organization.groups
+        const groups = this.$organization.groups
         const g = groups.find(g => g.id == group.groupId)
         const currentCycle = g?.cycle ?? 0
         const cycleOffset = currentCycle - group.cycle
@@ -722,7 +736,6 @@ export default class EditDocumentTemplateView extends Mixins(NavigationMixin) {
         return new ComponentWithProperties(FillRecordCategoryView, {
             category,
             answers: group.fieldAnswers,
-            markReviewed: true,
             dataPermission: true,
             hasNextStep: index < this.patchedDocument.privateSettings.templateDefinition.groupFieldCategories.length - 1,
             filterDefinitions: [],
@@ -768,7 +781,7 @@ export default class EditDocumentTemplateView extends Mixins(NavigationMixin) {
         errors.throwIfNotEmpty()
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
@@ -799,7 +812,7 @@ export default class EditDocumentTemplateView extends Mixins(NavigationMixin) {
                 patch.addPatch(this.patchDocument)
             }
 
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "PATCH",
                 path: "/organization/document-templates",
                 body: patch,

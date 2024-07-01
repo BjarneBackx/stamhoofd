@@ -5,14 +5,14 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
+import { Component, Vue } from "@simonbackx/vue-app-navigation/classes";
 
 @Component
 export default class STNavigationTitle extends Vue {}
 </script>
 
 <style lang="scss">
-@use '~@stamhoofd/scss/base/text-styles.scss';
+@use '@stamhoofd/scss/base/text-styles.scss';
 
 .st-navigation-title {
     margin-bottom: 20px;

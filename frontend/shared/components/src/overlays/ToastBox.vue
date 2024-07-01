@@ -7,7 +7,7 @@
                 <ComponentWithPropertiesInstance
                     ref="children"
                     :component="component"
-                    @pop="removeAt(index, component.key)"
+                    :custom-provide="getCustomProvide(index, component.key)"
                 />
             </div>
         </transition-group>
@@ -16,7 +16,7 @@
 
 <script lang="ts">
 import { ComponentWithProperties, ComponentWithPropertiesInstance } from "@simonbackx/vue-app-navigation";
-import { Component, Vue } from "vue-property-decorator";
+import { Component, Vue } from "@simonbackx/vue-app-navigation/classes";
 
 import { Toast } from "./Toast"
 import ToastView from './ToastView.vue';
@@ -34,6 +34,18 @@ export default class ToastBox extends Vue {
 
     mounted() {
         Toast.addListener(this, this.showToast)
+    }
+
+    getCustomProvide(index: number, key: number) {
+        return {
+            reactive_navigation_pop: () => {
+                this.removeAt(index, key);
+            },
+            reactive_navigation_dismiss: () => {
+                console.warn('Avoid calling dismiss in components on the ToastBox, since options are not supported here')
+                this.removeAt(index, key);
+            }
+        };
     }
 
     showToast(toast: Toast) {
@@ -60,15 +72,24 @@ export default class ToastBox extends Vue {
         }
     }
 
-    removeAt(index, key) {
-        if (this.components[index].key === key) {
+    removeAt(index: number, key: number) {
+        if (this.components[index] && this.components[index].key === key) {
             this.components.splice(index, 1);
-        } else {
-            console.warn("Expected component with key " + key + " at index" + index);
+            return;
         }
+
+        // Search
+        for (let i = 0; i < this.components.length; i++) {
+            if (this.components[i].key === key) {
+                this.components.splice(i, 1);
+                return;
+            }
+        }
+
+        console.warn("Expected component with key " + key + " at index" + index);
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Toast.removeListener(this)
         this.components = [];
     }
@@ -91,7 +112,7 @@ export default class ToastBox extends Vue {
 </script>
 
 <style lang="scss">
-@use '~@stamhoofd/scss/base/variables' as *;
+@use '@stamhoofd/scss/base/variables' as *;
 
 .toast-box {
     position: fixed;
@@ -134,7 +155,7 @@ export default class ToastBox extends Vue {
         transform: scale(1, 1) translate(0, 0);
     }
 
-    .move-enter, .move-leave-to
+    .move-enter-from, .move-leave-to
         /* .list-complete-leave-active below version 2.1.8 */ {
         opacity: 0;
         transform: scale(0.8, 0.8) translateY(30px);

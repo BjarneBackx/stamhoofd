@@ -11,9 +11,9 @@
                     Website
                 </a>
                 
-                <template v-for="policy in policies">
+                <template v-for="policy in policies" :key="policy.id">
                     -
-                    <a :key="policy.id" :href="policy.calculatedUrl" class="inline-link secundary" rel="nofollow noreferrer noopener" target="_blank">
+                    <a :href="policy.calculatedUrl" class="inline-link secundary" rel="nofollow noreferrer noopener" target="_blank">
                         {{ policy.name }}
                     </a>
                 </template>
@@ -50,7 +50,7 @@
 <script lang="ts">
 import { SessionManager } from "@stamhoofd/networking";
 import { Organization, Webshop, WebshopTicketType } from "@stamhoofd/structures";
-import { Component, Prop, Vue } from "vue-property-decorator";
+import { Component, Prop, Vue } from "@simonbackx/vue-app-navigation/classes";
 
 import Logo from "../icons/Logo.vue";
 import { CenteredMessage } from "../overlays/CenteredMessage";
@@ -68,14 +68,14 @@ export default class LegalFooter extends Vue {
         webshop!: Webshop | null;
 
     get isLoggedIn() {
-        return SessionManager.currentSession?.isComplete() ?? false
+        return this.$context.isComplete() ?? false
     }
 
     async logout() {
         if (!(await CenteredMessage.confirm('Wil je uitloggen?', 'Ja, uitloggen', 'Hiermee zal je worden afgemeld.'))) {
             return
         }
-        SessionManager.currentSession?.logout()
+        await this.$context.logout()
     }
 
     get privacyUrl() {

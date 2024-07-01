@@ -84,7 +84,9 @@
         <ProductPriceBox v-if="patchedProduct.prices.length == 1" :product-price="patchedProduct.prices[0]" :product="patchedProduct" :error-box="errorBox" @patch="addPatch($event)" />
 
         <STList v-else v-model="draggablePrices" :draggable="true">
-            <ProductPriceRow v-for="price in patchedProduct.prices" :key="price.id" :product-price="price" :product="patchedProduct" @patch="addPatch" @move-up="movePriceUp(price)" @move-down="movePriceDown(price)" />
+            <template #item="{item: price}">
+                <ProductPriceRow :product-price="price" :product="patchedProduct" @patch="addPatch" @move-up="movePriceUp(price)" @move-down="movePriceDown(price)" />
+            </template>            
         </STList>
 
         <OptionMenuSection v-for="optionMenu in patchedProduct.optionMenus" :key="optionMenu.id" :option-menu="optionMenu" :product="patchedProduct" @patch="addPatch" />
@@ -107,7 +109,9 @@
 
         <STList>
             <STListItem v-if="seatingPlan" :selectable="true" element-name="button" @click="chooseSeatingPlan">
-                <span slot="left" class="icon seat gray" />
+                <template #left>
+                    <span class="icon seat gray" />
+                </template>
                 <h3 class="style-title-list">
                     Zaalplan
                 </h3>
@@ -116,12 +120,16 @@
                     {{ seatingPlan.name }}
                 </p>
 
-                <span slot="right" class="icon success primary" />
-                <span slot="right" class="icon arrow-right-small gray" />
+                <template #right>
+                    <span class="icon success primary" />
+                    <span class="icon arrow-right-small gray" />
+                </template>
             </STListItem>
 
             <STListItem :selectable="true" element-name="button" @click="addOptionMenu">
-                <span slot="left" class="icon add gray" />
+                <template #left>
+                    <span class="icon add gray" />
+                </template>
 
                 <h3 class="style-title-list">
                     Keuzemenu
@@ -132,7 +140,9 @@
             </STListItem>
 
             <STListItem :selectable="true" element-name="button" @click="addField">
-                <span slot="left" class="icon add gray" />
+                <template #left>
+                    <span class="icon add gray" />
+                </template>
 
                 <h3 class="style-title-list">
                     Tekstveld (open vraag)
@@ -143,7 +153,9 @@
             </STListItem>
 
             <STListItem v-if="isTicket && !seatingPlan" :selectable="true" element-name="button" @click="chooseSeatingPlan">
-                <span slot="left" class="icon seat gray" />
+                <template #left>
+                    <span class="icon seat gray" />
+                </template>
                 <h3 class="style-title-list">
                     Zetelselectie instellen
                 </h3>
@@ -153,7 +165,9 @@
             </STListItem>
 
             <STListItem v-if="!image" :selectable="true" element-name="label" class="button">
-                <span slot="left" class="icon camera gray" />
+                <template #left>
+                    <span class="icon camera gray" />
+                </template>
 
                 <UploadButton v-model="image" :resolutions="resolutions" element-name="div">
                     <h3 class="style-title-list">
@@ -192,7 +206,9 @@
 
         <STList>
             <STListItem :selectable="true" element-name="label">
-                <Checkbox slot="left" v-model="hidden" />
+                <template #left>
+                    <Checkbox v-model="hidden" />
+                </template>
 
                 <h3 class="style-title-list">
                     Verbergen op webshop
@@ -205,7 +221,9 @@
 
             <template v-if="!hidden">
                 <STListItem :selectable="true" element-name="label">
-                    <Checkbox slot="left" v-model="disabled" />
+                    <template #left>
+                        <Checkbox v-model="disabled" />
+                    </template>
 
                     <h3 class="style-title-list">
                         Onbeschikbaar
@@ -217,7 +235,9 @@
 
                 <template v-if="!disabled">
                     <STListItem :selectable="true" :element-name="useEnableAfter ? 'div' : 'label'">
-                        <Checkbox slot="left" v-model="useEnableAfter" />
+                        <template #left>
+                            <Checkbox v-model="useEnableAfter" />
+                        </template>
 
                         <h3 class="style-title-list">
                             Beschikbaar vanaf datum
@@ -235,7 +255,9 @@
                     </STListItem>
 
                     <STListItem :selectable="true" :element-name="useDisableAfter ? 'div' : 'label'">
-                        <Checkbox slot="left" v-model="useDisableAfter" />
+                        <template #left>
+                            <Checkbox v-model="useDisableAfter" />
+                        </template>
 
                         <h3 class="style-title-list">
                             Onbeschikbaar na datum
@@ -253,7 +275,9 @@
                     </STListItem>
 
                     <STListItem :selectable="true" element-name="label">
-                        <Checkbox slot="left" v-model="useStock" />
+                        <template #left>
+                            <Checkbox v-model="useStock" />
+                        </template>
 
                         <h3 class="style-title-list">
                             Beperk het beschikbare aantal stuks (waarvan nu {{ usedStock }} verkocht of gereserveerd)
@@ -271,7 +295,9 @@
                     </STListItem>
 
                     <STListItem v-if="false && useStock" :selectable="true" element-name="label">
-                        <Checkbox slot="left" v-model="resetStock" />
+                        <template #left>
+                            <Checkbox v-model="resetStock" />
+                        </template>
 
                         <h3 class="style-title-list">
                             Wijzig aantal verkochte stuks manueel (nu {{ usedStock }} verkocht)
@@ -289,7 +315,9 @@
                     </STListItem>
 
                     <STListItem :selectable="true" element-name="label">
-                        <Checkbox slot="left" v-model="useMaxPerOrder" />
+                        <template #left>
+                            <Checkbox v-model="useMaxPerOrder" />
+                        </template>
 
                         <h3 class="style-title-list">
                             Beperk het maximaal aantal stuks per bestelling
@@ -309,7 +337,9 @@
             </template>
 
             <STListItem :selectable="true" element-name="label">
-                <Checkbox slot="left" v-model="notAllowMultiple" />
+                <template #left>
+                    <Checkbox v-model="notAllowMultiple" />
+                </template>
 
                 <h3 class="style-title-list">
                     Keuze voor aantal stuks verbergen
@@ -337,11 +367,10 @@
 <script lang="ts">
 import { AutoEncoderPatchType, Decoder, ObjectData, PatchableArray, PatchableArrayAutoEncoder, patchContainsChanges, VersionBoxDecoder } from '@simonbackx/simple-encoding';
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 import { CenteredMessage, Checkbox, DateSelection, Dropdown, ErrorBox, NumberInput, SaveView, SeatSelectionBox, STErrorsDefault, STInputBox, STList, STListItem, TimeInput, Toast, UploadButton, Validator } from "@stamhoofd/components";
 import { Image, OptionMenu, PrivateWebshop, Product, ProductDateRange, ProductLocation, ProductPrice, ProductType, ResolutionRequest, Version, WebshopField, WebshopTicketType } from "@stamhoofd/structures";
-import { Component, Mixins, Prop } from "vue-property-decorator";
 
-import { OrganizationManager } from '../../../../../classes/OrganizationManager';
 import EditWebshopFieldView from '../fields/EditWebshopFieldView.vue';
 import WebshopFieldsBox from "../fields/WebshopFieldsBox.vue";
 import ChooseSeatingPlanView from '../seating/ChooseSeatingPlanView.vue';
@@ -403,7 +432,7 @@ export default class EditProductView extends Mixins(NavigationMixin) {
         document.body.addEventListener("paste", this.onPaste);
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         document.body.removeEventListener("paste", this.onPaste);
     }
 
@@ -476,7 +505,7 @@ export default class EditProductView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     getFeatureFlag(flag: string) {

@@ -1,6 +1,6 @@
 <template>
     <div class="st-view background">
-        <STNavigationBar :title="template.settings.name" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar :title="template.settings.name" />
 
         <main>
             <h1 class="style-navigation-title">
@@ -20,36 +20,36 @@
 
             <STList class="illustration-list">    
                 <STListItem :selectable="true" class="left-center" @click="openDocuments">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/agreement.svg">
+                    <template #left><img src="@stamhoofd/assets/images/illustrations/agreement.svg"></template>
                     <h2 class="style-title-list">
                         Documenten
                     </h2>
                     <p class="style-description">
                         Bekijk en bewerk de aangemaakte documenten.
                     </p>
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right><span class="icon arrow-right-small gray" /></template>
                 </STListItem>
 
                 <STListItem v-if="isDraft || template.updatesEnabled" :selectable="true" class="left-center" @click="editSettings">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/edit-data.svg">
+                    <template #left><img src="@stamhoofd/assets/images/illustrations/edit-data.svg"></template>
                     <h2 class="style-title-list">
                         Instellingen
                     </h2>
                     <p class="style-description">
                         Wijzig de invulvelden en de instellingen van het document.
                     </p>
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right><span class="icon arrow-right-small gray" /></template>
                 </STListItem>
 
                 <STListItem v-if="!isDraft && xmlExportDescription" :selectable="true" class="left-center" @click="exportXml">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/code-export.svg">
+                    <template #left><img src="@stamhoofd/assets/images/illustrations/code-export.svg"></template>
                     <h2 class="style-title-list">
                         Exporteren naar XML
                     </h2>
                     <p class="style-description">
                         {{ xmlExportDescription }}
                     </p>
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right><span class="icon arrow-right-small gray" /></template>
                 </STListItem>
             </STList>
 
@@ -57,7 +57,7 @@
             <h2>Automatische wijzigingen</h2>
             <p>Stamhoofd kan de inhoud van documenten automatisch wijzigen als de daarbij horende gegevens wijzigen, en nieuwe documenten aanmaken als er nieuwe inschrijvingen bij komen (ook na publicatie). Dat is ideaal om bijvoorbeeld ontbrekende of foute gegevens door leden nog te laten invullen via het ledenportaal. Op het moment dat je documenten officiëel hebt ingedient (indien van toepassing), zet je dit best uit. Als dit uit staat zullen onvolledige documenten niet langer zichtbaar zijn voor leden.</p>
 
-            <Checkbox :checked="template.updatesEnabled" :disabled="settingUpdatesEnabled" @change="toggleUpdatesEnabled">
+            <Checkbox :model-value="template.updatesEnabled" :disabled="settingUpdatesEnabled" @update:model-value="toggleUpdatesEnabled">
                 Documenten automatisch wijzigen
             </Checkbox>
 
@@ -72,11 +72,10 @@
                     <p class="style-description">
                         Maak alle documenten toegankelijk voor alle leden.
                     </p>
-                    <button slot="right" type="button" class="button secundary green hide-smartphone">
+                    <template #right><button type="button" class="button secundary green hide-smartphone">
                         <span class="icon success" />
                         <span>Publiceer</span>
-                    </button>
-                    <button slot="right" type="button" class="button icon success only-smartphone" />
+                    </button>                    <button type="button" class="button icon success only-smartphone" /></template>
                 </STListItem>
 
                 <STListItem v-if="!isDraft" :selectable="true" @click="draftTemplate()">
@@ -86,11 +85,10 @@
                     <p class="style-description">
                         Maak dit document terug onzichtbaar voor alle leden.
                     </p>
-                    <button slot="right" type="button" class="button secundary hide-smartphone">
+                    <template #right><button type="button" class="button secundary hide-smartphone">
                         <span class="icon edit" />
                         <span>Naar klad</span>
-                    </button>
-                    <button slot="right" type="button" class="button icon edit only-smartphone" />
+                    </button>                    <button type="button" class="button icon edit only-smartphone" /></template>
                 </STListItem>
 
                 <STListItem v-if="isDraft" :selectable="true" @click="deleteTemplate()">
@@ -100,11 +98,10 @@
                     <p class="style-description">
                         Verwijder alle documenten definitief.
                     </p>
-                    <button slot="right" type="button" class="button secundary danger hide-smartphone">
+                    <template #right><button type="button" class="button secundary danger hide-smartphone">
                         <span class="icon trash" />
                         <span>Verwijder</span>
-                    </button>
-                    <button slot="right" type="button" class="button icon trash only-smartphone" />
+                    </button>                    <button type="button" class="button icon trash only-smartphone" /></template>
                 </STListItem>
             </STList>
         </main>
@@ -112,14 +109,13 @@
 </template>
 
 <script lang="ts">
-import { ArrayDecoder, AutoEncoderPatchType, Decoder,PatchableArray, PatchableArrayAutoEncoder } from "@simonbackx/simple-encoding";
+import { ArrayDecoder, AutoEncoderPatchType, Decoder, PatchableArray, PatchableArrayAutoEncoder } from "@simonbackx/simple-encoding";
 import { Request } from "@simonbackx/simple-networking";
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { CenteredMessage, Checkbox, FillRecordCategoryView, Spinner, STList, STListItem, STNavigationBar, Toast, TooltipDirective } from "@stamhoofd/components";
-import { SessionManager } from "@stamhoofd/networking";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
+import { CenteredMessage, Checkbox, FillRecordCategoryView, STList, STListItem, STNavigationBar, Spinner, Toast, TooltipDirective } from "@stamhoofd/components";
 import { DocumentSettings, DocumentStatus, DocumentTemplatePrivate, RecordAnswer } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
 
 import DocumentsView from "./DocumentsView.vue";
 import EditDocumentTemplateView from "./EditDocumentTemplateView.vue";
@@ -199,7 +195,7 @@ export default class DocumentTemplateOverview extends Mixins(NavigationMixin) {
         arr.addPatch(patch)
 
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "PATCH",
                 path: "/organization/document-templates",
                 body: arr,
@@ -259,7 +255,7 @@ export default class DocumentTemplateOverview extends Mixins(NavigationMixin) {
         patch.addDelete(this.template.id)
 
         try {
-            await SessionManager.currentSession!.authenticatedServer.request({
+            await this.$context.authenticatedServer.request({
                 method: "PATCH",
                 path: "/organization/document-templates",
                 body: patch,
@@ -292,7 +288,7 @@ export default class DocumentTemplateOverview extends Mixins(NavigationMixin) {
 
     async generateXML(): Promise<Blob> {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        const response = await SessionManager.currentSession!.authenticatedServer.request({
+        const response = await this.$context.authenticatedServer.request({
             method: "GET",
             path: "/organization/document-templates/" + encodeURIComponent(this.template.id) + "/xml",
             shouldRetry: true,
@@ -331,10 +327,9 @@ export default class DocumentTemplateOverview extends Mixins(NavigationMixin) {
         return new ComponentWithProperties(FillRecordCategoryView, {
             category,
             answers: this.template.settings.fieldAnswers,
-            markReviewed: true,
-            dataPermission: true,
             hasNextStep: index < this.template.privateSettings.templateDefinition.exportFieldCategories.length - 1,
-            filterDefinitions: [],
+            filterValue: this.template,
+            
             saveHandler: async (fieldAnswers: RecordAnswer[], component: NavigationMixin) => {
                 await this.patchTemplate(DocumentTemplatePrivate.patch({
                     settings: DocumentSettings.patch({
@@ -349,6 +344,7 @@ export default class DocumentTemplateOverview extends Mixins(NavigationMixin) {
                 }
                 component.show(c)
             },
+
             filterValueForAnswers: (fieldAnswers: RecordAnswer[]) => {
                 return this.template
             },

@@ -1,11 +1,11 @@
 
 import { column, Database, ManyToOneRelation, Model } from "@simonbackx/simple-database";
 import { EmailInterfaceRecipient } from "@stamhoofd/email";
-import { LoginProviderType, NewUser, Permissions, User as UserStruct,UserMeta } from "@stamhoofd/structures";
+import { LoginProviderType, NewUser, Permissions, User as UserStruct,UserMeta, UserPermissions } from "@stamhoofd/structures";
 import argon2 from "argon2";
 import { v4 as uuidv4 } from "uuid";
 
-import { Organization } from "./";
+import { Organization, Platform } from "./";
 
 export class User extends Model {
     static table = "users";
@@ -18,8 +18,8 @@ export class User extends Model {
     })
     id!: string;
 
-    @column({ foreignKey: User.organization, type: "string" })
-    organizationId: string;
+    @column({ foreignKey: User.organization, type: "string", nullable: true })
+    organizationId: string|null;
 
     @column({ type: "string", nullable: true })
     firstName: string | null = null;
@@ -36,12 +36,15 @@ export class User extends Model {
     @column({ type: "boolean" })
     verified = false
 
+    @column({ type: "json", decoder: UserPermissions, nullable: true })
+    permissions: UserPermissions | null = null
+
     /**
-     * This field is cached and recalculated when permissions are changed. This avoids database joins on every request.
-     * It is a combination of all user_permissions rows for this user and globalPermissions
+     * @deprecated
+     * use permissions
      */
     @column({ type: "json", decoder: Permissions, nullable: true })
-    permissions: Permissions | null = null
+    organizationPermissions: Permissions | null = null
 
     @column({ type: "json", decoder: UserMeta, nullable: true })
     meta: UserMeta | null = null
@@ -91,6 +94,17 @@ export class User extends Model {
             return []
         }
 
+        if (STAMHOOFD.userMode === 'platform') {
+            // Custom implementation
+            let global = (await User.where({ organizationId: null, permissions: { sign: "!=", value: null }}))
+            global = global.filter(u => organizationIds.find(organizationId => u.permissions?.organizationPermissions.has(organizationId)))
+
+            // Hide api accounts
+            global = global.filter(a => !a.isApiUser)
+
+            return global
+        }
+
         const query: any = {
             permissions: { sign: "!=", value: null }, 
             organizationId: {sign: 'IN', value: organizationIds},
@@ -112,11 +126,11 @@ export class User extends Model {
     async merge(other: User) {
         if (other.hasAccount()) {
             // We are going to merge accounts!
-            if (this.permissions && other.permissions) {
-                this.permissions.add(other.permissions);
+            if (this.organizationPermissions && other.organizationPermissions) {
+                this.organizationPermissions.add(other.organizationPermissions);
             } else {
-                if (!this.permissions && other.permissions) {
-                    this.permissions = other.permissions;
+                if (!this.organizationPermissions && other.organizationPermissions) {
+                    this.organizationPermissions = other.organizationPermissions;
                 }
             }
             await this.save();
@@ -155,7 +169,7 @@ export class User extends Model {
         await other.delete()
     }
 
-    static async login(organizationId: string, email: string, password: string): Promise<User | undefined> {
+    static async login(organizationId: string|null, email: string, password: string): Promise<User | undefined> {
         const user = await User.getForAuthentication(organizationId, email)
         if (!user || !user.hasKeys() || user.isApiUser) {
             return undefined
@@ -222,24 +236,22 @@ export class User extends Model {
         return false;
     }
 
-    static async getForRegister(organization: Organization, email: string): Promise<User | undefined> {
-        const user = await this.getForRegisterWithoutOrg(organization.id, email)
-
-        if (!user) {
-            return undefined
-        }
-
-        // Read member + address from first row
-        return user
+    static async getForRegister(organizationId: string|null, email: string): Promise<User | undefined> {
+        return await this.getForAuthentication(organizationId, email, {allowWithoutAccount: true})
     }
 
-    static async getForRegisterWithoutOrg(organizationId: string, email: string): Promise<User | undefined> {
-        const [rows] = await Database.select(`SELECT * FROM ${this.table} WHERE \`email\` = ? AND organizationId = ? LIMIT 1`, [email, organizationId]);
+    static async getOrganizationLevelUser(organizationId: string, email: string): Promise<User | undefined> {
+        const users = await User.where({
+            email,
+            organizationId: organizationId
+        }, {
+            limit: 1
+        })
 
-        if (rows.length == 0) {
+        if (users.length == 0) {
             return undefined;
         }
-        const user = this.fromRow(rows[0][this.table])
+        const user = users[0]
 
         if (!user) {
             return undefined
@@ -248,15 +260,26 @@ export class User extends Model {
         return user;
     }
 
-    static async getForAuthentication(organizationId: string, email: string): Promise<User | undefined> {
-        const [rows] = await Database.select(`SELECT * FROM ${this.table} WHERE \`email\` = ? AND organizationId = ? LIMIT 1`, [email, organizationId]);
+    static async getForAuthentication(organizationId: string|null, email: string, {allowWithoutAccount = false}: {allowWithoutAccount?: boolean} = {}): Promise<User | undefined> {
+        const users = await User.where({
+            email,
+            organizationId: STAMHOOFD.userMode === 'platform' ? null : organizationId
+        }, {
+            limit: 1
+        })
 
-        if (rows.length == 0) {
+        if (users.length == 0) {
+            if (organizationId && STAMHOOFD.userMode === 'organization') {
+                return this.getForAuthentication(null, email, {allowWithoutAccount})
+            }
             return undefined;
         }
-        const user = this.fromRow(rows[0][this.table])
+        const user = users[0]
 
-        if (!user || !user.hasKeys()) {
+        if (!user || (!user.hasKeys() && !allowWithoutAccount)) {
+            if (organizationId && STAMHOOFD.userMode === 'organization') {
+                return this.getForAuthentication(null, email, {allowWithoutAccount})
+            }
             return undefined
         }
 
@@ -269,8 +292,43 @@ export class User extends Model {
         return hash
     }
 
+    static async createInvited(
+        organization: Organization|null,
+        data: {firstName: string|null, lastName: string|null, email: string, allowPlatform?: boolean}
+    ): Promise<User | undefined> {
+        const {
+            email,
+            firstName,
+            lastName
+        } = data;
+
+        if (!organization && STAMHOOFD.userMode !== 'platform' && !data.allowPlatform) {
+            throw new Error("Missing organization")
+        }
+
+        const user = new User();
+        user.organizationId = STAMHOOFD.userMode === 'platform' ? null : (organization?.id ?? null)
+        user.id = uuidv4()
+        user.email = email;
+        user.verified = false;
+        user.firstName = firstName
+        user.lastName = lastName
+
+        try {
+            await user.save();
+        } catch (e) {
+            // Duplicate key probably
+            if (e.code && e.code == "ER_DUP_ENTRY") {
+                return;
+            }
+            throw e;
+        }
+
+        return user;
+    }
+
     static async register(
-        organization: Organization,
+        organization: Organization|null,
         data: NewUser
     ): Promise<User | undefined> {
         const {
@@ -285,8 +343,12 @@ export class User extends Model {
             throw new Error("A password is required for new users")
         }
 
+        if (!organization && STAMHOOFD.userMode !== 'platform') {
+            throw new Error("Missing organization")
+        }
+
         const user = new User();
-        user.organizationId = organization.id
+        user.organizationId = STAMHOOFD.userMode === 'platform' ? null : (organization?.id ?? null)
         user.id = id ?? uuidv4()
         user.email = email;
         user.password = await this.hash(password)
@@ -315,7 +377,7 @@ export class User extends Model {
     }
 
     static async registerSSO(
-        organization: Organization,
+        organization: Organization|null,
         data: {email, id, firstName, lastName, type: LoginProviderType, sub: string}
     ): Promise<User | undefined> {
         const {
@@ -324,6 +386,14 @@ export class User extends Model {
             firstName,
             lastName
         } = data;
+
+        if (STAMHOOFD.userMode === 'platform') {
+            throw new Error('SSO is disabled on platforms for now')
+        }
+
+        if (!organization) {
+            throw new Error("Missing organization")
+        }
 
         const user = new User();
         user.organizationId = organization.id

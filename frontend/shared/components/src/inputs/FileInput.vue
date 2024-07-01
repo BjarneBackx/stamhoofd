@@ -1,13 +1,13 @@
 <template>
     <STInputBox :title="title" error-fields="*" :error-box="errorBox">
-        <label class="file-input-box" :class="{ center: !value }" @click="onClick">
+        <label class="file-input-box" :class="{ center: !modelValue }" @click="onClick">
             <Spinner v-if="uploading" />
-            <span v-else-if="value == null" class="icon center upload" />
+            <span v-else-if="modelValue == null" class="icon center upload" />
 
-            <span v-if="value" :class="'icon '+getFileIcon(value)" />
-            <span v-if="value">{{ value.name }}</span>
+            <span v-if="modelValue" :class="'icon '+getFileIcon(modelValue)" />
+            <span v-if="modelValue">{{ modelValue.name }}</span>
 
-            <span v-if="!required && value" class="icon trash" @click="deleteMe" />
+            <span v-if="!required && modelValue" class="icon trash" @click="deleteMe" />
             <input type="file" class="file-upload" accept="application/pdf" @change="changedFile">
         </label>
     </STInputBox>
@@ -17,12 +17,14 @@
 import { SimpleError } from "@simonbackx/simple-errors";
 import { Request } from "@simonbackx/simple-networking";
 import { NavigationMixin } from '@simonbackx/vue-app-navigation';
-import { ErrorBox, STInputBox, Validator } from "@stamhoofd/components"
+import { Component, Mixins,Prop } from "@simonbackx/vue-app-navigation/classes";
 import { SessionManager } from '@stamhoofd/networking';
 import { File } from "@stamhoofd/structures";
-import { Component, Mixins,Prop } from "vue-property-decorator";
 
+import {ErrorBox} from "../errors/ErrorBox";
+import {Validator} from "../errors/Validator";
 import Spinner from "../Spinner.vue";
+import STInputBox from "./STInputBox.vue";
 
 @Component({
     components: {
@@ -38,7 +40,7 @@ export default class FileInput extends Mixins(NavigationMixin) {
         validator: Validator | null
     
     @Prop({ default: null })
-        value: File | null;
+        modelValue: File | null;
 
     @Prop({ default: true })
         required!: boolean
@@ -48,12 +50,12 @@ export default class FileInput extends Mixins(NavigationMixin) {
     uploading = false
 
     deleteMe() {
-        this.$emit("input", null)
+        this.$emit('update:modelValue', null)
     }
 
     onClick(event) {
-        if (this.value) {
-            window.open(this.value.getPublicPath(), 'Privacyvoorwaarden')
+        if (this.modelValue) {
+            window.open(this.modelValue.getPublicPath(), 'Privacyvoorwaarden')
             event.preventDefault();
         }
     }
@@ -74,7 +76,7 @@ export default class FileInput extends Mixins(NavigationMixin) {
         return "file"
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
@@ -102,7 +104,7 @@ export default class FileInput extends Mixins(NavigationMixin) {
         this.uploading = true;
         this.errorBox = null;
 
-        SessionManager.currentSession!.authenticatedServer
+        this.$context.authenticatedServer
             .request({
                 method: "POST",
                 path: "/upload-file",
@@ -113,7 +115,7 @@ export default class FileInput extends Mixins(NavigationMixin) {
                 owner: this
             })
             .then(response => {
-                this.$emit("input", response.data)
+                this.$emit('update:modelValue', response.data)
             })
             .catch(e => {
                 console.error(e);

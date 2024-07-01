@@ -1,6 +1,6 @@
 <template>
     <div class="st-view">
-        <STNavigationBar title="E-mailadressen" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="E-mailadressen" />
 
         <main>
             <h1>
@@ -18,9 +18,10 @@
                         {{ email.email }}
                     </p>
 
-                    <span v-if="email.default" slot="right" class="style-tag">Standaard</span>
-
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right>
+                        <span v-if="email.default" class="style-tag">Standaard</span>
+                        <span class="icon arrow-right-small gray" />
+                    </template>
                 </STListItem>
             </STList>
 
@@ -30,7 +31,7 @@
         </main>
 
         <STToolbar>
-            <template slot="right">
+            <template #right>
                 <button class="button primary" type="button" @click="addEmail">
                     <span class="icon add" />
                     <span>E-mailadres toevoegen</span>
@@ -45,9 +46,9 @@ import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-na
 import { BackButton, Checkbox,ErrorBox, LoadingButton, STErrorsDefault,STInputBox, STList, STListItem,STNavigationBar, STToolbar, Validator } from "@stamhoofd/components";
 import { SessionManager } from '@stamhoofd/networking';
 import { OrganizationEmail, OrganizationPrivateMetaData } from "@stamhoofd/structures"
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager"
+
 import EditEmailView from './EditEmailView.vue';
 
 @Component({
@@ -69,10 +70,10 @@ export default class EmailSettingsView extends Mixins(NavigationMixin) {
     saving = false
 
     // Make session (organization) reactive
-    reactiveSession = SessionManager.currentSession
+    reactiveSession = this.$context
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get emails() {
@@ -85,7 +86,7 @@ export default class EmailSettingsView extends Mixins(NavigationMixin) {
     
     addEmail() {
         const email = OrganizationEmail.create({ email: "" })
-        const patch = OrganizationManager.getPatch()
+        const patch = this.$organizationManager.getPatch()
         patch.privateMeta = OrganizationPrivateMetaData.patchType().create({})
         patch.privateMeta!.emails.addPut(email)
         this.present(new ComponentWithProperties(EditEmailView, { initialPatch: patch, emailId: email.id, isNew: true }).setDisplayStyle('popup'))

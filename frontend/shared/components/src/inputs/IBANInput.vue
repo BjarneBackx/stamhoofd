@@ -6,8 +6,11 @@
 
 <script lang="ts">
 import { SimpleError } from '@simonbackx/simple-errors';
-import { ErrorBox, STInputBox, Validator } from "@stamhoofd/components"
-import { Component, Prop,Vue, Watch } from "vue-property-decorator";
+import { Component, Prop,Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
+
+import {ErrorBox} from "../errors/ErrorBox";
+import {Validator} from "../errors/Validator";
+import STInputBox from "./STInputBox.vue";
 
 @Component({
     components: {
@@ -25,7 +28,7 @@ export default class IBANInput extends Vue {
     valid = true;
 
     @Prop({ default: null })
-        value!: string | null
+        modelValue!: string | null
 
     @Prop({ default: true })
         required!: boolean
@@ -38,7 +41,7 @@ export default class IBANInput extends Vue {
 
     errorBox: ErrorBox | null = null
 
-    @Watch('value')
+    @Watch('modelValue')
     onValueChanged(val: string | null) {
         if (val === null) {
             return
@@ -53,10 +56,10 @@ export default class IBANInput extends Vue {
             })
         }
 
-        this.ibanRaw = this.value ?? ""
+        this.ibanRaw = this.modelValue ?? ""
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -67,7 +70,7 @@ export default class IBANInput extends Vue {
 
         if (!this.required && this.ibanRaw.length == 0) {
             this.errorBox = null
-            this.$emit("input", null)
+            this.$emit('update:modelValue', null)
             return true
         }
 
@@ -93,7 +96,7 @@ export default class IBANInput extends Vue {
 
         } else {
             this.ibanRaw = ibantools.friendlyFormatIBAN(iban) ?? iban
-            this.$emit("input", this.ibanRaw)
+            this.$emit('update:modelValue', this.ibanRaw)
             this.errorBox = null
             return true
         }

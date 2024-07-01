@@ -1,6 +1,6 @@
 <template>
     <SaveView :title="title" :loading="loading" save-text="Bestelling bevestigen" :prefer-large-button="true" @save="goNext">
-        <span v-if="checkout.totalPrice > 0" slot="left">Totaal: {{ checkout.totalPrice | price }}</span>
+        <template #left v-if="checkout.totalPrice > 0"><span>Totaal: {{ formatPrice(checkout.totalPrice) }}</span></template>
 
         <h1>{{ title }}</h1>
 
@@ -28,10 +28,9 @@ import { I18nController } from '@stamhoofd/frontend-i18n';
 import { UrlHelper } from '@stamhoofd/networking';
 import { OrderData, OrderResponse, Payment, PaymentMethod } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
 import { CheckoutManager } from '../../classes/CheckoutManager';
-import { WebshopManager } from '../../classes/WebshopManager';
 import OrderView from '../orders/OrderView.vue';
 import { CheckoutStepType } from './CheckoutStepsManager';
 
@@ -68,12 +67,12 @@ export default class PaymentSelectionView extends Mixins(NavigationMixin){
     }
 
     get selectedPaymentMethod(): PaymentMethod | null {
-        return CheckoutManager.checkout.paymentMethod
+        return this.$checkoutManager.checkout.paymentMethod
     }
 
     set selectedPaymentMethod(paymentMethod: PaymentMethod | null) {
-        CheckoutManager.checkout.paymentMethod = paymentMethod
-        CheckoutManager.saveCheckout()
+        this.$checkoutManager.checkout.paymentMethod = paymentMethod
+        this.$checkoutManager.saveCheckout()
     }
 
     get paymentContext() {
@@ -81,15 +80,15 @@ export default class PaymentSelectionView extends Mixins(NavigationMixin){
     }
 
     get checkout() {
-        return CheckoutManager.checkout
+        return this.$checkoutManager.checkout
     }
 
     get checkoutMethod() {
-        return CheckoutManager.checkout.checkoutMethod!
+        return this.$checkoutManager.checkout.checkoutMethod!
     }
 
     get webshop() {
-        return WebshopManager.webshop
+        return this.$webshopManager.webshop
     }
 
     get isTrial() {
@@ -97,7 +96,7 @@ export default class PaymentSelectionView extends Mixins(NavigationMixin){
     }
 
     get organization() {
-        return WebshopManager.organization
+        return this.$webshopManager.organization
     }
 
     get paymentMethods() {
@@ -107,11 +106,11 @@ export default class PaymentSelectionView extends Mixins(NavigationMixin){
     goToOrder(id: string, component: NavigationMixin) {
         // Force reload webshop (stock will have changed: prevent invalidating the cart)
         // Update stock in background
-        WebshopManager.reload().catch(e => {
+        this.$webshopManager.reload().catch(e => {
             console.error(e)
         })
         
-        if (this.modalNavigationController) {
+        if (!this.popup) {
             // We are not in a popup: on mobile
             // So replace with a force instead of dimissing
             component.present({
@@ -123,12 +122,12 @@ export default class PaymentSelectionView extends Mixins(NavigationMixin){
             })
         } else {
             // Desktop: push
+            component.dismiss({force: true})
             component.present({
                 components: [
                     new ComponentWithProperties(OrderView, { orderId: id, success: true })
                 ]
             })
-            component.dismiss({force: true})
         }
     }
    
@@ -139,13 +138,13 @@ export default class PaymentSelectionView extends Mixins(NavigationMixin){
         this.loading = true
 
         try {
-            if (!CheckoutManager.checkout.paymentMethod) {
-                CheckoutManager.checkout.paymentMethod = PaymentMethod.Unknown
+            if (!this.$checkoutManager.checkout.paymentMethod) {
+                this.$checkoutManager.checkout.paymentMethod = PaymentMethod.Unknown
             }
             // Place order
-            const data = OrderData.create(CheckoutManager.checkout as any)
+            const data = OrderData.create(this.$checkoutManager.checkout as any)
             data.consumerLanguage = I18nController.shared?.language ?? "nl"
-            const response = await WebshopManager.optionalAuthenticatedServer.request({
+            const response = await this.$webshopManager.optionalAuthenticatedServer.request({
                 method: "POST",
                 path: "/webshop/"+this.webshop.id+"/order",
                 body: data, // TODO: add some manual casting here
@@ -157,13 +156,13 @@ export default class PaymentSelectionView extends Mixins(NavigationMixin){
             const payment = response.data.order.payment
             if (payment) {
                 PaymentHandler.handlePayment({
-                    server: WebshopManager.server, 
+                    server: this.$webshopManager.server, 
                     organization: this.organization, 
                     payment, 
                     paymentUrl: response.data.paymentUrl, 
                     returnUrl: "https://"+this.webshop.getUrl(this.organization)+"/payment?id="+encodeURIComponent(payment.id),
                     component: this,
-                    transferSettings: WebshopManager.webshop.meta.transferSettings,
+                    transferSettings: this.$webshopManager.webshop.meta.transferSettings,
                     type: "order"
                 }, (payment: Payment, component: NavigationMixin) => {
                     this.loading = false
@@ -189,7 +188,7 @@ export default class PaymentSelectionView extends Mixins(NavigationMixin){
             if (isSimpleErrors(error)) {
                 if (error.hasFieldThatStartsWith("cart")) {
                     // A cart error: force a reload and go back to the cart.
-                    await WebshopManager.reload()
+                    await this.$webshopManager.reload()
                     
                     if (this.webshop.meta.cartEnabled) {
                         this.navigationController!.popToRoot({ force: true }).catch(e => console.error(e))
@@ -199,7 +198,7 @@ export default class PaymentSelectionView extends Mixins(NavigationMixin){
                     Toast.fromError(e).show()
                 } else if (error.hasFieldThatStartsWith("fieldAnswers")) {
                     // A cart error: force a reload and go back to the cart.
-                    await WebshopManager.reload()
+                    await this.$webshopManager.reload()
 
                     if (this.webshop.meta.cartEnabled) {
                         this.navigationController!.popToRoot({ force: true }).catch(e => console.error(e))

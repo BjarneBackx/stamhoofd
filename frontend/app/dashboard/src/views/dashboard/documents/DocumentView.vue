@@ -1,6 +1,6 @@
 <template>
     <div class="st-view document-view">
-        <STNavigationBar :title="'Document'" :pop="canPop" :dismiss="canDismiss">
+        <STNavigationBar :title="'Document'">
             <template #right>
                 <button v-if="hasPrevious || hasNext" v-tooltip="'Ga naar vorig document'" type="button" class="button navigation icon arrow-up" :disabled="!hasPrevious" @click="goBack" />
                 <button v-if="hasNext || hasPrevious" v-tooltip="'Ga naar volgende document'" type="button" class="button navigation icon arrow-down" :disabled="!hasNext" @click="goNext" />
@@ -66,7 +66,7 @@
                         Aangemaakt op
                     </h3>
                     <p class="style-definition-text">
-                        {{ document.createdAt | dateTime | capitalizeFirstLetter }}
+                        {{ capitalizeFirstLetter(formatDateTime(document.createdAt)) }}
                     </p>
                 </STListItem>
 
@@ -85,7 +85,7 @@
                 <h2>
                     {{ category.name }}
                 </h2>
-                <RecordCategoryAnswersBox :category="category" :answers="fieldAnswers" :data-permission="true" />
+                <ViewRecordCategoryAnswersBox :category="category" :value="document" />
             </div>
         </main>
     </div>
@@ -93,10 +93,10 @@
 
 <script lang="ts">
 import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { ErrorBox, LongPressDirective,RecordCategoryAnswersBox, STErrorsDefault, STList, STListItem, STNavigationBar, TableActionsContextMenu, TooltipDirective } from "@stamhoofd/components";
+import { ErrorBox, LongPressDirective,ViewRecordCategoryAnswersBox, STErrorsDefault, STList, STListItem, STNavigationBar, TableActionsContextMenu, TooltipDirective } from "@stamhoofd/components";
 import { Document, DocumentStatusHelper, DocumentTemplatePrivate, RecordCategory, RecordWarning } from "@stamhoofd/structures";
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import { DocumentActionBuilder } from "./DocumentActionBuilder";
 
@@ -106,7 +106,7 @@ import { DocumentActionBuilder } from "./DocumentActionBuilder";
         STList,
         STListItem,
         STErrorsDefault,
-        RecordCategoryAnswersBox
+        ViewRecordCategoryAnswersBox
     },
     filters: {
         dateTime: Formatter.dateTimeWithDay.bind(Formatter),
@@ -185,6 +185,7 @@ export default class DocumentView extends Mixins(NavigationMixin){
 
     get actionBuilder() {
         return new DocumentActionBuilder({
+            $context: this.$context,
             template: this.template,
             component: this,
         })
@@ -280,7 +281,7 @@ export default class DocumentView extends Mixins(NavigationMixin){
             return;
         }
 
-        if (!this.isFocused()) {
+        if (!this.isFocused) {
             return
         }
 
@@ -298,7 +299,7 @@ export default class DocumentView extends Mixins(NavigationMixin){
     get recordCategories(): RecordCategory[] {
         return RecordCategory.flattenCategoriesForAnswers(
             [...this.template.privateSettings.templateDefinition.documentFieldCategories, ...this.template.privateSettings.templateDefinition.groupFieldCategories],
-            this.document.data.fieldAnswers
+            [...this.document.data.fieldAnswers.values()]
         )
     }
 

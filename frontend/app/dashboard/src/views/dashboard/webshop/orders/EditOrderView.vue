@@ -52,7 +52,9 @@
 
                 <STList>
                     <STListItem v-for="checkoutMethod in checkoutMethods" :key="checkoutMethod.id" :selectable="true" element-name="label" class="right-stack left-center">
-                        <Radio slot="left" v-model="selectedMethod" name="choose-checkout-method" :value="checkoutMethod" />
+                        <template #left>
+                            <Radio v-model="selectedMethod" name="choose-checkout-method" :value="checkoutMethod" />
+                        </template>
                         <h2 class="style-title-list">
                             {{ getTypeName(checkoutMethod.type) }}: {{ checkoutMethod.name }}
                         </h2>
@@ -60,12 +62,12 @@
                             {{ checkoutMethod.description || checkoutMethod.address || "" }}
                         </p>
                         <p v-if="checkoutMethod.timeSlots.timeSlots.length == 1" class="style-description-small">
-                            {{ checkoutMethod.timeSlots.timeSlots[0].date | date | capitalizeFirstLetter }} tussen {{ checkoutMethod.timeSlots.timeSlots[0].startTime | minutes }} - {{ checkoutMethod.timeSlots.timeSlots[0].endTime | minutes }}
+                            {{ capitalizeFirstLetter(formatDate(checkoutMethod.timeSlots.timeSlots[0].date)) }} tussen {{ formatMinutes(checkoutMethod.timeSlots.timeSlots[0].startTime) }} - {{ formatMinutes(checkoutMethod.timeSlots.timeSlots[0].endTime) }}
                         </p>
 
-                        <template v-if="checkoutMethod.timeSlots.timeSlots.length == 1">
-                            <span v-if="checkoutMethod.timeSlots.timeSlots[0].listedRemainingStock === 0" slot="right" class="style-tag error">Volzet</span>
-                            <span v-else-if="checkoutMethod.timeSlots.timeSlots[0].listedRemainingStock !== null" slot="right" class="style-tag">Nog {{ checkoutMethod.timeSlots.timeSlots[0].listedRemainingStock }} {{ checkoutMethod.timeSlots.timeSlots[0].remainingPersons !== null ? (checkoutMethod.timeSlots.timeSlots[0].listedRemainingStock == 1 ? "persoon" : "personen") : (checkoutMethod.timeSlots.timeSlots[0].listedRemainingStock == 1 ? "plaats" : "plaatsen") }}</span>
+                        <template v-if="checkoutMethod.timeSlots.timeSlots.length == 1 && checkoutMethod.timeSlots.timeSlots[0].listedRemainingStock !== null" #right>
+                            <span v-if="checkoutMethod.timeSlots.timeSlots[0].listedRemainingStock === 0" class="style-tag error">Volzet</span>
+                            <span v-else class="style-tag">Nog {{ checkoutMethod.timeSlots.timeSlots[0].listedRemainingStock }} {{ checkoutMethod.timeSlots.timeSlots[0].remainingPersons !== null ? (checkoutMethod.timeSlots.timeSlots[0].listedRemainingStock == 1 ? "persoon" : "personen") : (checkoutMethod.timeSlots.timeSlots[0].listedRemainingStock == 1 ? "plaats" : "plaatsen") }}</span>
                         </template>
                     </STListItem>
                 </STList>
@@ -95,16 +97,21 @@
 
                 <STList>
                     <STListItem v-for="(slot, index) in timeSlots" :key="index" :selectable="true" element-name="label" class="right-stack left-center">
-                        <Radio slot="left" v-model="selectedSlot" name="choose-time-slot" :value="slot" />
+                        <template #left>
+                            <Radio v-model="selectedSlot" name="choose-time-slot" :value="slot" />
+                        </template>
+
                         <h2 class="style-title-list">
-                            {{ slot.date | dateWithDay }}
+                            {{ formatDateWithDay(slot.date) }}
                         </h2> 
                         <p class="style-description">
-                            Tussen {{ slot.startTime | minutes }} - {{ slot.endTime | minutes }}
+                            Tussen {{ formatMinutes(slot.startTime) }} - {{ formatMinutes(slot.endTime) }}
                         </p>
 
-                        <span v-if="slot.listedRemainingStock === 0" slot="right" class="style-tag error">Volzet</span>
-                        <span v-else-if="slot.listedRemainingStock !== null" slot="right" class="style-tag">Nog {{ slot.listedRemainingStock }} {{ slot.remainingPersons !== null ? (slot.listedRemainingStock == 1 ? "persoon" : "personen") : (slot.listedRemainingStock == 1 ? "plaats" : "plaatsen") }}</span>
+                        <template #right v-if="slot.listedRemainingStock !== null" >
+                            <span v-if="slot.listedRemainingStock === 0" class="style-tag error">Volzet</span>
+                            <span v-else class="style-tag">Nog {{ slot.listedRemainingStock }} {{ slot.remainingPersons !== null ? (slot.listedRemainingStock == 1 ? "persoon" : "personen") : (slot.listedRemainingStock == 1 ? "plaats" : "plaatsen") }}</span>
+                        </template>
                     </STListItem>
                 </STList>
             </template>
@@ -113,19 +120,19 @@
                 <hr>
                 <h2>Leveringsadres</h2>
                 <div v-if="deliveryMethod && deliveryMethod.price.minimumPrice !== null && deliveryMethod.price.discountPrice !== patchedOrder.data.deliveryPrice" class="info-box">
-                    Bestel minimum {{ deliveryMethod.price.minimumPrice | price }} om van een verlaagde leveringskost van {{ deliveryMethod.price.discountPrice | price }} te genieten.
+                    Bestel minimum {{ formatPrice(deliveryMethod.price.minimumPrice) }} om van een verlaagde leveringskost van {{ formatPrice(deliveryMethod.price.discountPrice) }} te genieten.
                 </div>
 
                 <p v-if="patchedOrder.data.deliveryPrice == 0" class="success-box">
                     Levering is gratis
                     <template v-if="deliveryMethod && deliveryMethod.price.minimumPrice !== null && deliveryMethod.price.price != 0">
-                        vanaf een bestelbedrag van {{ deliveryMethod.price.minimumPrice | price }}.
+                        vanaf een bestelbedrag van {{ formatPrice(deliveryMethod.price.minimumPrice) }}.
                     </template>
                 </p>
                 <p v-else class="info-box">
-                    De leveringskost bedraagt {{ patchedOrder.data.deliveryPrice | price }}
+                    De leveringskost bedraagt {{ formatPrice(patchedOrder.data.deliveryPrice) }}
                     <template v-if="deliveryMethod && deliveryMethod.price.minimumPrice !== null && deliveryMethod.price.discountPrice === patchedOrder.data.deliveryPrice">
-                        vanaf een bestelbedrag van {{ deliveryMethod.price.minimumPrice | price }}.
+                        vanaf een bestelbedrag van {{ formatPrice(deliveryMethod.price.minimumPrice) }}.
                     </template>
                 </p>
 
@@ -137,13 +144,13 @@
             <h2>Winkelmandje</h2>
 
             <p v-for="code of patchedOrder.data.discountCodes" :key="code.id" class="discount-box icon label">
-                <span>Kortingscode <span class="style-discount-code">{{code.code}}</span></span>
+                <span>Kortingscode <span class="style-discount-code">{{ code.code }}</span></span>
 
                 <button class="button icon trash" @click="deleteCode(code)" />
             </p>
 
             <STList v-if="webshopFull">
-                <CartItemRow v-for="cartItem of patchedOrder.data.cart.items" :key="cartItem.id" :cartItem="cartItem" :cart="patchedOrder.data.cart" :webshop="webshopFull" :editable="true" :admin="true" @edit="editCartItem(cartItem)" @delete="deleteItem(cartItem)" @amount="setCartItemAmount(cartItem, $event)" />
+                <CartItemRow v-for="cartItem of patchedOrder.data.cart.items" :key="cartItem.id" :cart-item="cartItem" :cart="patchedOrder.data.cart" :webshop="webshopFull" :editable="true" :admin="true" @edit="editCartItem(cartItem)" @delete="deleteItem(cartItem)" @amount="setCartItemAmount(cartItem, $event)" />
             </STList>
 
             <p v-if="(webshopFull && webshopFull.shouldEnableCart) || patchedOrder.data.cart.items.length === 0">
@@ -156,7 +163,7 @@
             <hr>
 
 
-            <CheckoutPriceBreakdown :checkout="patchedOrder.data" />
+            <PriceBreakdownBox :price-breakdown="patchedOrder.data.priceBreakown" />
 
             <template v-if="isNew">
                 <hr>
@@ -170,14 +177,14 @@
 <script lang="ts">
 import { AutoEncoderPatchType, PatchableArray, PatchableArrayAutoEncoder, patchContainsChanges } from "@simonbackx/simple-encoding";
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { AddressInput, CartItemView, CenteredMessage, EmailInput, ErrorBox, FieldBox, LongPressDirective, PaymentSelectionList, PhoneInput, Radio, RecordAnswerInput, SaveView, STErrorsDefault, STInputBox, CartItemRow, STList, CheckoutPriceBreakdown, STListItem, STNavigationBar, STToolbar, Toast, TooltipDirective, Validator } from "@stamhoofd/components";
+import { AddressInput, CartItemRow, CartItemView, CenteredMessage, PriceBreakdownBox, EmailInput, ErrorBox, FieldBox, LongPressDirective, PaymentSelectionList, PhoneInput, Radio, RecordAnswerInput, SaveView, STErrorsDefault, STInputBox, STList, STListItem, STNavigationBar, STToolbar, Toast, TooltipDirective, Validator } from "@stamhoofd/components";
 import { I18nController } from "@stamhoofd/frontend-i18n";
 import { NetworkManager } from "@stamhoofd/networking";
 import { CartItem, Checkout, CheckoutMethod, CheckoutMethodType, Customer, DiscountCode, OrderData, PaymentMethod, PrivateOrder, RecordAnswer, RecordCategory, ValidatedAddress, Version, WebshopTicketType, WebshopTimeSlot } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../../classes/OrganizationManager";
+
 import { WebshopManager } from "../WebshopManager";
 import AddItemView from "./AddItemView.vue";
 
@@ -197,7 +204,7 @@ import AddItemView from "./AddItemView.vue";
         FieldBox,
         PaymentSelectionList,
         RecordAnswerInput,
-        CheckoutPriceBreakdown,
+        PriceBreakdownBox,
         CartItemRow
     },
     filters: {
@@ -261,9 +268,7 @@ export default class EditOrderView extends Mixins(NavigationMixin){
     get recordCategories(): RecordCategory[] {
         return RecordCategory.flattenCategories(
             this.webshop.meta.recordCategories, 
-            this.patchedOrder.data, 
-            this.webshopManager.webshop ? Checkout.getFilterDefinitions(this.webshopManager.webshop, this.webshop.meta.recordCategories) : [],
-            true
+            this.patchedOrder.data
         )
     }
 
@@ -296,7 +301,7 @@ export default class EditOrderView extends Mixins(NavigationMixin){
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get webshop() {
@@ -535,7 +540,7 @@ export default class EditOrderView extends Mixins(NavigationMixin){
             await this.$nextTick();
 
             const orderData = this.patchedOrder.data
-            orderData.validate(this.webshopManager.webshop!, OrganizationManager.organization.meta, I18nController.i18n, true);
+            orderData.validate(this.webshopManager.webshop!, this.$organization.meta, I18nController.i18n, true);
 
             // Save validated record answers (to delete old answers)
             this.recordAnswersClone = orderData.recordAnswers

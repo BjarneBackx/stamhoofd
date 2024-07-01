@@ -2,15 +2,16 @@ import { AutoEncoderPatchType, PartialWithoutMethods, PatchableArrayAutoEncoder,
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, ErrorBox, Toast, Validator } from "@stamhoofd/components";
 import { FinancialSupportSettings, Group, GroupPrices, GroupPrivateSettings, GroupSettings, Organization, OrganizationMetaData, OrganizationRecordsConfiguration, Version } from '@stamhoofd/structures';
-import { Component, Mixins, Prop } from "vue-property-decorator";
-
-import { OrganizationManager } from '../../../../classes/OrganizationManager';
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component
 export default class EditGroupMixin extends Mixins(NavigationMixin) {
     @Prop({ required: true })
         group: Group
 
+    /**
+     *  == patched organization <-> $organization (= unpatched)
+     */
     @Prop({ required: true })
         organization: Organization
 
@@ -23,7 +24,7 @@ export default class EditGroupMixin extends Mixins(NavigationMixin) {
     patchOrganization: AutoEncoderPatchType<Organization> = Organization.patch({})
 
     get isNew() {
-        return !OrganizationManager.organization.groups.find(g => g.id === this.group.id)
+        return !this.$organization.groups.find(g => g.id === this.group.id)
     }
 
     saving = false
@@ -109,7 +110,7 @@ export default class EditGroupMixin extends Mixins(NavigationMixin) {
             let patch = this.patchOrganization
 
             // Check if reduced price is enabled
-            if (!this.patchedOrganization.meta.recordsConfiguration.financialSupport && !!this.patchedGroup.settings.prices.find(g => !!g.prices.find(gg => gg.reducedPrice !== null))) {
+            if (!this.patchedOrganization.meta.recordsConfiguration.financialSupport && !this.$platform.config.recordsConfiguration.financialSupport && !!this.patchedGroup.settings.prices.find(g => !!g.prices.find(gg => gg.reducedPrice !== null))) {
                 const patchOrganization = Organization.patch({
                     meta:  OrganizationMetaData.patch({
                         recordsConfiguration: OrganizationRecordsConfiguration.patch({

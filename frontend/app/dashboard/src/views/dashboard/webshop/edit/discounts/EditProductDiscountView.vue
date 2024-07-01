@@ -9,7 +9,7 @@
         
         <STErrorsDefault :error-box="errorBox" />
 
-        <ProductSelectorBox :productSelector="productSelector" @patch="patchProductSelector" :webshop="webshop" :validator="validator" />
+        <ProductSelectorBox :product-selector="productSelector" :webshop="webshop" :validator="validator" @patch="patchProductSelector" />
 
         <hr>
         <h2>Korting</h2>
@@ -19,17 +19,21 @@
 
         <div v-for="(d, index) in discounts" :key="d.id">
             <STInputBox :title="discounts.length === 1 ? 'Korting' : 'Korting op '+(index+1)+'e stuk' + ((repeatBehaviour === 'RepeatLast' && index === discounts.length - 1) ? ' en verder' : '')" :error-box="errorBox" class="max">
-                <button slot="right" class="button icon trash gray" type="button" @click="removeDiscount(d)" v-if="discounts.length > 1" />
+                <template v-if="discounts.length > 1" #right><button class="button icon trash gray" type="button" @click="removeDiscount(d)" /></template>
 
                 <div class="split-inputs">
                     <div>
-                        <PriceInput v-if="getDiscountType(d) == 'discountPerPiece'" :value="getDiscountDiscountPerPiece(d)" @input="setDiscountDiscountPerPiece(d, $event)" :min="0" :required="true" />
-                        <PermyriadInput v-else :value="getDiscountPercentageDiscount(d)" @input="setDiscountPercentageDiscount(d, $event)" :required="true" />
+                        <PriceInput v-if="getDiscountType(d) == 'discountPerPiece'" :value="getDiscountDiscountPerPiece(d)" :min="0" :required="true" @input="setDiscountDiscountPerPiece(d, $event)" />
+                        <PermyriadInput v-else :value="getDiscountPercentageDiscount(d)" :required="true" @input="setDiscountPercentageDiscount(d, $event)" />
                     </div>
                     <div>
-                        <Dropdown :value="getDiscountType(d)" @change="setDiscountType(d, $event)">
-                            <option value="percentageDiscount">Percentage</option>
-                            <option value="discountPerPiece">Bedrag</option>
+                        <Dropdown :value="getDiscountType(d)" @update:model-value="setDiscountType(d, $event)">
+                            <option value="percentageDiscount">
+                                Percentage
+                            </option>
+                            <option value="discountPerPiece">
+                                Bedrag
+                            </option>
                         </Dropdown>
                     </div>
                 </div>
@@ -56,7 +60,9 @@
 
         <STList>
             <STListItem :selectable="true" element-name="label" class="left-center">
-                <Radio slot="left" v-model="repeatBehaviour" value="Once" />
+                <template #left>
+                    <Radio v-model="repeatBehaviour" value="Once" />
+                </template>
                 <h3 class="style-title-list">
                     Niet herhalen
                 </h3>
@@ -65,8 +71,10 @@
                 </p>
             </STListItem>
             <STListItem :selectable="true" element-name="label" class="left-center">
-                <Radio slot="left" v-model="repeatBehaviour" value="RepeatLast" />
-                <h3 class="style-title-list" v-if="discounts.length > 1 || repeatBehaviour == 'RepeatPattern'">
+                <template #left>
+                    <Radio v-model="repeatBehaviour" value="RepeatLast" />
+                </template>
+                <h3 v-if="discounts.length > 1 || repeatBehaviour == 'RepeatPattern'" class="style-title-list">
                     Laatste korting herhalen
                 </h3>
                 <h3 v-else>
@@ -77,8 +85,10 @@
                 </p>
             </STListItem>
 
-            <STListItem :selectable="true" element-name="label" class="left-center" v-if="discounts.length > 1 || repeatBehaviour == 'RepeatPattern'">
-                <Radio slot="left" v-model="repeatBehaviour" value="RepeatPattern" />
+            <STListItem v-if="discounts.length > 1 || repeatBehaviour == 'RepeatPattern'" :selectable="true" element-name="label" class="left-center">
+                <template #left>
+                    <Radio v-model="repeatBehaviour" value="RepeatPattern" />
+                </template>
                 <h3 class="style-title-list">
                     Patroon herhalen
                 </h3>
@@ -119,11 +129,11 @@
 <script lang="ts">
 import { AutoEncoderPatchType, PatchableArray, PatchableArrayAutoEncoder, patchContainsChanges } from '@simonbackx/simple-encoding';
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { CenteredMessage, Checkbox, ErrorBox, NumberInput, PermyriadInput, PriceInput, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Validator, Dropdown, Radio } from "@stamhoofd/components";
-import { ProductDiscountSettings, PrivateWebshop, ProductSelector, Version, ProductDiscount, ProductDiscountRepeatBehaviour } from '@stamhoofd/structures';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { CenteredMessage, Checkbox, Dropdown, ErrorBox, NumberInput, PermyriadInput, PriceInput, Radio,SaveView, STErrorsDefault, STInputBox, STList, STListItem, Validator } from "@stamhoofd/components";
+import { PrivateWebshop, ProductDiscount, ProductDiscountRepeatBehaviour,ProductDiscountSettings, ProductSelector, Version } from '@stamhoofd/structures';
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from '../../../../../classes/OrganizationManager';
+
 import ProductSelectorBox from './ProductSelectorBox.vue';
 
 @Component({
@@ -170,7 +180,7 @@ export default class EditProductDiscountView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get productSelector() {
@@ -298,7 +308,7 @@ export default class EditProductDiscountView extends Mixins(NavigationMixin) {
             return
         }
 
-       const p: PatchableArrayAutoEncoder<ProductDiscountSettings> = new PatchableArray()
+        const p: PatchableArrayAutoEncoder<ProductDiscountSettings> = new PatchableArray()
         p.addDelete(this.productDiscount.id)
         this.saveHandler(p)
         this.pop({ force: true })

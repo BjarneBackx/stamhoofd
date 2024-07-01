@@ -19,7 +19,7 @@
 import { SimpleError } from '@simonbackx/simple-errors';
 import { DateSelection, ErrorBox, STInputBox, TimeInput, Validator } from "@stamhoofd/components"
 import { ProductDateRange} from "@stamhoofd/structures"
-import { Component, Prop, Vue, Watch } from "vue-property-decorator";
+import { Component, Prop, Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {
@@ -48,7 +48,7 @@ export default class ProductDateRangeInput extends Vue {
         }
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -60,7 +60,7 @@ export default class ProductDateRangeInput extends Vue {
 
     set startDate(startDate: Date) {
         if (this.value) {
-            this.$emit("input", this.value.patch({ startDate }))
+            this.$emit('update:modelValue', this.value.patch({ startDate }))
         }
     }
 
@@ -70,7 +70,7 @@ export default class ProductDateRangeInput extends Vue {
 
     set endDate(endDate: Date) {
         if (this.value) {
-            this.$emit("input", this.value.patch({ endDate }))
+            this.$emit('update:modelValue', this.value.patch({ endDate }))
         }
     }
 

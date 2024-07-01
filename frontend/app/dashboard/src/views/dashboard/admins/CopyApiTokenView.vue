@@ -1,6 +1,6 @@
 <template>
     <div class="st-view">
-        <STNavigationBar title="Token" :dismiss="canDismiss" />
+        <STNavigationBar title="Token" />
 
         <main>
             <h1>
@@ -24,7 +24,7 @@
         </main>
 
         <STToolbar>
-            <template slot="right">
+            <template #right>
                 <button class="button primary" type="button" @click="dismiss">
                     Klaar
                 </button>
@@ -38,7 +38,7 @@ import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, STInputBox,STNavigationBar, STToolbar } from "@stamhoofd/components";
 import { ApiUserWithToken } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 
 @Component({

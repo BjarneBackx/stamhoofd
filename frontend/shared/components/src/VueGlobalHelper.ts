@@ -1,15 +1,23 @@
 import { Request } from "@simonbackx/simple-networking";
+import { injectHooks, useCurrentComponent, useUrl } from "@simonbackx/vue-app-navigation";
 import { AppManager } from "@stamhoofd/networking";
+import { CountryHelper } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import Vue from "vue";
+import { type App } from "vue";
 
-import { CopyableDirective, GlobalEventBus, LongPressDirective,TooltipDirective } from "..";
+import { Checkbox, CopyableDirective, GlobalEventBus, LoadingButton, LoadingView, LongPressDirective, Radio, SaveView, STList, TooltipDirective, useAppContext } from "..";
+import PromiseView from "./containers/PromiseView.vue";
+import STErrorsDefault from "./errors/STErrorsDefault.vue";
+import { useContext, useOrganization, usePlatform, useUser } from "./hooks";
+import STInputBox from "./inputs/STInputBox.vue";
+import STListItem from "./layout/STListItem.vue";
+import STNavigationBar from "./navigation/STNavigationBar.vue";
 
-declare module "vue/types/vue" {
-    interface Vue {
-        readonly $OS: "android" | "iOS" | "web" | "macOS" | "windows" | "unknown";
-    }
-}
+
+export type ComponentExposed<T> =
+	T extends new (...angs: any) => infer E ? E :
+	    T extends (props: any, ctx: any, expose: (exposed: infer E) => any, ...args: any) => any ? NonNullable<E> :
+	        {};
 
 /**
  * Return false if it should not cancel the default behaviour
@@ -70,23 +78,37 @@ function focusNextElement () {
 }
 
 export class VueGlobalHelper {
-    static setup() {
-        Vue.prototype.$isMobile = document.documentElement.clientWidth <= 550 || document.documentElement.clientHeight <= 400;
-        Vue.prototype.$focusNext = () => {
+    static setup(app: App<Element>) {
+        (window as any).PromiseComponent = PromiseView
+        app.config.globalProperties.$country = "BE" // todo
+        app.config.globalProperties.$isMobile = document.documentElement.clientWidth <= 550 || document.documentElement.clientHeight <= 400;
+        app.config.globalProperties.$focusNext = () => {
             focusNextElement()
         }
 
-        Vue.prototype.$OS = AppManager.shared.getOS()
-        Vue.prototype.$isNative = AppManager.shared.isNative
-        Vue.prototype.$isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || ((navigator as any).msMaxTouchPoints > 0)
+        app.config.globalProperties.$OS = AppManager.shared.getOS()
+        app.config.globalProperties.$isNative = AppManager.shared.isNative
+        app.config.globalProperties.$isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || ((navigator as any).msMaxTouchPoints > 0)
 
-        Vue.prototype.$isAndroid = Vue.prototype.$OS === "android"
-        Vue.prototype.$isIOS = Vue.prototype.$OS === "iOS"
-        Vue.prototype.$isMac = Vue.prototype.$OS === "macOS"
+        app.config.globalProperties.$isAndroid = app.config.globalProperties.$OS === "android"
+        app.config.globalProperties.$isIOS = app.config.globalProperties.$OS === "iOS"
+        app.config.globalProperties.$isMac = app.config.globalProperties.$OS === "macOS"
 
-        Vue.prototype.pluralText = function(num: number, singular: string, plural: string) {
+        app.config.globalProperties.pluralText = function(num: number, singular: string, plural: string) {
             return Formatter.pluralText(num, singular, plural)
         }
+
+        // Register shared components
+        app.component('STList', STList)
+        app.component('STListItem', STListItem)
+        app.component('STNavigationBar', STNavigationBar)
+        app.component('STInputBox', STInputBox)
+        app.component('STErrorsDefault', STErrorsDefault)
+        app.component('SaveView', SaveView)
+        app.component('Checkbox', Checkbox)
+        app.component('Radio', Radio)
+        app.component('LoadingView', LoadingView)
+        app.component('LoadingButton', LoadingButton)
 
         document.addEventListener('keydown', (event) => {
             const element = event.target as HTMLInputElement;
@@ -99,7 +121,7 @@ export class VueGlobalHelper {
             }
         })
 
-        if (Vue.prototype.$OS === "android") {
+        if (app.config.globalProperties.$OS === "android") {
             document.addEventListener('touchstart', (event) => {
                 const target = event.target as HTMLElement
                 if (target && target.tagName === 'BUTTON') {
@@ -112,7 +134,7 @@ export class VueGlobalHelper {
             }, { passive: true })
         }
 
-        Vue.mixin({
+        app.mixin({
             directives: {
                 tooltip: TooltipDirective,
                 copyable: CopyableDirective,
@@ -123,10 +145,71 @@ export class VueGlobalHelper {
                 date: Formatter.date.bind(Formatter),
                 dateTime: Formatter.dateTime.bind(Formatter)
             },
-            beforeDestroy() {
+            inject: {
+                $context: {
+                    default: function () {
+                        return null;
+                    }
+                },
+                $organizationManager: {
+                    default: function () {
+                        return null;
+                    }
+                },
+                $memberManager: {
+                    default: function () {
+                        return null;
+                    }
+                },
+                $webshopManager: {
+                    default: function () {
+                        return null;
+                    }
+                },
+                $checkoutManager: {
+                    default: function () {
+                        return null;
+                    }
+                },
+                urlPrefix: {
+                    from: 'urlPrefix',
+                    default: function () {
+                        return null
+                    }
+                }
+            },
+            beforeUnmount() {
                 // Clear all pending requests
                 GlobalEventBus.removeListener(this)
                 Request.cancelAll(this)
+            },
+            created() {
+                const directives = {
+                    currentComponent: useCurrentComponent(),
+                    $url: useUrl(),
+                    $user: useUser(),
+                    $organization: useOrganization(),
+                    $context: useContext(),
+                    $platform: usePlatform(),
+                    $app: useAppContext()
+                };
+
+                injectHooks(this, directives)
+            },
+            methods: {
+                formatPrice: Formatter.price.bind(Formatter),
+                formatDate: Formatter.date.bind(Formatter),
+                formatDateTime: Formatter.dateTime.bind(Formatter),
+                formatPriceChange: Formatter.priceChange.bind(Formatter),
+                formatMinutes: Formatter.minutes.bind(Formatter),
+                capitalizeFirstLetter: Formatter.capitalizeFirstLetter.bind(Formatter),
+                formatDateWithDay: Formatter.dateWithDay.bind(Formatter),
+                formatTime: Formatter.time.bind(Formatter),
+                setUrl(url: string, title?: string) {
+                    console.warn('old usage of this.setUrl, change to $url.setTitle and move url definitions to parent components')
+                },
+                formatCountry: CountryHelper.getName.bind(CountryHelper),
+                formatInteger: Formatter.integer.bind(Formatter),
             }
         })
     }

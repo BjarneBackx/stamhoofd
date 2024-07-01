@@ -11,7 +11,7 @@
 import { SimpleError } from '@simonbackx/simple-errors';
 import { AddressInput,ErrorBox, STInputBox, Validator } from "@stamhoofd/components"
 import { Address, ProductLocation} from "@stamhoofd/structures"
-import { Component, Prop, Vue } from "vue-property-decorator";
+import { Component, Prop, Vue } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {
@@ -39,7 +39,7 @@ export default class ProductLocationInput extends Vue {
         }
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -51,7 +51,7 @@ export default class ProductLocationInput extends Vue {
 
     set name(name: string) {
         if (this.value) {
-            this.$emit("input", this.value.patch({ name }))
+            this.$emit('update:modelValue', this.value.patch({ name }))
         }
     }
 
@@ -61,7 +61,7 @@ export default class ProductLocationInput extends Vue {
 
     set address(address: Address | null) {
         if (this.value) {
-            this.$emit("input", this.value.patch({ address }))
+            this.$emit('update:modelValue', this.value.patch({ address }))
         }
     }
 

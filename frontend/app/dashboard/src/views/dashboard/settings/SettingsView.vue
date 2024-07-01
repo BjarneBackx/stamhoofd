@@ -1,8 +1,8 @@
 <template>
     <div id="settings-view" class="st-view background">
-        <STNavigationBar title="Instellingen" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Instellingen" />
 
-        <main>
+        <main class="center">
             <h1>
                 Instellingen
             </h1>
@@ -19,77 +19,93 @@
 
             <STList class="illustration-list">    
                 <STListItem :selectable="true" class="left-center" @click="openGeneral(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/flag.svg">
+                    <template #left>
+                        <img src="@stamhoofd/assets/images/illustrations/flag.svg">
+                    </template>
                     <h2 class="style-title-list">
                         Algemeen
                     </h2>
                     <p class="style-description">
                         Naam, adres en website
                     </p>
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right>
+                        <span class="icon arrow-right-small gray" />
+                    </template>
                 </STListItem>
 
                 <STListItem :selectable="true" class="left-center" @click="openPersonalize(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/palette.svg">
+                    <template #left>
+                        <img src="@stamhoofd/assets/images/illustrations/palette.svg">
+                    </template>
                     <h2 class="style-title-list">
                         Personaliseren
                     </h2>
                     <p class="style-description">
                         Logo, kleur en domeinnaam
                     </p>
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right>
+                        <span class="icon arrow-right-small gray" />
+                    </template>
                 </STListItem>
 
                 <STListItem :selectable="true" class="left-center" @click="setupEmail(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/email.svg">
+                    <template #left>
+                        <img src="@stamhoofd/assets/images/illustrations/email.svg">
+                    </template>
                     <h2 class="style-title-list">
                         E-mailadressen
                     </h2>
                     <p class="style-description">
                         Verstuur e-mails vanaf je zelf gekozen e-mailadres
                     </p>
-                    <template slot="right">
+                    <template #right>
                         <span v-if="!hasPolicy" v-tooltip="'We hebben zeker één e-mailadres nodig voor communicatie en indien leden antwoorden op automatische e-mails'" class="icon warning yellow" />
                         <span class="icon arrow-right-small gray" />
                     </template>
                 </STListItem>
 
                 <STListItem :selectable="true" class="left-center" @click="openAdmins(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/admin.svg">
+                    <template #left>
+                        <img src="@stamhoofd/assets/images/illustrations/admin.svg">
+                    </template>
                     <h2 class="style-title-list">
                         Beheerders
                     </h2>
                     <p class="style-description">
                         Geef anderen ook toegang tot deze vereniging
                     </p>
-                    <template slot="right">
+                    <template #right>
                         <span class="icon arrow-right-small gray" />
                     </template>
                 </STListItem>
 
                 <STListItem :selectable="true" class="left-center" @click="openPrivacy(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/privacy-policy.svg">
+                    <template #left>
+                        <img src="@stamhoofd/assets/images/illustrations/privacy-policy.svg">
+                    </template>
                     <h2 class="style-title-list">
                         Privacyvoorwaarden
                     </h2>
                     <p class="style-description">
                         Stel je privacyvoorwaarden in
                     </p>
-                    <template slot="right">
+                    <template #right>
                         <span v-if="!hasPolicy" v-tooltip="'Voeg je privacyvoorwaarden toe om in orde te zijn met GDPR'" class="icon warning yellow" />
                         <span class="icon arrow-right-small gray" />
                     </template>
                 </STListItem>
 
                 <STListItem :selectable="true" class="left-center" @click="openPayment(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/creditcards.svg">
+                    <template #left>
+                        <img src="@stamhoofd/assets/images/illustrations/creditcards.svg">
+                    </template>
                     <h2 class="style-title-list">
                         {{ $t('dashboard.settings.menu.paymentAccounts.title') }}
                     </h2>
                     <p class="style-description">
                         {{ $t('dashboard.settings.menu.paymentAccounts.description') }}
                     </p>
-                    <template slot="right">
+                    <template #right>
                         <span class="icon arrow-right-small gray" />
                     </template>
                 </STListItem>
@@ -100,8 +116,10 @@
                 <h2>Ledenadministratie</h2>
 
                 <STList class="illustration-list">    
-                    <STListItem :selectable="true" class="left-center right-stack" @click="manageRegistrationPage(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/laptop.svg">
+                    <STListItem v-if="!isPlatform" :selectable="true" class="left-center right-stack" @click="manageRegistrationPage(true)">
+                        <template #left>
+                            <img src="@stamhoofd/assets/images/illustrations/laptop.svg">
+                        </template>
                         <h2 class="style-title-list">
                             Link naar ledenportaal
                         </h2>
@@ -109,41 +127,38 @@
                             Via deze weg kunnen leden zelf online inschrijven
                         </p>
 
-                        <template slot="right">
+                        <template #right>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
 
                     <STListItem :selectable="true" class="left-center" @click="openRegistrationPayment(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/creditcards.svg">
+                        <template #left>
+                            <img src="@stamhoofd/assets/images/illustrations/creditcards.svg">
+                        </template>
                         <h2 class="style-title-list">
                             {{ $t('dashboard.settings.menu.paymentMethods.title') }}
                         </h2>
                         <p class="style-description">
                             {{ $t('dashboard.settings.menu.paymentMethods.description') }}
                         </p>
-                        <template slot="right">
-                            <span v-if="!hasPaymentMethod" v-tooltip="'Je hebt nog geen bankrekeningnummer toegevoegd of andere betaalmethodes geactiveerd'" class="icon warning yellow" />
+                        <template #right>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
 
                     <STListItem :selectable="true" class="left-center right-stack" @click="manageGroups(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/group.svg">
+                        <template #left>
+                            <img src="@stamhoofd/assets/images/illustrations/group.svg">
+                        </template>
                         <h2 class="style-title-list">
-                            Inschrijvingsgroepen<template v-if="enableActivities">
-                                en activiteiten
-                            </template>
+                            Inschrijvingsgroepen
                         </h2>
-                        <p v-if="enableActivities" class="style-description">
-                            Deel je leden op in groepen en activiteiten, wijzig de prijs en de inschrijvingsdatum
-                        </p>
-                        <p v-else class="style-description">
-                            Leeftijdsgroepen aanmaken en beheren
+                        <p class="style-description">
+                            Deel je leden op in groepen en categorieën
                         </p>
 
-                        <template slot="right">
-                            <span v-if="!hasGroups" v-tooltip="'Je hebt nog geen inschrijvingsgroepen ingesteld'" class="icon warning yellow" />
+                        <template #right>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
@@ -151,7 +166,9 @@
 
 
                     <STListItem :selectable="true" class="left-center right-stack" @click="manageRecords(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/health-data.svg">
+                        <template #left>
+                            <img src="@stamhoofd/assets/images/illustrations/health-data.svg">
+                        </template>
                         <h2 class="style-title-list">
                             Vragenlijsten en gegevens van leden
                         </h2>
@@ -159,41 +176,15 @@
                             Kies welke informatie je verzamelt van jouw leden
                         </p>
 
-                        <template slot="right">
-                            <span class="icon arrow-right-small gray" />
-                        </template>
-                    </STListItem>
-
-                    <STListItem :selectable="true" class="left-center right-stack" @click="manageFinancialSupport(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/discount.svg">
-                        <h2 class="style-title-list">
-                            Financiële ondersteuning
-                        </h2>
-                        <p class="style-description">
-                            Steun kwetsbare gezinnen
-                        </p>
-
-                        <template slot="right">
-                            <span class="icon arrow-right-small gray" />
-                        </template>
-                    </STListItem>
-
-                    <STListItem :selectable="true" class="left-center right-stack" @click="manageDataPermission(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/agreement.svg">
-                        <h2 class="style-title-list">
-                            Toestemming gegevensverzameling
-                        </h2>
-                        <p class="style-description">
-                            Vaak heb je toestemming nodig om bepaalde gegevens te verzamelen. Dat stel je hier in.
-                        </p>
-
-                        <template slot="right">
+                        <template #right>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
 
                     <STListItem :selectable="true" class="left-center right-stack" @click="manageFreeContribution(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/piggy-bank.svg">
+                        <template #left>
+                            <img src="@stamhoofd/assets/images/illustrations/piggy-bank.svg">
+                        </template>
                         <h2 class="style-title-list">
                             Vrije bijdrage
                         </h2>
@@ -201,35 +192,7 @@
                             Maak het mogelijk dat leden een (optionele) vrije bijdrage doen bij het inschrijven
                         </p>
 
-                        <template slot="right">
-                            <span class="icon arrow-right-small gray" />
-                        </template>
-                    </STListItem>
-
-                    <STListItem :selectable="true" class="left-center right-stack" @click="importMembers(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/import-excel.svg">
-                        <h2 class="style-title-list">
-                            Leden importeren
-                        </h2>
-                        <p class="style-description">
-                            Importeer leden vanaf een Excel of CSV bestand
-                        </p>
-
-                        <template slot="right">
-                            <span class="icon arrow-right-small gray" />
-                        </template>
-                    </STListItem>
-
-                    <STListItem v-if="isSGV" :selectable="true" class="left-center right-stack" @click="openSyncScoutsEnGidsen(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/sync-scouts.svg">
-                        <h2 class="style-title-list">
-                            Synchroniseer met de groepsadministratie
-                        </h2>
-                        <p class="style-description">
-                            Neem alle gegevens uit Stamhoofd over in de groepsadministratie
-                        </p>
-
-                        <template slot="right">
+                        <template #right>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
@@ -241,14 +204,16 @@
                 <h2>Geavanceerd</h2>
                 <STList class="illustration-list">    
                     <STListItem :selectable="true" class="left-center" @click="openSSO(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/lock.svg">
+                        <template #left>
+                            <img src="@stamhoofd/assets/images/illustrations/lock.svg">
+                        </template>
                         <h2 class="style-title-list">
                             Single-Sign-On (SSO)
                         </h2>
                         <p class="style-description">
                             Configureer een externe authenticatie server
                         </p>
-                        <template slot="right">
+                        <template #right>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
@@ -257,89 +222,81 @@
 
             <template v-if="!areSalesDisabled">
                 <hr>
-                <h2>Stamhoofd</h2>
+                <h2>{{ $t('shared.platformName') }}</h2>
                 <STList class="illustration-list">    
-                    <STListItem :selectable="true" class="left-center" @click="openPackages(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/stock.svg">
+                    <STListItem v-if="!isPlatform" :selectable="true" class="left-center" @click="openPackages(true)">
+                        <template #left>
+                            <img src="@stamhoofd/assets/images/illustrations/stock.svg">
+                        </template>
                         <h2 class="style-title-list">
                             Pakketten aankopen
                         </h2>
                         <p class="style-description">
                             Wijzig je pakketten of activeer nieuwe functies
                         </p>
-                        <template slot="right">
+                        <template #right>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
 
-                    <STListItem v-if="false" :selectable="true" class="left-center" @click="openBilling(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/transfer.svg">
-                        <h2 class="style-title-list">
-                            Facturen en betalingen
-                        </h2>
-                        <p class="style-description">
-                            Download jouw facturen en bekijk jouw tegoed
-                        </p>
-                        <template slot="right">
-                            <span class="icon arrow-right-small gray" />
+                    <STListItem v-if="!isPlatform" :selectable="true" class="left-center" @click="openReferrals(true)">
+                        <template #left>
+                            <img src="@stamhoofd/assets/images/illustrations/credits.svg">
                         </template>
-                    </STListItem>
-
-                    <STListItem :selectable="true" class="left-center" @click="openReferrals(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/credits.svg">
                         <h2 class="style-title-list">
                             Vertel Stamhoofd door aan andere verenigingen
                         </h2>
                         <p class="style-description">
                             Geef 25 euro en krijg zelf ook een tegoed
                         </p>
-                        <template slot="right">
+                        <template #right>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
 
                     <STListItem :selectable="true" class="left-center" @click="openLabs(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/experiment.svg">
+                        <template #left>
+                            <img src="@stamhoofd/assets/images/illustrations/experiment.svg">
+                        </template>
                         <h2 class="style-title-list">
                             Experimenten
                         </h2>
                         <p class="style-description">
                             Probeer als eerste nieuwe functies uit die in ontwikkeling zijn.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right>
+                            <span class="icon arrow-right-small gray" />
+                        </template>
                     </STListItem>
                 </STList>
 
-                <hr>
-                <h2>Functies gratis uitproberen</h2>
-                <p>Je kan alle functies van Stamhoofd gratis uitproberen in een demo-versie. Je kan de demo-versie enkel gebruiken om zelf alle functies te testen, niet om extern te gebruiken. Zodra je het in gebruik wilt nemen kan je overschakelen op één van onze pakketten. We rekenen nooit kosten aan zonder dit duidelijk te communiceren en hiervoor toestemming te vragen.</p>
+                <template v-if="!isPlatform">
+                    <hr>
+                    <h2>Functies gratis uitproberen</h2>
+                    <p>Je kan alle functies van Stamhoofd gratis uitproberen in een demo-versie. Je kan de demo-versie enkel gebruiken om zelf alle functies te testen, niet om extern te gebruiken. Zodra je het in gebruik wilt nemen kan je overschakelen op één van onze pakketten. We rekenen nooit kosten aan zonder dit duidelijk te communiceren en hiervoor toestemming te vragen.</p>
 
-                <ModuleSettingsBox />
+                    <ModuleSettingsBox />
+                </template>
             </template>
         </main>
     </div>
 </template>
 
 <script lang="ts">
-import { ArrayDecoder, Decoder } from '@simonbackx/simple-encoding';
+import { ArrayDecoder, AutoEncoderPatchType, Decoder } from '@simonbackx/simple-encoding';
 import { Request } from '@simonbackx/simple-networking';
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { AsyncComponent, BackButton, CenteredMessage, LoadComponent, STList, STListItem, STNavigationBar, Toast, TooltipDirective } from "@stamhoofd/components";
-import { AppManager, SessionManager, UrlHelper } from '@stamhoofd/networking';
-import { OrganizationType, PaymentMethod, StripeAccount, UmbrellaOrganization } from "@stamhoofd/structures";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
+import { AdminsView, AsyncComponent, BackButton, CenteredMessage, LoadComponent, RecordsConfigurationView, STList, STListItem, STNavigationBar, Toast, TooltipDirective } from "@stamhoofd/components";
+import { AppManager, UrlHelper } from '@stamhoofd/networking';
+import { Organization, OrganizationMetaData, OrganizationRecordsConfiguration, OrganizationType, PaymentMethod, Platform, StripeAccount, UmbrellaOrganization } from "@stamhoofd/structures";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
-import AdminsView from '../admins/AdminsView.vue';
 import ConfigurePaymentExportView from './administration/ConfigurePaymentExportView.vue';
 import { buildManageGroupsComponent } from './buildManageGroupsComponent';
 import EmailSettingsView from './EmailSettingsView.vue';
 import GeneralSettingsView from './GeneralSettingsView.vue';
 import LabsView from './LabsView.vue';
-import DataPermissionSettingsView from './modules/members/DataPermissionSettingsView.vue';
-import FinancialSupportSettingsView from './modules/members/FinancialSupportSettingsView.vue';
 import FreeContributionSettingsView from './modules/members/FreeContributionSettingsView.vue';
-import RecordsSettingsView from './modules/members/RecordsSettingsView.vue';
 import ModuleSettingsBox from './ModuleSettingsBox.vue';
 import BillingSettingsView from './packages/BillingSettingsView.vue';
 import BillingWarningBox from './packages/BillingWarningBox.vue';
@@ -365,16 +322,16 @@ import RegistrationPaymentSettingsView from './RegistrationPaymentSettingsView.v
     }
 })
 export default class SettingsView extends Mixins(NavigationMixin) {
-    temp_organization = OrganizationManager.organization
+    temp_organization = this.$organization
     loadingStripeAccounts = false;
     stripeAccounts: StripeAccount[] = []
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
-    get isSGV() {
-        return this.organization.meta.type == OrganizationType.Youth && this.organization.meta.umbrellaOrganization == UmbrellaOrganization.ScoutsEnGidsenVlaanderen
+    get isPlatform() {
+        return STAMHOOFD.userMode === 'platform'
     }
 
     get areSalesDisabled() {
@@ -394,7 +351,7 @@ export default class SettingsView extends Mixins(NavigationMixin) {
             this.loadingStripeAccounts = true
             if (recheckStripeAccount) {
                 try {
-                    await SessionManager.currentSession!.authenticatedServer.request({
+                    await this.$context.authenticatedServer.request({
                         method: "POST",
                         path: "/stripe/accounts/" + encodeURIComponent(recheckStripeAccount),
                         decoder: StripeAccount as Decoder<StripeAccount>,
@@ -404,7 +361,7 @@ export default class SettingsView extends Mixins(NavigationMixin) {
                     console.error(e)
                 }
             }
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "GET",
                 path: "/stripe/accounts",
                 decoder: new ArrayDecoder(StripeAccount as Decoder<StripeAccount>),
@@ -415,7 +372,7 @@ export default class SettingsView extends Mixins(NavigationMixin) {
             if (!recheckStripeAccount) {
                 for (const account of this.stripeAccounts) {
                     try {
-                        const response = await SessionManager.currentSession!.authenticatedServer.request({
+                        const response = await this.$context.authenticatedServer.request({
                             method: "POST",
                             path: "/stripe/accounts/" + encodeURIComponent(account.id),
                             decoder: StripeAccount as Decoder<StripeAccount>,
@@ -455,7 +412,8 @@ export default class SettingsView extends Mixins(NavigationMixin) {
                 new ComponentWithProperties(NavigationController, {
                     root: new ComponentWithProperties(GeneralSettingsView, {})
                 })
-            ]
+            ],
+            url: 'general'
         })
     }
 
@@ -468,7 +426,8 @@ export default class SettingsView extends Mixins(NavigationMixin) {
                 new ComponentWithProperties(NavigationController, {
                     root: new ComponentWithProperties(LabsView, {})
                 })
-            ]
+            ],
+            url: 'labs'
         })
     }
 
@@ -481,7 +440,8 @@ export default class SettingsView extends Mixins(NavigationMixin) {
                 new ComponentWithProperties(NavigationController, {
                     root: new ComponentWithProperties(PersonalizeSettingsView, {})
                 })
-            ]
+            ],
+            url: 'personalize'
         })
     }
 
@@ -494,7 +454,8 @@ export default class SettingsView extends Mixins(NavigationMixin) {
                 new ComponentWithProperties(NavigationController, {
                     root: new ComponentWithProperties(PrivacySettingsView, {})
                 })
-            ]
+            ],
+            url: 'privacy'
         })
     }
 
@@ -570,7 +531,8 @@ export default class SettingsView extends Mixins(NavigationMixin) {
                 new ComponentWithProperties(NavigationController, {
                     root: new ComponentWithProperties(PackageSettingsView, {})
                 })
-            ]
+            ],
+            url: 'packages'
         })
     }
 
@@ -582,19 +544,6 @@ export default class SettingsView extends Mixins(NavigationMixin) {
             components: [
                 new ComponentWithProperties(NavigationController, {
                     root: new ComponentWithProperties(ConfigurePaymentExportView, {})
-                })
-            ]
-        })
-    }
-
-    openSyncScoutsEnGidsen(animated = true) {
-        this.present({
-            animated,
-            adjustHistory: animated,
-            modalDisplayStyle: "popup",
-            components: [
-                new ComponentWithProperties(NavigationController, { 
-                    root: AsyncComponent(() => import(/* webpackChunkName: "SGVGroepsadministratieView" */ "./SGVGroepsadministratieView.vue"))
                 })
             ]
         })
@@ -627,7 +576,7 @@ export default class SettingsView extends Mixins(NavigationMixin) {
     }
 
     manageGroups(animated = true) {
-        const component = buildManageGroupsComponent(this.organization)
+        const component = buildManageGroupsComponent(this.$organizationManager)
             
         this.present({
             animated,
@@ -648,33 +597,19 @@ export default class SettingsView extends Mixins(NavigationMixin) {
             modalDisplayStyle: "popup",
             components: [
                 new ComponentWithProperties(NavigationController, {
-                    root: new ComponentWithProperties(RecordsSettingsView, {})
-                })
-            ]
-        })
-    }
-
-    manageFinancialSupport(animated = true) {
-        this.present({
-            animated,
-            adjustHistory: animated,
-            modalDisplayStyle: "popup",
-            components: [
-                new ComponentWithProperties(NavigationController, {
-                    root: new ComponentWithProperties(FinancialSupportSettingsView, {})
-                })
-            ]
-        })
-    }
-
-    manageDataPermission(animated = true) {
-        this.present({
-            animated,
-            adjustHistory: animated,
-            modalDisplayStyle: "popup",
-            components: [
-                new ComponentWithProperties(NavigationController, {
-                    root: new ComponentWithProperties(DataPermissionSettingsView, {})
+                    root: new ComponentWithProperties(RecordsConfigurationView, {
+                        inheritedRecordsConfiguration: Platform.shared.config.recordsConfiguration,
+                        recordsConfiguration: this.$organization.meta.recordsConfiguration,
+                        saveHandler: async (patch: AutoEncoderPatchType<OrganizationRecordsConfiguration>) => {
+                            await this.$organizationManager.patch(Organization.patch({
+                                id: this.$organization.id,
+                                meta: OrganizationMetaData.patch({
+                                    recordsConfiguration: patch
+                                })
+                            }))
+                            Toast.success("De aanpassingen zijn opgeslagen").show();
+                        }
+                    })
                 })
             ]
         })
@@ -688,24 +623,6 @@ export default class SettingsView extends Mixins(NavigationMixin) {
             components: [
                 new ComponentWithProperties(NavigationController, {
                     root: new ComponentWithProperties(FreeContributionSettingsView, {})
-                })
-            ]
-        })
-    }
-
-    importMembers(animated = true) {
-        if (this.organization.groups.length == 0) {
-            new CenteredMessage("Voeg eerst inschrijvingsgroepen toe", "Je kan leden pas importeren nadat je jouw inschrijvingsgroepen hebt ingesteld.", "error").addCloseButton().show()
-            return
-        }
-
-        this.present({
-            animated,
-            adjustHistory: animated,
-            modalDisplayStyle: "popup",
-            components: [
-                new ComponentWithProperties(NavigationController, {
-                    root: AsyncComponent(() => import(/* webpackChunkName: "ImportMembersView" */ "./modules/members/ImportMembersView.vue"))
                 })
             ]
         })
@@ -735,99 +652,81 @@ export default class SettingsView extends Mixins(NavigationMixin) {
         return this.organization.meta.modules.useActivities
     }
 
+    activated() {
+        this.$url.setTitle("Instellingen")
+    }
 
     mounted() {
-        const parts = UrlHelper.shared.getParts()
-
         // First set current url already, to fix back
-        UrlHelper.setUrl("/settings")
-        document.title = "Stamhoofd - Instellingen"
-
-        if (parts.length == 2 && parts[0] == 'oauth' && parts[1] == 'mollie') {
+        if (this.$url.match('oauth/mollie')) {
             // Open mollie settings
             this.openPayment(false)
             return
         }
 
-        if ((parts.length >= 1 && parts[0] == 'scouts-en-gidsen-vlaanderen') || (parts.length == 2 && parts[0] == 'oauth' && parts[1] == 'sgv')) {
-            this.openSyncScoutsEnGidsen(false)
-            return; // (don't clear)
-        }
-
-
-        if (parts.length >= 2 && parts[0] == 'settings' && parts[1] == 'admins') {
+        if (this.$url.match('admins')) {
             // Open mollie settings
             this.openAdmins(false)
             return; // (don't clear)
         }
 
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'general') {
+        if (this.$url.match('general')) {
             // Open mollie settings
             this.openGeneral(false)
         }
 
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'payments') {
+        if (this.$url.match('payments')) {
             // Open mollie settings
             this.openPayment(false)
-        } else {
-            // We can clear now
-            UrlHelper.shared.clear()
         }
 
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'labs') {
+        if (this.$url.match('labs')) {
             // Open mollie settings
             this.openLabs(false)
         }
 
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'registration-payments') {
+        if (this.$url.match('registration-payments')) {
             // Open mollie settings
             this.openRegistrationPayment(false)
         }
 
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'privacy') {
+        if (this.$url.match('privacy')) {
             // Open mollie settings
             this.openPrivacy(false)
         }
 
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'personalize') {
+        if (this.$url.match('personalize')) {
             // Open mollie settings
             this.openPersonalize(false)
         }
 
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'sso') {
+        if (this.$url.match('sso')) {
             // Open mollie settings
             this.openSSO(false).catch(console.error)
         }
 
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'records') {
+        if (this.$url.match('records')) {
             // Open mollie settings
             this.manageRecords(false)
         }
 
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'packages') {
+        if (this.$url.match('packages')) {
             this.openPackages(false)
         }
 
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'referrals') {
+        if (this.$url.match('referrals')) {
             this.openReferrals(false)
         }
 
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'free-contribution') {
+        if (this.$url.match('free-contribution')) {
             this.manageFreeContribution(false)
         }
 
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'financial-support') {
-            this.manageFinancialSupport(false)
-        }
-
-        if (parts.length == 2 && parts[0] == 'settings' && parts[1] == 'data-permission') {
-            this.manageDataPermission(false)
-        }
-
+        UrlHelper.shared.clear()
         this.loadStripeAccounts(null).catch(console.error);
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         // Clear all pending requests
         Request.cancelAll(this)
     }

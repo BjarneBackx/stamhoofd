@@ -27,17 +27,19 @@ declare global {
     };
 
     type StamhoofdDomains = {
-        dashboard: string,
-        registration: LocalizedDomain,      // requires wildcard prefix DNS
-        marketing: LocalizedDomain,         // main landing page
-        webshopPrefix: string,              // Webshop prefix that is used on the marketing domain, e.g. 'shop', for stamhoofd.be/shop/my-webshop
-        webshop: LocalizedDomain,           // E.g. shop.stamhoofd.be
-        legacyWebshop: string,              // E.g. stamhoofd.shop for *.stamhoofd.shop
-        api: string,                        // requires wildcard prefix DNS
-        demoApi: string,                    // requires wildcard prefix DNS
-        admin: string,
-        adminApi: string,
+        dashboard: string,                      // requires both www + non-www DNS record
+        registration?: LocalizedDomain,         // Optional. Set to undefined for platforms. requires wildcard prefix DNS
+        marketing: LocalizedDomain,             // main landing page (used for linking back to website, documentation...)
+        webshop: LocalizedDomain,               // E.g. shop.stamhoofd.be
+        legacyWebshop?: string,                 // In the past, webshops were hosted on a subdomain. This is deprecated, but the links should still work. E.g. stamhoofd.shop for *.stamhoofd.shop
+        api: string,                            // requires wildcard prefix DNS
         rendererApi: string,
+
+        // MX + SPF (both for email) + A record for webshops
+        webshopCname: string,
+
+        // MX + SPF (both for email) + A record for registration
+        registrationCname: string,
     }
 
     /** 
@@ -49,6 +51,14 @@ declare global {
          */
         readonly environment: "production" | "development" | "staging" | "test"
         readonly domains: StamhoofdDomains
+
+        /**
+         * organization = users are specific to one organization
+         * platform = users are shared between organizations
+         */
+        readonly userMode: 'organization'|'platform'
+        readonly translationNamespace: string
+        readonly fixedCountry?: Country
     }
 
     /** 
@@ -156,6 +166,7 @@ declare global {
 
         // Communication with other internal services
         readonly INTERNAL_SECRET_KEY: string
+        readonly translationNamespace: string
     }
     
     type FrontendEnvironment = SharedEnvironment & FrontendSpecificEnvironment

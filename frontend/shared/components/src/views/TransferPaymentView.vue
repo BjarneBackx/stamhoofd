@@ -1,6 +1,6 @@
 <template>
     <div class="st-view">
-        <STNavigationBar title="Overschrijven" :pop="false" :dismiss="isPopup && canDismiss" />
+        <STNavigationBar title="Overschrijven" :disablePop="true" :disableDismiss="!isPopup" />
 
         <main>
             <h1 v-if="created && type == 'order'">
@@ -39,7 +39,7 @@
                             <tr>
                                 <td>Bedrag</td>
                                 <td v-tooltip="'Klik om te kopiëren'" v-copyable="payment.price/100" class="style-copyable">
-                                    {{ payment.price | price }}
+                                    {{ formatPrice(payment.price) }}
                                 </td>
                             </tr>
                             <tr v-if="payment.price > 0">
@@ -90,7 +90,7 @@
 
                 <STList>
                     <STListItem element-name="a" :href="'com.kbc.mobilesignqrcode://'+qrMessage">
-                        <img slot="left" class="payment-app-logo" src="~@stamhoofd/assets/images/partners/kbc/app.svg">
+                        <template #left><img class="payment-app-logo" src="@stamhoofd/assets/images/partners/kbc/app.svg"></template>
                         <h3 class="style-title-list">
                             KBC Mobile
                         </h3>
@@ -100,7 +100,7 @@
                     </STListItem>
 
                     <STListItem element-name="a" :href="'bepingib://'">
-                        <img slot="left" class="payment-app-logo" src="~@stamhoofd/assets/images/partners/ing/app.svg">
+                        <template #left><img class="payment-app-logo" src="@stamhoofd/assets/images/partners/ing/app.svg"></template>
                         <h3 class="style-title-list">
                             ING Banking
                         </h3>
@@ -110,7 +110,7 @@
                     </STListItem>
 
                     <STListItem element-name="a" :href="'BEPbelfius://'">
-                        <img slot="left" class="payment-app-logo" src="~@stamhoofd/assets/images/partners/belfius/app.svg">
+                        <template #left><img class="payment-app-logo" src="@stamhoofd/assets/images/partners/belfius/app.svg"></template>
                         <h3 class="style-title-list">
                             Belfius Mobile
                         </h3>
@@ -120,7 +120,7 @@
                     </STListItem>
 
                     <STListItem element-name="a" :href="'easybanking://'">
-                        <img slot="left" class="payment-app-logo" src="~@stamhoofd/assets/images/partners/bnp/app.png">
+                        <template #left><img class="payment-app-logo" src="@stamhoofd/assets/images/partners/bnp/app.png"></template>
                         <h3 class="style-title-list">
                             Easy Banking App (BNP Paribas Fortis)
                         </h3>
@@ -130,7 +130,7 @@
                     </STListItem>
 
                     <STListItem element-name="a" :href="'BEPargenta://'">
-                        <img slot="left" class="payment-app-logo" src="~@stamhoofd/assets/images/partners/argenta/app.png">
+                        <template #left><img class="payment-app-logo" src="@stamhoofd/assets/images/partners/argenta/app.png"></template>
                         <h3 class="style-title-list">
                             Argenta-app
                         </h3>
@@ -140,7 +140,7 @@
                     </STListItem>
 
                     <STListItem element-name="a" :href="'HBApp://'">
-                        <img slot="left" class="payment-app-logo" src="~@stamhoofd/assets/images/partners/hello-bank/app.png">
+                        <template #left><img class="payment-app-logo" src="@stamhoofd/assets/images/partners/hello-bank/app.png"></template>
                         <h3 class="style-title-list">
                             Hello Bank! app
                         </h3>
@@ -173,20 +173,20 @@
                 <span class="icon help" />
                 <span>Het lukt niet</span>
             </button>
-            <button slot="right" class="button primary" type="button" @click="goNext">
+            <template #right><button class="button primary" type="button" @click="goNext">
                 <span>Doorgaan</span>
                 <span class="icon arrow-right" />
-            </button>
+            </button></template>
         </STToolbar>
     </div>
 </template>
 
 <script lang="ts">
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { BackButton, Checkbox, CopyableDirective, LoadingView, STList, STListItem, STNavigationBar, STToolbar, TooltipDirective } from "@stamhoofd/components";
+import { BackButton, Checkbox, CopyableDirective, LoadingView, NavigationActions, STList, STListItem, STNavigationBar, STToolbar, TooltipDirective } from "@stamhoofd/components";
 import { Country, Organization, Payment, TransferDescriptionType, TransferSettings } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import { CenteredMessage } from '../overlays/CenteredMessage';
 
@@ -229,7 +229,7 @@ export default class TransferPaymentView extends Mixins(NavigationMixin){
         isPopup: boolean
 
     @Prop({ default: null })
-        finishedHandler: ((payment: Payment | null, component: NavigationMixin) => void) | null
+        finishedHandler: ((payment: Payment | null, navigate: NavigationActions) => void) | null
 
     QRCodeUrl: string | null = null
 
@@ -281,7 +281,7 @@ export default class TransferPaymentView extends Mixins(NavigationMixin){
         return "unknown"
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         window.removeEventListener("beforeunload", this.preventLeave);
     }
 

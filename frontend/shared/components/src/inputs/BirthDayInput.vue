@@ -40,37 +40,40 @@
 
 <script lang="ts">
 import { SimpleError } from '@simonbackx/simple-errors';
-import { Dropdown,ErrorBox, STInputBox, Validator } from "@stamhoofd/components"
+import { Component, Prop, Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 import { Formatter } from "@stamhoofd/utility"
-import { Component, Prop, Vue, Watch } from "vue-property-decorator";
+
+import {ErrorBox} from "../errors/ErrorBox";
+import {Validator} from "../errors/Validator";
+import STInputBox from "./STInputBox.vue";
 
 @Component({
     components: {
-        STInputBox,
-        Dropdown
-    }
+        STInputBox
+    },
+    emits: ['update:modelValue']
 })
 export default class BirthDayInput extends Vue {
     @Prop({ default: "" }) 
-    title: string;
+        title: string;
 
     @Prop({ default: true })
-    required!: boolean
+        required!: boolean
 
     @Prop({ default: null})
-    value!: Date | null
+        modelValue!: Date | null
 
     /**
      * Assign a validator if you want to offload the validation to components
      */
     @Prop({ default: null }) 
-    validator: Validator | null
+        validator: Validator | null
 
     errorBox: ErrorBox | null = null
 
-    day: number | null = this.value?.getDate() ?? null
-    month: number | null  = this.value ? this.value.getMonth() + 1 : null
-    year: number | null  = this.value?.getFullYear() ?? null
+    day: number | null = this.modelValue?.getDate() ?? null
+    month: number | null  = this.modelValue ? this.modelValue.getMonth() + 1 : null
+    year: number | null  = this.modelValue?.getFullYear() ?? null
 
     currentYear = new Date().getFullYear()
 
@@ -82,7 +85,7 @@ export default class BirthDayInput extends Vue {
         }
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -92,7 +95,7 @@ export default class BirthDayInput extends Vue {
         return Formatter.month(month)
     }
 
-    @Watch('value', { deep: true })
+    @Watch('modelValue', { deep: true })
     onValueChanged(val: Date | null) {
         if (val) {
             this.day = val.getDate()
@@ -107,15 +110,17 @@ export default class BirthDayInput extends Vue {
 
     updateDate() {
         if (this.year && this.month && this.day) {
-            this.$emit("input", new Date(this.year, this.month - 1, this.day, 12))
+            this.$emit('update:modelValue', new Date(this.year, this.month - 1, this.day, 12))
         } else {
-            this.$emit("input", null)
+            this.$emit('update:modelValue', null)
         }
     }
 
     validate() {
         if (this.year && this.month && this.day) {
-            this.$emit("input", new Date(this.year, this.month - 1, this.day, 12))
+            if (!this.modelValue) {
+                this.$emit('update:modelValue', new Date(this.year, this.month - 1, this.day, 12))
+            }
             this.errorBox = null
             return true
         }
@@ -123,14 +128,14 @@ export default class BirthDayInput extends Vue {
         if (!this.required) {
             this.errorBox = null
 
-            if (this.value !== null) {
-                this.$emit("input", null)
+            if (this.modelValue !== null) {
+                this.$emit('update:modelValue', null)
             }
             return true
         }
 
-        if (this.value !== null) {
-            this.$emit("input", null)
+        if (this.modelValue !== null) {
+            this.$emit('update:modelValue', null)
         }
         this.errorBox = new ErrorBox(new SimpleError({
             code: "empty_field",
@@ -143,8 +148,8 @@ export default class BirthDayInput extends Vue {
 </script>
 
 <style lang="scss">
-@use "~@stamhoofd/scss/base/text-styles.scss" as *;
-@use "~@stamhoofd/scss/base/variables.scss" as *;
+@use "@stamhoofd/scss/base/text-styles.scss" as *;
+@use "@stamhoofd/scss/base/variables.scss" as *;
 
 .input.birth-day-selection {
     padding-right: 0;

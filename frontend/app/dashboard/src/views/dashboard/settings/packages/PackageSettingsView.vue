@@ -1,6 +1,6 @@
 <template>
     <div class="st-view background">
-        <STNavigationBar title="Mijn paketten" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Mijn paketten" />
 
         <main>
             <h1>
@@ -17,12 +17,14 @@
 
                 <template v-else>
                     <p class="style-description-block">
-                        Selecteer alle functies die je wilt aankopen of verlengen en klik op 'doorgaan'. Meer info over alle pakketten kan je terugvinden op <a :href="'https://'+$t('shared.domains.marketing')+'/prijzen'" class="inline-link" target="_blank">onze website</a>.
+                        Selecteer alle functies die je wilt aankopen en klik op 'doorgaan'. Meer info over alle pakketten kan je terugvinden op <a :href="'https://'+$t('shared.domains.marketing')+'/prijzen'" class="inline-link" target="_blank">onze website</a>.
                     </p>
 
                     <STList>
                         <STListItem v-for="pack of availablePackages" :key="pack.bundle" element-name="label" :selectable="true">
-                            <Checkbox slot="left" v-model="pack.selected" :disabled="!pack.canSelect(availablePackages)" />
+                            <template #left>
+                                <Checkbox v-model="pack.selected" :disabled="!pack.canSelect(availablePackages)" />
+                            </template>
                             <h3 class="style-title-list">
                                 {{ pack.title }}
                             </h3>
@@ -30,9 +32,9 @@
                                 {{ pack.description }}
                             </p>
 
-                            <p v-if="!pack.canSelect(availablePackages)" slot="right" class="style-description">
+                            <template v-if="!pack.canSelect(availablePackages)" #right><p class="style-description">
                                 Niet combineerbaar
-                            </p>
+                            </p></template>
                         </STListItem>
                     </STList>
                 </template>
@@ -42,19 +44,23 @@
 
                 <STList v-if="status && status.packages.length > 0">
                     <STListItem v-for="pack of status.packages" :key="pack.id" :selectable="true" class="right-stack " @click="openPackageDetails(pack)">
-                        <img v-if="getPackageIcon(pack)" slot="left" :src="getPackageIcon(pack)">
+                        <template v-if="getPackageIcon(pack)" #left>
+                            <img :src="getPackageIcon(pack)">
+                        </template>
 
                         <h3 class="style-title-list">
                             {{ pack.meta.name }}
                         </h3>
                         <p v-if="pack.validUntil" class="style-description">
-                            Geldig tot {{ pack.validUntil | date }}
+                            Geldig tot {{ formatDate(pack.validUntil, true) }}
                         </p>
 
-                        <button v-if="false && pack.shouldHintRenew()" slot="right" class="button text gray" type="button">
-                            Verleng nu
-                        </button>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right>
+                            <button v-if="pack.shouldHintRenew()" class="button text gray" type="button">
+                                Verleng nu
+                            </button>
+                            <span class="icon arrow-right-small gray" />
+                        </template>
                     </STListItem>
                 </STList>
 
@@ -65,7 +71,7 @@
         </main>
 
         <STToolbar>
-            <template slot="right">
+            <template #right>
                 <LoadingButton :loading="loading">
                     <button class="button primary" :disabled="!hasSelected" @click="checkout">
                         Doorgaan
@@ -86,9 +92,9 @@ import { BackButton, Checkbox,ErrorBox,LoadingButton, Spinner, STErrorsDefault,S
 import { UrlHelper } from '@stamhoofd/networking';
 import { STBillingStatus, STPackage, STPackageBundle, STPackageBundleHelper, STPackageType } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Watch } from "vue-property-decorator";
+import { Component, Mixins, Watch } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../../classes/OrganizationManager";
+
 import PackageConfirmView from "./PackageConfirmView.vue";
 import PackageDetailsView from "./PackageDetailsView.vue";
 
@@ -139,12 +145,6 @@ export class SelectablePackage {
         STListItem,
         Spinner,
         Checkbox
-    },
-    filters: {
-        price: Formatter.price,
-        date: (date: Date) => {
-            return Formatter.date(date, true)
-        }
     }
 })
 export default class PackageSettingsView extends Mixins(NavigationMixin) {
@@ -158,7 +158,7 @@ export default class PackageSettingsView extends Mixins(NavigationMixin) {
     loading = false
 
     mounted() {
-        UrlHelper.setUrl("/finances/packages");
+        this.setUrl("/", "Pakketten - " + this.$organization.name);
         this.reload().catch(e => {
             console.error(e)
         })
@@ -193,7 +193,7 @@ export default class PackageSettingsView extends Mixins(NavigationMixin) {
     updatePackages() {
         const packages: SelectablePackage[] = []
         const limit = new Date()
-        limit.setDate(limit.getDate() + 3 * 31)
+        limit.setDate(limit.getDate() + 14)
         for (const bundle of Object.values(STPackageBundle)) {
             if (!STPackageBundleHelper.isPublic(bundle)) {
                 continue
@@ -225,7 +225,7 @@ export default class PackageSettingsView extends Mixins(NavigationMixin) {
         this.loadingStatus = true
 
         try {
-            this.status = await OrganizationManager.loadBillingStatus({
+            this.status = await this.$organizationManager.loadBillingStatus({
                 owner: this
             })
         } catch (e) {

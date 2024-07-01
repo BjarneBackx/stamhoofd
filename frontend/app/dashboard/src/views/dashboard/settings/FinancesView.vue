@@ -1,36 +1,36 @@
 <template>
     <LoadingView v-if="loadingStatus" />
     <div v-else id="finances-view" class="st-view background">
-        <STNavigationBar title="Boekhouding" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Boekhouding" />
 
-        <main>
+        <main class="center">
             <h1>
                 Boekhouding
             </h1>
 
             <STList class="illustration-list">    
                 <STListItem v-if="hasFinanceAccess" :selectable="true" class="left-center" @click="openPayments(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/calculator.svg">
+                    <template #left><img src="@stamhoofd/assets/images/illustrations/calculator.svg"></template>
                     <h2 class="style-title-list">
                         Betalingen exporteren
                     </h2>
                     <p class="style-description">
                         Alle betalingen, transactiekosten en uitbetalingen die via Stamhoofd verliepen.
                     </p>
-                    <template slot="right">
+                    <template #right>
                         <span class="icon arrow-right-small gray" />
                     </template>
                 </STListItem>
 
                 <STListItem :selectable="true" class="left-center" @click="openTransfers(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/check-transfer.svg">
+                    <template #left><img src="@stamhoofd/assets/images/illustrations/check-transfer.svg"></template>
                     <h2 class="style-title-list">
                         Overschrijvingen controleren
                     </h2>
                     <p class="style-description">
                         Markeer overschrijvingen als betaald.
                     </p>
-                    <template slot="right">
+                    <template #right>
                         <span class="icon arrow-right-small gray" />
                     </template>
                 </STListItem>
@@ -43,7 +43,7 @@
 
                 <STList class="illustration-list">    
                     <STListItem v-if="status && status.pendingInvoice && status.pendingInvoice.meta.priceWithoutVAT" :selectable="true" class="left-center right-stack" @click="openPendingInvoice(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/outstanding-amount.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/outstanding-amount.svg"></template>
                         <h2 v-if="!isPaymentFailed" class="style-title-list">
                             Volgende aanrekening
                         </h2>
@@ -56,55 +56,55 @@
                         <p v-else class="style-description">
                             Betaal je openstaande bedrag.
                         </p>
-                        <template slot="right">
+                        <template #right>
                             <span v-if="!isPaymentFailed" class="style-description-small">
-                                {{ status.pendingInvoice.meta.priceWithoutVAT | price }}
+                                {{ formatPrice(status.pendingInvoice.meta.priceWithoutVAT) }}
                             </span>
                             <span v-else class="style-tag error">
-                                {{ status.pendingInvoice.meta.priceWithoutVAT | price }}
+                                {{ formatPrice(status.pendingInvoice.meta.priceWithoutVAT) }}
                             </span>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
 
                     <STListItem v-if="status && status.credits.length" :selectable="true" class="left-center" @click="showCreditsHistory(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/credits.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/credits.svg"></template>
                         <h2 class="style-title-list">
                             Tegoed
                         </h2>
                         <p class="style-description">
                             Dit bedrag zal automatisch gebruikt worden om jouw volgende aankoop te betalen.
                         </p>
-                        <template slot="right">
+                        <template #right>
                             <span class="style-description-small">
-                                {{ balance | price }}
+                                {{ formatPrice(balance) }}
                             </span>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
 
                     <STListItem :selectable="true" class="left-center" @click="openPackages(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/stock.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/stock.svg"></template>
                         <h2 class="style-title-list">
                             Pakketten aankopen
                         </h2>
                         <p class="style-description">
                             Wijzig je pakketten of activeer nieuwe functies
                         </p>
-                        <template slot="right">
+                        <template #right>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
 
                     <STListItem :selectable="true" class="left-center" @click="openBilling(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/transfer.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/transfer.svg"></template>
                         <h2 class="style-title-list">
                             Facturen en betalingen
                         </h2>
                         <p class="style-description">
                             Download jouw facturen en bekijk jouw tegoed.
                         </p>
-                        <template slot="right">
+                        <template #right>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
@@ -116,13 +116,13 @@
 
 <script lang="ts">
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { BackButton, LoadComponent, LoadingView,STList, STListItem, STNavigationBar, TooltipDirective } from "@stamhoofd/components";
-import { SessionManager, UrlHelper } from '@stamhoofd/networking';
-import { STBillingStatus, STCredit } from '@stamhoofd/structures';
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
+import { BackButton, LoadComponent, LoadingView, STList, STListItem, STNavigationBar, TooltipDirective } from "@stamhoofd/components";
+import { UrlHelper } from '@stamhoofd/networking';
+import { AccessRight, STBillingStatus, STCredit } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins } from "vue-property-decorator";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
+
 import ConfigurePaymentExportView from './administration/ConfigurePaymentExportView.vue';
 import ModuleSettingsBox from './ModuleSettingsBox.vue';
 import BillingSettingsView from './packages/BillingSettingsView.vue';
@@ -147,7 +147,6 @@ import PackageSettingsView from "./packages/PackageSettingsView.vue";
     }
 })
 export default class FinancesView extends Mixins(NavigationMixin) {
-    OrganizationManager = OrganizationManager
     loadingStatus = true
 
     status: STBillingStatus | null = null
@@ -157,7 +156,7 @@ export default class FinancesView extends Mixins(NavigationMixin) {
 
         try {
             if (this.hasFinanceAccess) {
-                this.status = await OrganizationManager.loadBillingStatus({
+                this.status = await this.$organizationManager.loadBillingStatus({
                     owner: this
                 })
             }
@@ -187,11 +186,11 @@ export default class FinancesView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get hasFinanceAccess() {
-        return SessionManager.currentSession!.user!.permissions!.hasFinanceAccess(this.organization.privateMeta?.roles ?? [])
+        return this.$context.organizationAuth.hasAccessRight(AccessRight.OrganizationFinanceDirector)
     }
 
     get balance() {
@@ -277,6 +276,7 @@ export default class FinancesView extends Mixins(NavigationMixin) {
             animated,
             adjustHistory: animated,
             modalDisplayStyle: "popup",
+            url: 'packages',
             components: [
                 new ComponentWithProperties(NavigationController, {
                     root: new ComponentWithProperties(PackageSettingsView, {})
@@ -290,23 +290,19 @@ export default class FinancesView extends Mixins(NavigationMixin) {
             console.error(e)
         })
 
-        const parts = UrlHelper.shared.getParts()
-
         // First set current url already, to fix back
-        UrlHelper.setUrl("/finances")
-        document.title = "Stamhoofd - Boekhouding"
+        this.setUrl("", "Boekhouding - " + this.$organization.name)
 
-        if (parts.length == 2 && parts[0] == 'finances' && parts[1] == 'transfers') {
+        if (this.$url.match('transfers')) {
             // Open mollie settings
             this.openTransfers(false).catch(console.error)
         }
-
     
-        if (parts.length == 2 && parts[0] == 'finances' && parts[1] == 'billing') {
+        if (this.$url.match('billing')) {
             this.openBilling(false)
         }
 
-        if (parts.length == 2 && parts[0] == 'finances' && parts[1] == 'packages') {
+        if (this.$url.match('packages')) {
             this.openPackages(false)
         }
 

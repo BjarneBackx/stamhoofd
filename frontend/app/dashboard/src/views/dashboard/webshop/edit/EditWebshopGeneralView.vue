@@ -22,7 +22,9 @@
 
         <STList>
             <STListItem :selectable="true" element-name="label" class="left-center">
-                <Radio slot="left" v-model="ticketType" :value="WebshopTicketType.None" />
+                <template #left>
+                    <Radio v-model="ticketType" :value="WebshopTicketType.None" />
+                </template>
                 <h3 class="style-title-list">
                     Geen tickets
                 </h3>
@@ -31,7 +33,9 @@
                 </p>
             </STListItem>
             <STListItem :selectable="true" element-name="label" class="left-center">
-                <Radio slot="left" v-model="ticketType" :value="WebshopTicketType.SingleTicket" />
+                <template #left>
+                    <Radio v-model="ticketType" :value="WebshopTicketType.SingleTicket" />
+                </template>
                 <h3 class="style-title-list">
                     Ticketverkoop voor groepen
                 </h3>
@@ -40,7 +44,9 @@
                 </p>
             </STListItem>
             <STListItem :selectable="true" element-name="label" class="left-center">
-                <Radio slot="left" v-model="ticketType" :value="WebshopTicketType.Tickets" />
+                <template #left>
+                    <Radio v-model="ticketType" :value="WebshopTicketType.Tickets" />
+                </template>
                 <h3 class="style-title-list">
                     Ticketverkoop voor personen
                 </h3>
@@ -85,16 +91,18 @@
         <div class="container">
             <hr>
             <h2>Nummering</h2>
-            <p class="warning-box" v-if="!isNew && originalNumberingType !== WebshopNumberingType.Continuous">
+            <p v-if="!isNew && originalNumberingType !== WebshopNumberingType.Continuous" class="warning-box">
                 Je kan de bestelnummering niet meer wijzigen van willekeurig naar opeenvolgend (dupliceer de webshop als je dat toch nog wilt doen). 
             </p>
-            <p class="warning-box" v-else-if="numberingType == WebshopNumberingType.Random">
+            <p v-else-if="numberingType == WebshopNumberingType.Random" class="warning-box">
                 Je kan de bestelnummering achteraf niet meer wijzigen van willekeurig naar opeenvolgend. 
             </p>
 
             <STList>
                 <STListItem :selectable="true" element-name="label" class="left-center">
-                    <Radio slot="left" v-model="numberingType" :value="WebshopNumberingType.Continuous" :disabled="!isNew && originalNumberingType !== WebshopNumberingType.Continuous" />
+                    <template #left>
+                        <Radio v-model="numberingType" :value="WebshopNumberingType.Continuous" :disabled="!isNew && originalNumberingType !== WebshopNumberingType.Continuous" />
+                    </template>
                     <h3 class="style-title-list">
                         Gebruik opeenvolgende bestelnummers
                     </h3>
@@ -103,7 +111,9 @@
                     </p>
                 </STListItem>
                 <STListItem :selectable="true" element-name="label" class="left-center">
-                    <Radio slot="left" v-model="numberingType" :value="WebshopNumberingType.Random" :disabled="!isNew && originalNumberingType !== WebshopNumberingType.Continuous" />
+                    <template #left>
+                        <Radio v-model="numberingType" :value="WebshopNumberingType.Random" :disabled="!isNew && originalNumberingType !== WebshopNumberingType.Continuous" />
+                    </template>
                     <h3 class="style-title-list">
                         Gebruik willekeurige bestelnummers
                     </h3>
@@ -127,23 +137,8 @@
                 :validator="validator" 
                 :show-administration-fee="false" 
                 @patch:config="patchConfig($event)"
-                @patch:privateConfig="patchPrivateConfig($event)"
+                @patch:private-config="patchPrivateConfig($event)"
             />
-        </template>
-
-        <template v-if="isNew && roles.length > 0">
-            <hr>
-            <h2>Toegangsbeheer</h2>
-            <p>Kies welke beheerdersrollen toegang hebben tot deze webshop (hoofdbeheerders kunnen beheerdersrollen wijzigen via Instellingen → Beheerders)</p>
-
-            <STList>
-                <STListItem>
-                    <Checkbox slot="left" :checked="true" :disabled="true" />
-                    Hoofdbeheerders
-                </STListItem>
-
-                <WebshopPermissionRow v-for="role in roles" :key="role.id" type="role" :role="role" :organization="organization" :webshop="webshop" @patch="addPatch" />
-            </STList>
         </template>
 
         <div v-if="getFeatureFlag('webshop-auth')" class="container">
@@ -155,7 +150,9 @@
 
             <STList>
                 <STListItem :selectable="true" element-name="label" class="left-center">
-                    <Radio slot="left" v-model="authType" :value="WebshopAuthType.Disabled" />
+                    <template #left>
+                        <Radio v-model="authType" :value="WebshopAuthType.Disabled" />
+                    </template>
                     <h3 class="style-title-list">
                         Uitgeschakeld
                     </h3>
@@ -164,7 +161,9 @@
                     </p>
                 </STListItem>
                 <STListItem :selectable="true" element-name="label" class="left-center">
-                    <Radio slot="left" v-model="authType" :value="WebshopAuthType.Required" />
+                    <template #left>
+                        <Radio v-model="authType" :value="WebshopAuthType.Required" />
+                    </template>
                     <h3 class="style-title-list">
                         Verplicht
                     </h3>
@@ -180,15 +179,13 @@
 <script lang="ts">
 import { AutoEncoderPatchType } from '@simonbackx/simple-encoding';
 import { SimpleError } from '@simonbackx/simple-errors';
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 import { Checkbox, DateSelection, Radio, SaveView, STErrorsDefault, STInputBox, STList, STListItem, TimeInput, Toast } from "@stamhoofd/components";
-import { SessionManager, UrlHelper } from '@stamhoofd/networking';
-import { PaymentConfiguration, PermissionRole, PermissionsByRole, PrivatePaymentConfiguration, PrivateWebshop, Product, ProductType, WebshopAuthType, WebshopMetaData, WebshopNumberingType, WebshopPrivateMetaData, WebshopTicketType } from '@stamhoofd/structures';
+import { UrlHelper } from '@stamhoofd/networking';
+import { AccessRight, PaymentConfiguration, PermissionRole, PermissionsByRole, PrivatePaymentConfiguration, PrivateWebshop, Product, ProductType, WebshopAuthType, WebshopMetaData, WebshopNumberingType, WebshopPrivateMetaData, WebshopTicketType } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins } from "vue-property-decorator";
 
-import { OrganizationManager } from '../../../../classes/OrganizationManager';
 import EditPaymentMethodsBox from '../../../../components/EditPaymentMethodsBox.vue';
-import WebshopPermissionRow from '../../admins/WebshopPermissionRow.vue';
 import EditWebshopMixin from './EditWebshopMixin';
 
 @Component({
@@ -202,7 +199,6 @@ import EditWebshopMixin from './EditWebshopMixin';
         TimeInput,
         Radio,
         SaveView,
-        WebshopPermissionRow,
         EditPaymentMethodsBox
     },
 })
@@ -211,11 +207,11 @@ export default class EditWebshopGeneralView extends Mixins(EditWebshopMixin) {
         UrlHelper.setUrl("/webshops/" + Formatter.slug(this.webshop.meta.name) + "/settings/general")
         
         // Auto assign roles
-        if (this.isNew && OrganizationManager.user.permissions && !this.webshop.privateMeta.permissions.hasFullAccess(OrganizationManager.user.permissions, this.organization.privateMeta?.roles ?? [])) {
+        if (this.isNew && this.$organizationManager.user.permissions && !this.webshop.privateMeta.permissions.hasFullAccess(this.$context.organizationPermissions)) {
             // By default, add full permissions for all the roles this user has, that also have create webshop permissions
-            const roles = OrganizationManager.organization.privateMeta?.roles.flatMap(r => {
-                const has = OrganizationManager.user.permissions?.roles.find(i => i.id === r.id)
-                if (r.createWebshops && has) {
+            const roles = this.$organization.privateMeta?.roles.flatMap(r => {
+                const has = this.$organizationManager.user.permissions?.organizationPermissions.get(this.organization.id)?.roles.find(i => i.id === r.id)
+                if (r.hasAccessRight(AccessRight.OrganizationCreateWebshops) && has) {
                     return [PermissionRole.create(r)]
                 }
                 return []
@@ -364,7 +360,7 @@ export default class EditWebshopGeneralView extends Mixins(EditWebshopMixin) {
     }
 
     get organization() {
-        return SessionManager.currentSession!.organization!
+        return this.$context.organization!
     }
 
     get useAvailableUntil() {

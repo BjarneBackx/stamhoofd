@@ -36,7 +36,7 @@ import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, ErrorBox, RecordAnswerInput, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Validator } from "@stamhoofd/components";
 import { SessionManager } from "@stamhoofd/networking";
 import { Document, DocumentData, DocumentTemplatePrivate, RecordCategory, Version } from "@stamhoofd/structures";
-import { Component, Mixins, Prop, Watch } from "vue-property-decorator";
+import { Component, Mixins, Prop, Watch } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {
@@ -69,11 +69,11 @@ export default class EditDocumentView extends Mixins(NavigationMixin) {
     }
 
     get definitions() {
-        return RecordCategory.getRecordCategoryDefinitions([...this.template.privateSettings.templateDefinition.documentFieldCategories, ...this.template.privateSettings.templateDefinition.groupFieldCategories], () => this.editingAnswers)
+        return []
     }
 
     get fieldCategories() {
-        return RecordCategory.flattenCategories([...this.template.privateSettings.templateDefinition.documentFieldCategories, ...this.template.privateSettings.templateDefinition.groupFieldCategories], {} as any, this.definitions, true)
+        return RecordCategory.flattenCategories([...this.template.privateSettings.templateDefinition.documentFieldCategories, ...this.template.privateSettings.templateDefinition.groupFieldCategories], {} as any)
     }
 
     @Watch("editingAnswers")
@@ -123,7 +123,7 @@ export default class EditDocumentView extends Mixins(NavigationMixin) {
         // todo: validate information before continueing
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
@@ -154,7 +154,7 @@ export default class EditDocumentView extends Mixins(NavigationMixin) {
                 patch.addPatch(this.patchDocument)
             }
 
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "PATCH",
                 path: "/organization/documents",
                 body: patch,

@@ -1,6 +1,6 @@
 <template>
     <div id="missing-first-name-view" class="st-view background">
-        <STNavigationBar :title="title" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar :title="title" />
 
         <main>
             <h1>{{ title }}</h1>
@@ -33,7 +33,7 @@
         </main>
 
         <STToolbar>
-            <template slot="right">
+            <template #right>
                 <button class="button secundary" @click="pop">
                     Sluiten
                 </button>
@@ -45,7 +45,7 @@
 <script lang="ts">
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { BackButton, STNavigationBar, STToolbar } from "@stamhoofd/components";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {

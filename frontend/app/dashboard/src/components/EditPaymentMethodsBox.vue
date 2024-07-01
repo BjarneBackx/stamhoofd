@@ -25,7 +25,7 @@
 
         <STList>
             <STListItem v-for="method in sortedPaymentMethods" :key="method" :selectable="true" element-name="label" :disabled="!canEnablePaymentMethod(method)">
-                <Checkbox slot="left" :checked="getPaymentMethod(method)" @change="setPaymentMethod(method, $event)" />
+                <template #left><Checkbox :model-value="getPaymentMethod(method)" @update:model-value="setPaymentMethod(method, $event)" /></template>
                 <h3 class="style-title-list">
                     {{ getName(method) }}
                 </h3>
@@ -53,7 +53,9 @@
             <STInputBox title="Soort mededeling" error-fields="transferSettings.type" :error-box="errorBox" class="max">
                 <STList>
                     <STListItem v-for="_type in transferTypes" :key="_type.value" :selectable="true" element-name="label">
-                        <Radio slot="left" v-model="transferType" :value="_type.value" />
+                        <template #left>
+                            <Radio v-model="transferType" :value="_type.value" />
+                        </template>
                         <h3 class="style-title-list">
                             {{ _type.name }}
                         </h3>
@@ -108,7 +110,7 @@
             </Checkbox>
 
             <p v-if="percentage && exampleAdministrationFee1" class="style-description-small">
-                Voorbeeld: de aangerekende administratiekost bedraagt {{ exampleAdministrationFee1 | price }} op een bedrag van {{ exampleAdministrationFeeValue1 | price }}, en {{ exampleAdministrationFee2 | price }} op een bedrag van {{ exampleAdministrationFeeValue2 | price }}.
+                Voorbeeld: de aangerekende administratiekost bedraagt {{ formatPrice(exampleAdministrationFee1) }} op een bedrag van {{ formatPrice(exampleAdministrationFeeValue1) }}, en {{ formatPrice(exampleAdministrationFee2) }} op een bedrag van {{ formatPrice(exampleAdministrationFeeValue2) }}.
             </p>
         </template>
     </div>
@@ -123,7 +125,7 @@ import { I18nController } from "@stamhoofd/frontend-i18n";
 import { SessionManager } from "@stamhoofd/networking";
 import { AdministrationFeeSettings, Country, Organization, PaymentConfiguration, PaymentMethod, PaymentMethodHelper, PaymentProvider, PrivatePaymentConfiguration, StripeAccount, TransferDescriptionType, TransferSettings } from "@stamhoofd/structures";
 import { Formatter, Sorter } from "@stamhoofd/utility";
-import { Component, Prop, Vue } from "vue-property-decorator";
+import { Component, Prop, Vue } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {
@@ -185,7 +187,7 @@ export default class EditPaymentMethodsBox extends Vue {
         }
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -229,7 +231,7 @@ export default class EditPaymentMethodsBox extends Vue {
     async loadStripeAccounts() {
         try {
             this.loadingStripeAccounts = true
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "GET",
                 path: "/stripe/accounts",
                 decoder: new ArrayDecoder(StripeAccount as Decoder<StripeAccount>),

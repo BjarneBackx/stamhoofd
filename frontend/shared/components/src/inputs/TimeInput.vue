@@ -6,10 +6,12 @@
 
 <script lang="ts">
 import { SimpleError } from '@simonbackx/simple-errors';
-import { ErrorBox, STInputBox, Validator } from "@stamhoofd/components"
+import { Component, Prop, Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Prop, Vue, Watch } from "vue-property-decorator";
 
+import { ErrorBox } from "../errors/ErrorBox";
+import { Validator } from "../errors/Validator";
+import STInputBox from "./STInputBox.vue";
 @Component({
     components: {
         STInputBox
@@ -17,34 +19,34 @@ import { Component, Prop, Vue, Watch } from "vue-property-decorator";
 })
 export default class TimeInput extends Vue {
     @Prop({ default: "" }) 
-    title: string;
+        title: string;
 
     @Prop({ default: null }) 
-    validator: Validator | null
+        validator: Validator | null
 
     timeRaw = "";
     valid = true;
 
     @Prop({ required: true })
-    value!: Date
+        modelValue!: Date
 
     @Prop({ default: false })
-    disabled!: boolean
+        disabled!: boolean
 
     @Prop({ default: "" })
-    placeholder!: string
+        placeholder!: string
 
     @Prop({ default: "" })
-    autocomplete!: string
+        autocomplete!: string
 
     errorBox: ErrorBox | null = null
 
-    @Watch('value')
+    @Watch('modelValue')
     onValueChanged(val: Date) {
         if (val === null) {
             return
         }
-        this.timeRaw = Formatter.timeIso(this.value)
+        this.timeRaw = Formatter.timeIso(this.modelValue)
     }
 
     mounted() {
@@ -53,11 +55,11 @@ export default class TimeInput extends Vue {
                 return this.validate()
             })
         }
-        this.timeRaw = Formatter.timeIso(this.value)
+        this.timeRaw = Formatter.timeIso(this.modelValue)
 
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -98,9 +100,9 @@ export default class TimeInput extends Vue {
                 return false
             }
  
-            const d = new Date(this.value.getTime())
+            const d = new Date(this.modelValue.getTime())
             d.setHours(hours, minutes, 0, 0)
-            this.$emit("input", d)
+            this.$emit('update:modelValue', d)
 
             this.errorBox = null
             return true

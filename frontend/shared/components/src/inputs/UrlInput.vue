@@ -1,13 +1,16 @@
 <template>
     <STInputBox :title="title" error-fields="url" :error-box="errorBox">
-        <input v-model="urlRaw" class="input" :class="{ error: !valid }" :placeholder="placeholder || $t('dashboard.inputs.website.placeholder')" autocomplete="url" @change="validate(false)" @input="urlRaw = $event.target.value; onTyping();">
+        <input v-model="urlRaw" class="input" :class="{ error: !valid }" :placeholder="placeholder || $t('dashboard.inputs.website.placeholder')" autocomplete="url" @change="validate(false)" @input="(event) => {urlRaw = event.target.value; onTyping();}">
     </STInputBox>
 </template>
 
 <script lang="ts">
 import { isSimpleError, isSimpleErrors, SimpleError } from '@simonbackx/simple-errors';
-import { ErrorBox, STInputBox, Validator } from "@stamhoofd/components";
-import { Component, Prop, Vue, Watch } from "vue-property-decorator";
+import { Component, Prop, Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
+
+import {ErrorBox} from "../errors/ErrorBox";
+import {Validator} from "../errors/Validator";
+import STInputBox from "./STInputBox.vue";
 
 @Component({
     components: {
@@ -25,7 +28,7 @@ export default class UrlInput extends Vue {
     valid = true;
 
     @Prop({ default: null })
-        value!: string | null
+        modelValue!: string | null
 
     @Prop({ default: true })
         required!: boolean
@@ -42,7 +45,7 @@ export default class UrlInput extends Vue {
 
     errorBox: ErrorBox | null = null
 
-    @Watch('value')
+    @Watch('modelValue')
     onValueChanged(val: string | null) {
         if (val === null) {
             this.urlRaw = ""
@@ -63,10 +66,10 @@ export default class UrlInput extends Vue {
             })
         }
 
-        this.urlRaw = this.value ?? ""
+        this.urlRaw = this.modelValue ?? ""
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -80,8 +83,8 @@ export default class UrlInput extends Vue {
                     this.errorBox = null
                 }
 
-                if (this.value !== null) {
-                    this.$emit("input", null)
+                if (this.modelValue !== null) {
+                    this.$emit('update:modelValue', null)
                 }
                 return true
             }
@@ -91,8 +94,8 @@ export default class UrlInput extends Vue {
                     this.errorBox = null
                 }
 
-                if (this.nullable && this.value !== null) {
-                    this.$emit("input", null)
+                if (this.nullable && this.modelValue !== null) {
+                    this.$emit('update:modelValue', null)
                 }
                 return false
             }
@@ -123,8 +126,8 @@ export default class UrlInput extends Vue {
             const v = silent ? this.urlRaw : autoCorrected;
             this.urlRaw = v
     
-            if (this.value !== v) {
-                this.$emit("input", v)
+            if (this.modelValue !== v) {
+                this.$emit('update:modelValue', v)
             }
             if (!silent) {
                 this.errorBox = null

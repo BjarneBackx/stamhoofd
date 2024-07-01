@@ -21,7 +21,7 @@
 </template>
 
 <style lang="scss">
-@use '~@stamhoofd/scss/base/variables' as *;
+@use '@stamhoofd/scss/base/variables' as *;
 
 .logo-container {
     gap: 10px;
@@ -29,6 +29,8 @@
     align-items: center;
     display: flex;
     justify-content: flex-start;
+    width: var(--block-width, 40px);
+    height: var(--block-width, 40px);
 }
 
 .logo-text {
@@ -73,11 +75,22 @@
 
     &:last-child {
         display: none;
+        width: calc(var(--block-width, 40px) - 10px);
+        height: calc(var(--block-width, 40px) - 10px);
     }
 }
 
 .stamhoofd-logo-container {
     display: inline-block;  
+
+    &.small {
+        svg:first-child {
+            display: none;
+        }
+        svg:last-child {
+            display: inline-block;
+        }
+    }
 
     &.responsive {
         @media (max-width: 450px) {

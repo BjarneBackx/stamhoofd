@@ -1,14 +1,14 @@
 <template>
     <div>
         <p v-if="!hasBillingListener && isPaymentFailed" class="error-box selectable with-button" @click="openBilling">
-            Jouw betaling via domiciliëring/kredietkaart is mislukt. Breng de betaling zelf in orde via 'Boekhouding → Openstaand bedrag' voor {{ paymentFailedDeactivateDate | dateTime }} om te voorkomen dat sommige functies tijdelijk onbeschikbaar worden.
+            Jouw betaling via domiciliëring/kredietkaart is mislukt. Breng de betaling zelf in orde via 'Boekhouding → Openstaand bedrag' voor {{ formatDateTime(paymentFailedDeactivateDate) }} om te voorkomen dat sommige functies tijdelijk onbeschikbaar worden.
 
             <button class="button text" type="button">
                 Nakijken
             </button>
         </p>
         <p v-else-if="hasBillingListener && isPaymentFailed" class="error-box selectable with-button" @click="openBilling">
-            Een automatische betaling is mislukt. Breng de betaling zelf in orde voor {{ paymentFailedDeactivateDate | dateTime }} om te voorkomen dat sommige functies tijdelijk onbeschikbaar worden.
+            Een automatische betaling is mislukt. Breng de betaling zelf in orde voor {{ formatDateTime(paymentFailedDeactivateDate) }} om te voorkomen dat sommige functies tijdelijk onbeschikbaar worden.
 
             <button class="button text" type="button">
                 Openen
@@ -24,7 +24,7 @@
         </p>
 
         <p v-if="!shouldFilter('webshops') && isNearing(webshopDeactivateDate)" class="warning-box selectable with-button" @click="openPackages">
-            Jouw webshops worden automatisch uitgeschakeld vanaf {{ webshopDeactivateDate | dateTime }}. Verleng jouw pakket om de webshop module langer in gebruik te houden.
+            Jouw webshops worden automatisch uitgeschakeld vanaf {{ formatDateTime(webshopDeactivateDate) }}. Verleng jouw pakket om de webshop module langer in gebruik te houden.
 
             <button class="button text" type="button">
                 Verlengen
@@ -64,7 +64,7 @@
         </p>
 
         <p v-if="!shouldFilter('members') && isNearing(membersDeactivateDate)" class="warning-box selectable with-button" @click="openPackages">
-            De ledenadministratie wordt uitgeschakeld vanaf {{ membersDeactivateDate | dateTime }}. Verleng jouw pakket om onderbreking van online inschrijvingen en het bekijken van gegevens te voorkomen.
+            De ledenadministratie wordt uitgeschakeld vanaf {{ formatDateTime(membersDeactivateDate) }}. Verleng jouw pakket om onderbreking van online inschrijvingen en het bekijken van gegevens te voorkomen.
 
             <button class="button text" type="button">
                 Verlengen
@@ -72,7 +72,7 @@
         </p>
 
         <p v-if="!shouldFilter('members') && isNearing(membersActivitiesDeactivateDate)" class="warning-box selectable with-button" @click="openPackages">
-            De functionaliteiten 'Inschrijven voor activiteiten' worden uitgeschakeld vanaf {{ membersActivitiesDeactivateDate | dateTime }}. Verleng jouw pakket om de nieuwe functies te kunnen blijven gebruiken.
+            De functionaliteiten 'Inschrijven voor activiteiten' worden uitgeschakeld vanaf {{ formatDateTime(membersActivitiesDeactivateDate) }}. Verleng jouw pakket om de nieuwe functies te kunnen blijven gebruiken.
 
             <button class="button text" type="button">
                 Verlengen
@@ -85,14 +85,11 @@
 <script lang="ts">
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, LoadComponent } from "@stamhoofd/components";
-import { SessionManager } from "@stamhoofd/networking";
-import { STPackageType } from "@stamhoofd/structures";
+import { AccessRight, STPackageType } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from '../../../../classes/OrganizationManager';
-import FinancesView from "../FinancesView.vue";
-import BillingSettingsView from "./BillingSettingsView.vue";
+
 import PackageSettingsView from "./PackageSettingsView.vue";
 
 @Component({
@@ -100,12 +97,12 @@ import PackageSettingsView from "./PackageSettingsView.vue";
         date: Formatter.date.bind(Formatter),
         dateTime: Formatter.dateTime.bind(Formatter)
     },
+    emits: ["billing"]
 })
 export default class BillingWarningBox extends Mixins(NavigationMixin) {
     @Prop({ default: null })
         filterTypes: "members" | "webshops" | null
 
-    OrganizationManager = OrganizationManager
 
     shouldFilter(type: "members" | "webshops") {
         if (this.filterTypes === null) {
@@ -118,7 +115,7 @@ export default class BillingWarningBox extends Mixins(NavigationMixin) {
     }
 
     get hasBillingListener(){
-        return this.$listeners && this.$listeners.billing
+        return !!this.$.vnode.props?.onBilling
     }
 
     get isWebshopsTrial() {
@@ -151,7 +148,7 @@ export default class BillingWarningBox extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get paymentFailedDeactivateDate() {
@@ -253,7 +250,7 @@ export default class BillingWarningBox extends Mixins(NavigationMixin) {
     }
 
     openPackages() {
-        if (!SessionManager.currentSession!.user!.permissions?.hasFinanceAccess(this.organization.privateMeta?.roles ?? [])) {
+        if (!this.$context.organizationAuth.hasAccessRight(AccessRight.OrganizationFinanceDirector)) {
             new CenteredMessage("Enkel voor hoofdbeheerders", "Het aanpassen van pakketten is enkel beschikbaar voor hoofdbeheerders. Vraag hen om de verlenging in orde te brengen.").addCloseButton().show()
             return
         }
@@ -268,7 +265,7 @@ export default class BillingWarningBox extends Mixins(NavigationMixin) {
             return
         }
 
-        if (!SessionManager.currentSession!.user!.permissions?.hasFinanceAccess(this.organization.privateMeta?.roles ?? [])) {
+        if (!this.$context.organizationAuth.hasAccessRight(AccessRight.OrganizationFinanceDirector)) {
             new CenteredMessage("Enkel voor hoofdbeheerders", "Betalingen zijn enkel beschikbaar voor hoofdbeheerders. Vraag hen om de betaling in orde te brengen.").addCloseButton().show()
             return
         }

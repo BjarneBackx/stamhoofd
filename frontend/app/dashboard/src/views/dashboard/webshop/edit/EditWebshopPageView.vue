@@ -25,7 +25,9 @@
 
         <STList>
             <STListItem :selectable="true" element-name="label" class="left-center">
-                <Radio slot="left" v-model="layout" :value="WebshopLayout.Split" />
+                <template #left>
+                    <Radio v-model="layout" :value="WebshopLayout.Split" />
+                </template>
                 <h3 class="style-title-list">
                     Naast elkaar
                 </h3>
@@ -34,7 +36,9 @@
                 </p>
             </STListItem>
             <STListItem :selectable="true" element-name="label" class="left-center">
-                <Radio slot="left" v-model="layout" :value="WebshopLayout.Default" />
+                <template #left>
+                    <Radio v-model="layout" :value="WebshopLayout.Default" />
+                </template>
                 <h3 class="style-title-list">
                     Onder elkaar
                 </h3>
@@ -137,22 +141,21 @@
         <Checkbox v-model="reduceBranding">
             Verminder de zichtbaarheid van Stamhoofd
         </Checkbox>
-
     </SaveView>
 </template>
 
 <script lang="ts">
 import { AutoEncoderPatchType } from "@simonbackx/simple-encoding";
 import { ComponentWithProperties, NavigationController } from "@simonbackx/vue-app-navigation";
-import { ColorInput, DetailedTicketView, LogoEditor, Radio, RadioGroup, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Toast, UploadButton, WYSIWYGTextInput, Checkbox } from "@stamhoofd/components";
+import { Checkbox,ColorInput, DetailedTicketView, LogoEditor, Radio, RadioGroup, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Toast, UploadButton, WYSIWYGTextInput } from "@stamhoofd/components";
 import { UrlHelper } from "@stamhoofd/networking";
 import { Cart, CartReservedSeat, TicketPublic } from "@stamhoofd/structures";
 import { CartItem } from "@stamhoofd/structures";
 import { DarkMode, Image, Policy, PrivateWebshop, ProductType, ResolutionRequest, RichText, SponsorConfig, WebshopLayout, WebshopMetaData } from '@stamhoofd/structures';
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../../classes/OrganizationManager";
+
 import EditSponsorsBox from "../../sponsors/EditSponsorsBox.vue"
 import EditPolicyBox from "./EditPolicyBox.vue";
 import EditWebshopMixin from "./EditWebshopMixin";
@@ -181,7 +184,7 @@ export default class EditWebshopPageView extends Mixins(EditWebshopMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get viewTitle() {

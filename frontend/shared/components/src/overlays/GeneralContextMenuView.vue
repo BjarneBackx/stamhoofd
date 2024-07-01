@@ -1,32 +1,41 @@
 <template>
-    <ContextMenuView v-bind="$attrs" @mousedown.native.prevent>
-        <template v-for="(items, groupIndex) of menu.items">
-            <ContextMenuLine v-if="groupIndex > 0" :key="groupIndex+'-line'" />
+    <div>
+    <ContextMenuView v-bind="$attrs" @mousedown.native.prevent ref="contextMenuView">
+        <template v-for="(items, groupIndex) of menu.items" :key="groupIndex+'-group'" >
+            <ContextMenuLine v-if="groupIndex > 0" />
 
-            <ContextMenuItemView v-for="(item, index) of items" :key="groupIndex+'-'+index" v-tooltip="item.disabled" :class="{'disabled': !!item.disabled, 'with-description': !!item.description}" :child-context-menu="item.childMenu ? item.childMenu.getComponent() : undefined" @click="handleAction(item, $event)">
-                <Checkbox v-if="item.selected !== null" slot="left" :checked="item.selected" :only-line="true" />
-                <span v-else-if="item.leftIcon !== null" slot="left" :class="'icon '+item.leftIcon" />
+            <ContextMenuItemView v-for="(item, index) of items" :contextMenuView="$refs.contextMenuView" :key="index" v-tooltip="item.disabled" :class="{'disabled': !!item.disabled, 'with-description': !!item.description}" :child-context-menu="item.childMenu ? item.childMenu.getComponent() : undefined" @click="handleAction(item, $event)">
+                <template #left v-if="item.selected !== null || item.leftIcon !== null">
+                    <Checkbox v-if="item.selected !== null" :modelValue="item.selected" :only-line="true" />
+                    <span v-else :class="'icon '+item.leftIcon" />
+                </template>
+
                 <p>{{ item.name }}</p>
                 <p v-if="item.description" class="description">
                     {{ item.description }}
                 </p>
-                <span v-if="item.childMenu" slot="right" class="icon arrow-right-small" />
-                <span v-else-if="item.icon !== null" slot="right" :class="'icon '+item.icon" />
-                <span v-else-if="item.rightText !== null" slot="right" class="style-context-menu-item-description">
-                    {{ item.rightText }}
-                </span>
+
+                <template #right  v-if="item.childMenu || item.icon !== null || item.rightText !== null">
+                    <span v-if="item.childMenu"  class="icon arrow-right-small" />
+                    <span v-else-if="item.icon !== null" :class="'icon '+item.icon" />
+                    <span v-else class="style-context-menu-item-description">
+                        {{ item.rightText }}
+                    </span>
+                </template>
             </ContextMenuItemView>
         </template>
     </ContextMenuView>
+    </div>
 </template>
 
 <script lang="ts">
-import { NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { Checkbox, ContextMenuItemView, ContextMenuLine, ContextMenuView, TooltipDirective } from "@stamhoofd/components";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Prop, VueComponent } from "@simonbackx/vue-app-navigation/classes";
 
+import Checkbox from "../inputs/Checkbox.vue";
 import { ContextMenu, ContextMenuItem } from "./ContextMenu";
-
+import ContextMenuItemView from "./ContextMenuItemView.vue";
+import ContextMenuLine from "./ContextMenuLine.vue";
+import ContextMenuView from "./ContextMenuView.vue";
 
 @Component({
     components: {
@@ -34,25 +43,21 @@ import { ContextMenu, ContextMenuItem } from "./ContextMenu";
         ContextMenuItemView,
         ContextMenuLine,
         Checkbox
-    },
-    directives: {
-        tooltip: TooltipDirective
     }
 })
-export default class GeneralContextMenuView extends Mixins(NavigationMixin) {
+export default class GeneralContextMenuView extends VueComponent {
     @Prop({ required: false })
-    menu: ContextMenu;
+        menu: ContextMenu;
 
     handleAction(item: ContextMenuItem, event) {
         if (!item.action || item.disabled) {
             return
         }
-        const result = item.action.call(item, event) as boolean
-        if (result === true) {
-            // Dismiss
-        } else {
-            // Don't dismiss
-        }
+        item.action.call(item, event)
+    }
+
+    pop(popParents = false) {
+        this.$refs.contextMenuView.pop(popParents);
     }
 
 }

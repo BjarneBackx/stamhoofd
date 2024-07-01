@@ -1,6 +1,6 @@
 <template>
     <!-- This div is not really needed, but causes bugs if we remove it from the DOM. Probably something Vue.js related (e.g. user keeps logged out, even if loggedIn = true and force reload is used) -->
-    <div :key="userId || 'unknown'">
+    <div>
         <ComponentWithPropertiesInstance v-if="loggedIn" :key="root.key" :component="root" />
         <ComponentWithPropertiesInstance v-else-if="noPermissionsRoot && showPermissionsRoot" :key="noPermissionsRoot.key" :component="noPermissionsRoot" />
         <LoadingView v-else-if="hasToken" key="loadingView" />
@@ -10,58 +10,91 @@
 
 <script lang="ts">
 import { ComponentWithProperties, ComponentWithPropertiesInstance } from "@simonbackx/vue-app-navigation";
-import {SessionManager} from "@stamhoofd/networking"
-import { Component, Prop, Vue } from "vue-property-decorator";
+import { Component, Prop, VueComponent } from "@simonbackx/vue-app-navigation/classes";
 
-import LoadingView from "./LoadingView.vue"
+import LoadingView from "./LoadingView.vue";
 
 @Component({
     components: {
         ComponentWithPropertiesInstance,
         LoadingView
-    },
+    }
 })
-export default class AuthenticatedView extends Vue {
+export default class AuthenticatedView extends VueComponent {
     @Prop()
-    root: ComponentWithProperties
+        root!: ComponentWithProperties
 
     @Prop()
-    loginRoot: ComponentWithProperties
+        loginRoot!: ComponentWithProperties
 
     /**
      * Set this as the root when the user doesn't have permissions (don't set if permissions are not needed)
      */
     @Prop()
-    noPermissionsRoot: ComponentWithProperties | null
+        noPermissionsRoot!: ComponentWithProperties | null
 
     loggedIn = false
     userId: string | null = null
     hasToken = false
     showPermissionsRoot = false
+    lastOrganizationFetch = new Date()
 
     created() {
         // We need to check data already before loading any component!
         this.changed()
-        SessionManager.addListener(this, this.changed.bind(this));
+        this.$context.addListener(this, this.changed.bind(this));
+        document.addEventListener("visibilitychange", this.onVisibilityChange);
     }
 
-    beforeDestroy() {
-        SessionManager.removeListener(this);
+    beforeUnmount() {
+        this.$context.removeListener(this);
+        document.removeEventListener("visibilitychange", this.onVisibilityChange);
     }
 
     changed() {
         if (this.noPermissionsRoot) {
-            this.loggedIn = (SessionManager.currentSession?.isComplete() ?? false) && !!SessionManager.currentSession!.user && SessionManager.currentSession!.user.permissions != null
-            this.hasToken = SessionManager.currentSession?.hasToken() ?? false
-            this.showPermissionsRoot = SessionManager.currentSession?.isComplete() ?? false
-            this.userId = SessionManager.currentSession?.user?.id ?? null
+            this.loggedIn = (this.$context.isComplete() ?? false) && !!this.$context.user && !!this.$context.auth.permissions
+            this.hasToken = this.$context.hasToken() ?? false
+            this.showPermissionsRoot = this.$context.isComplete() ?? false
+            this.userId = this.$context.user?.id ?? null
         } else {
-            this.loggedIn = SessionManager.currentSession?.isComplete() ?? false
-            this.hasToken = SessionManager.currentSession?.hasToken() ?? false
+            this.loggedIn = this.$context.isComplete() ?? false
+            this.hasToken = this.$context.hasToken() ?? false
             this.showPermissionsRoot = false
-            this.userId = SessionManager.currentSession?.user?.id ?? null
+            this.userId = this.$context.user?.id ?? null
         }
-        console.log('changed', this.loggedIn, this.userId, this.hasToken, this.showPermissionsRoot);
+    }
+
+    onVisibilityChange() {
+        if (document.visibilityState === 'visible') {
+            // TODO
+            console.info("Window became visible again")
+
+            if (!this.$context || !this.$context.isComplete()) {
+                return
+            }
+
+            if (STAMHOOFD.environment === 'development' || this.lastOrganizationFetch.getTime() + 1000 * 60 * 5 < new Date().getTime()) {
+                // Update when at least 5 minutes inactive
+                console.info("Updating organization")
+                this.lastOrganizationFetch = new Date()
+
+                this.$context.updateData(true, false, false).catch(console.error)
+            }
+        }
+    }
+
+    async shouldNavigateAway() {
+        if (this.loggedIn) {
+            return await this.root.shouldNavigateAway()
+        }
+        if (this.noPermissionsRoot && this.showPermissionsRoot) {
+            return await this.noPermissionsRoot.shouldNavigateAway()
+        }
+        if (!this.hasToken) {
+            return await this.loginRoot.shouldNavigateAway()
+        }
+        return true
     }
 }
 </script>

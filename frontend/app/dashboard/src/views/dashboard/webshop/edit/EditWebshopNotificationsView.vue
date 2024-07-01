@@ -6,8 +6,8 @@
         <STErrorsDefault :error-box="errorBox" />
 
         <EmailInput v-for="n in emailCount" :key="n" :title="'E-mailadres '+n" :value="getEmail(n - 1)" placeholder="E-mailadres" :validator="validator" @input="setEmail(n - 1, $event)">
-            <span v-if="isBlocked(n-1)" slot="right" v-tooltip="getInvalidEmailDescription(n-1)" class="icon warning yellow" />
-            <button slot="right" class="button icon trash gray" type="button" @click="deleteEmail(n - 1)" />
+            <template #right><span v-if="isBlocked(n-1)" v-tooltip="getInvalidEmailDescription(n-1)" class="icon warning yellow" />
+            <button class="button icon trash gray" type="button" @click="deleteEmail(n - 1)" /></template>
         </EmailInput>
 
         <p v-if="emailCount == 0" class="info-box">
@@ -33,9 +33,9 @@ import { EmailInput, SaveView, STErrorsDefault, STInputBox, TooltipDirective } f
 import { SessionManager, UrlHelper } from "@stamhoofd/networking";
 import { EmailInformation, PrivateWebshop, WebshopPrivateMetaData } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../../classes/OrganizationManager";
+
 import EditWebshopMixin from "./EditWebshopMixin";
 
 
@@ -52,18 +52,18 @@ import EditWebshopMixin from "./EditWebshopMixin";
 })
 export default class EditWebshopNotificationsView extends Mixins(EditWebshopMixin) {
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get user() {
-        return OrganizationManager.user
+        return this.$organizationManager.user
     }
 
     get viewTitle() {
         return "Meldingen"
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
@@ -143,7 +143,7 @@ export default class EditWebshopNotificationsView extends Mixins(EditWebshopMixi
         this.checkingBounces = true
 
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "POST",
                 path: "/email/check-bounces",
                 body: this.emails,

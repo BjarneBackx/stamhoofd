@@ -10,7 +10,7 @@
             </div>
         </div>
 
-        <Dropdown v-model="country" autocomplete="country" name="country" @change="updateAddress" @focus="onFocus" @blur="onBlur">
+        <Dropdown v-model="country" autocomplete="country" name="country" @update:model-value="updateAddress" @focus="onFocus" @blur="onBlur">
             <option v-for="country in countries" :key="country.value" :value="country.value">
                 {{ country.text }}
             </option>
@@ -22,48 +22,53 @@
 import { Decoder } from '@simonbackx/simple-encoding';
 import { isSimpleError, isSimpleErrors } from '@simonbackx/simple-errors';
 import { Server } from "@simonbackx/simple-networking";
-import { Dropdown,ErrorBox, STInputBox, Validator } from "@stamhoofd/components"
+import { Component, Prop, Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 import { I18nController } from '@stamhoofd/frontend-i18n';
-import { Address, Country, CountryHelper, ValidatedAddress} from "@stamhoofd/structures"
-import { Component, Prop, Vue, Watch } from "vue-property-decorator";
+import { Address, Country, CountryHelper, ValidatedAddress } from "@stamhoofd/structures";
+
+import {ErrorBox} from "../errors/ErrorBox";
+import {Validator} from "../errors/Validator";
+import Dropdown from './Dropdown.vue';
+import STInputBox from './STInputBox.vue';
 
 @Component({
     components: {
         STInputBox,
         Dropdown
-    }
+    },
+    emits: ["update:modelValue"]
 })
 export default class AddressInput extends Vue {
     @Prop({ default: "" }) 
-    title: string;
+        title: string;
 
     /**
      * Assign a validator if you want to offload the validation to components
      */
     @Prop({ default: null }) 
-    validator: Validator | null
+        validator: Validator | null
 
     errorBox: ErrorBox | null = null
     pendingErrorBox: ErrorBox | null = null
     
     @Prop({ default: null })
-    value: Address | ValidatedAddress | null
+        modelValue: Address | ValidatedAddress | null
 
     /**
      * Validate on the server or not? -> will return a ValidatedAddress if this is true
      */
     @Prop({ default: null })
-    validateServer: Server | null
+        validateServer: Server | null
 
     @Prop({ default: true })
-    required: boolean
+        required: boolean
 
     /**
      * Whether the value can be set to null if it is empty (even when it is required, will still be invalid)
      * Only used if required = false
      */
     @Prop({ default: false })
-    nullable!: boolean
+        nullable!: boolean
 
     addressLine1 = ""
     city = ""
@@ -71,7 +76,7 @@ export default class AddressInput extends Vue {
     country = this.getDefaultCountry()
 
     @Prop({ default: false })
-    linkCountryToLocale: boolean
+        linkCountryToLocale: boolean
 
     getDefaultCountry() {
         return I18nController.shared?.country ?? Country.Belgium
@@ -83,7 +88,7 @@ export default class AddressInput extends Vue {
         return CountryHelper.getList()
     }
 
-    @Watch('value', { deep: true })
+    @Watch('modelValue', { deep: true })
     onValueChanged(val: Address | null) {
         if (this.hasFocus) {
             // don't change while typing
@@ -102,6 +107,12 @@ export default class AddressInput extends Vue {
         this.city = val.city
         this.postalCode = val.postalCode
         this.country = val.country
+    }
+
+    @Watch('required', { deep: true })
+    onChangeRequired() {
+        // Revalidate, because the fields might be empty, and required goes false -> send null so any saved address gets cleared
+        this.isValid(false, true).catch(console.error)
     }
 
     updateValues(val: Address | null) {
@@ -138,15 +149,15 @@ export default class AddressInput extends Vue {
             })
         }
 
-        if (this.value) {
-            this.addressLine1 = this.value.street.length > 0 ? (this.value.street+" "+this.value.number) : (this.value.number+"")
-            this.city = this.value.city
-            this.postalCode = this.value.postalCode
-            this.country = this.value.country
+        if (this.modelValue) {
+            this.addressLine1 = this.modelValue.street.length > 0 ? (this.modelValue.street+" "+this.modelValue.number) : (this.modelValue.number+"")
+            this.city = this.modelValue.city
+            this.postalCode = this.modelValue.postalCode
+            this.country = this.modelValue.country
         }
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -158,8 +169,8 @@ export default class AddressInput extends Vue {
                 this.errorBox = null
             }
 
-            if (this.value !== null) {
-                this.$emit("input", null)
+            if (this.modelValue !== null) {
+                this.$emit('update:modelValue', null)
             }
             return true
         }
@@ -170,8 +181,8 @@ export default class AddressInput extends Vue {
                     this.errorBox = null
                 }
 
-                if (this.nullable && this.value !== null) {
-                    this.$emit("input", null)
+                if (this.nullable && this.modelValue !== null) {
+                    this.$emit('update:modelValue', null)
                 }
                 return false
             }
@@ -182,7 +193,7 @@ export default class AddressInput extends Vue {
         try {
             address = Address.createFromFields(this.addressLine1, this.postalCode, this.city, this.country)
 
-            if (!this.value || (this.validateServer && !(this.value instanceof ValidatedAddress) && !silent && isFinal) || address.toString() != this.value.toString()) {
+            if (!this.modelValue || (this.validateServer && !(this.modelValue instanceof ValidatedAddress) && !silent && isFinal) || address.toString() != this.modelValue.toString()) {
                 // Do we need to validate on the server?
                 if (this.validateServer && !silent && isFinal) {
                     const response = await this.validateServer.request({
@@ -195,12 +206,12 @@ export default class AddressInput extends Vue {
                     if (!this.hasFocus) {
                         this.updateValues(response.data)
                     }
-                    this.$emit("input", response.data)
+                    this.$emit('update:modelValue', response.data)
                 } else {
                     if (!this.hasFocus) {
                         this.updateValues(address)
                     }
-                    this.$emit("input", address)
+                    this.$emit('update:modelValue', address)
                 }
             } else {
                 if (!this.hasFocus) {
@@ -233,7 +244,7 @@ export default class AddressInput extends Vue {
             }
 
             if (!this.required && !silent) {
-                this.$emit("input", null)
+                this.$emit('update:modelValue', null)
             }
             return false
         }

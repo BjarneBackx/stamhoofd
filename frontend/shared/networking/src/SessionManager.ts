@@ -1,11 +1,11 @@
-import * as Sentry from '@sentry/browser';
 import { ArrayDecoder, AutoEncoder, Decoder, field, ObjectData, StringDecoder, VersionBox, VersionBoxDecoder } from '@simonbackx/simple-encoding';
 import { isSimpleError, isSimpleErrors, SimpleError } from '@simonbackx/simple-errors';
 import { Request } from '@simonbackx/simple-networking';
 import { Organization, Version } from '@stamhoofd/structures';
 
-import { Session } from './Session';
+import { SessionContext } from './SessionContext';
 import { Storage } from './Storage';
+import { isReactive } from 'vue';
 
 class SessionStorage extends AutoEncoder {
     @field({ decoder: new ArrayDecoder(Organization) })
@@ -15,7 +15,7 @@ class SessionStorage extends AutoEncoder {
         lastOrganizationId: string | null = null
 }
 
-type AuthenticationStateListener = (changed: "userPrivateKey" | "user" | "organization" | "token" | "session") => void
+type AuthenticationStateListener = (changed: "precentComplete" | "user" | "organization" | "token" | "session") => void
 
 /**
  * The SessionManager manages the storage of Sessions for different organizations. You can request the session for a given organization.
@@ -23,27 +23,27 @@ type AuthenticationStateListener = (changed: "userPrivateKey" | "user" | "organi
  * You can also request the available sessions, so you can hint the user in which organizations he is already signed in.
  */
 export class SessionManagerStatic {
-    currentSession: Session | null = null
-    currentOrganization: Organization | null = null
+    // currentSession: SessionContext | null = null
 
     protected cachedStorage?: SessionStorage
     protected listeners: Map<any, AuthenticationStateListener> = new Map()
 
-    async restoreLastSession() {
-        // Restore keychain before setting the current session
-        // to prevent fetching the organization to refetch the missing keychain items
-
-        const id = (await this.getSessionStorage(false)).lastOrganizationId
+    async getLastSession() {
+        const storage = await this.getSessionStorage(false)
+        const id = storage.lastOrganizationId
         if (id) {
-            const session = await this.getSessionForOrganization(id)
+            const session = await this.getContextForOrganization(id)
             if (session && session.canGetCompleted()) {
-                
-                await this.setCurrentSession(session)
+                return session
             } else {
                 console.log("session can not get completed, no autosignin")
                 console.log(session)
             }
         }
+
+        const session = new SessionContext(null)
+        await session.loadFromStorage()
+        return session
     }
 
     addListener(owner: any, listener: AuthenticationStateListener) {
@@ -54,25 +54,10 @@ export class SessionManagerStatic {
         this.listeners.delete(owner)
     }
 
-    protected callListeners(changed: "userPrivateKey" | "user" | "organization" | "token" | "session") {
+    protected callListeners(changed: "user" | "organization" | "token" | "session" | "preventComplete") {
         for (const listener of this.listeners.values()) {
             listener(changed)
         }
-    }
-
-    deactivateSession() {
-        if (this.currentSession) {
-            this.currentSession.removeListener(this)
-        }
-        this.currentSession = null;
-        this.callListeners("session");
-
-        // Not important async block: we don't need to wait for a save here
-        (async () => {
-            const storage = await this.getSessionStorage(false)
-            storage.lastOrganizationId = null
-            this.saveSessionStorage(storage)
-        })().catch(console.error)
     }
 
     async addOrganizationToStorage(organization: Organization, options: {updateOnly?: boolean} = {}) {
@@ -101,39 +86,15 @@ export class SessionManagerStatic {
         this.saveSessionStorage(storage)
     }
 
-    logout() {
-        if (this.currentSession) {
-            this.currentSession.logout()
+    async prepareSessionForUsage(session: SessionContext, shouldRetry = true) {      
+        session.enableStorage();
+         
+        if (!isReactive(session)) {
+            console.error('Passing around a non-reactive session can cause issues. Prevent using a session that is not reactive.')
         }
-        this.clearCurrentSession()
-    }
-
-    clearCurrentSession() {
-        console.error("Clear current session")
-        if (this.currentSession) {
-            this.currentSession.removeListener(this)
-        }
-        this.currentSession = null
-        this.callListeners("session")
-    }
-
-    /**
-     * 
-     * @param session 
-     * @param shouldRetry If you set this to false, setting the session might fail, so make sure to catch this
-     */
-    async setCurrentSession(session: Session, shouldRetry = true) {
-        console.log("Changing current session")
-        if (this.currentSession) {
-            this.currentSession.removeListener(this)
-        }
-
         if (session.canGetCompleted() && !session.isComplete()) {
             // Always request a new user (the organization is not needed)
             // session.user = null
-            if (!session.organization) {
-                console.log("Doing a sync session update because organization is missing")
-            }
             if (!session.user) {
                 console.log("Doing a sync session update because user is missing")
             }
@@ -142,17 +103,21 @@ export class SessionManagerStatic {
                 console.log("Doing a sync session update because preventComplete")
             }
 
-            if (session.organization && session.user && !session.preventComplete) {
+            if (session.user && !session.preventComplete) {
                 console.log("Doing a sync session update other")
             }
 
             try {
-                await session.updateData(false, shouldRetry, true)
+                await session.updateData(true, shouldRetry, true)
             } catch (e) {
+                console.error('Failed to update data in preparation of session', e);
+
                 if (isSimpleErrors(e) || isSimpleError(e)) {
                     if (e.hasCode("invalid_organization")) {
                         // Clear from session storage
-                        await this.removeOrganizationFromStorage(session.organizationId)
+                        if (session.organization) {
+                            await this.removeOrganizationFromStorage(session.organization.id)
+                        }
                         throw new SimpleError({
                             code: "invalid_organization",
                             message: e.message,
@@ -175,18 +140,23 @@ export class SessionManagerStatic {
             }
         } else {
             if (session.canGetCompleted()) {
+                // Already complete
                 // Initiate a slow background update without retry
                 // = we don't need to block the UI for this ;)
                 session.updateData(true, false).catch(e => {
                     // Ignore network errors
                     console.error(e)
                 })
+            } else {
+                // Update organization
+                if (session.organization) {
+                    await session.fetchOrganization(shouldRetry)
+                }
             }
         }
-        this.currentSession = session
 
         const storage = await this.getSessionStorage(false)
-        storage.lastOrganizationId = session.organizationId
+        storage.lastOrganizationId = session.organization?.id ?? null
         this.saveSessionStorage(storage)
 
         if (session.organization) {
@@ -195,40 +165,33 @@ export class SessionManagerStatic {
 
         this.callListeners("session")
 
-        this.currentSession.addListener(this, (changed: "user" | "organization" | "token") => {
+        session.addListener(this, (changed: "user" | "organization" | "token" | "preventComplete") => {
             if (session.organization) {
                 this.addOrganizationToStorage(session.organization).catch(console.error)
             }
-            this.setUserId();
             this.callListeners(changed)
-
-            if (changed === 'token' || changed === 'user') {
-                this.currentSession?.saveToStorage()
-            }
         })
 
-        this.setUserId();
-        this.currentSession.saveToStorage()
+        await session.saveToStorage();
+        return session
     }
 
-    setUserId() {
-        if (this.currentSession && this.currentSession.user) {
-            const id = this.currentSession.user.id;
-            Sentry.configureScope(function(scope) {
-                scope.setUser({"id": id});
-            });
-        }
-    }
+    /**
+     * Try to create a session, and support offline mode so we don't need to fetch if network is offline
+     */
+    async getContextForOrganization(id: string) {
+        const sessionStorage = await this.getSessionStorage(false)
+        const organization = sessionStorage.organizations.find(o => o.id === id)
 
-    async getSessionForOrganization(id: string) {
-        if (this.currentSession && this.currentSession.organizationId == id) {
-            return this.currentSession
+        if (organization) {
+            const session = new SessionContext(organization)
+            await session.loadFromStorage()
+            return session
         }
-        for (const session of await this.availableSessions()) {
-            if (session.organizationId === id) {
-                return session
-            }
-        }
+
+        const session = await SessionContext.createFrom({organizationId: id})
+        await session.loadFromStorage()
+        return session
     }
 
     saveSessionStorage(storage: SessionStorage, retryWithLess = true) {
@@ -273,13 +236,12 @@ export class SessionManagerStatic {
         return cache
     }
 
-    async availableSessions(): Promise<Session[]> {
+    async availableSessions(): Promise<SessionContext[]> {
         const sessionStorage = await this.getSessionStorage(false)
-        const sessions: Session[] = []
+        const sessions: SessionContext[] = []
 
         for (const o of sessionStorage.organizations) {
-            const session = new Session(o.id)
-            session.setOrganization(o)
+            const session = new SessionContext(o)
             await session.loadFromStorage()
             sessions.push(session)
         }
@@ -287,27 +249,29 @@ export class SessionManagerStatic {
         return sessions
     }
 
-    lastOrganizationFetch = new Date()
+    async getPreparedContextForOrganization(organization: Organization) {
+        if (document.activeElement) {
+            // Blur currently focused element, to prevent from opening the login view multiple times
+            (document.activeElement as HTMLElement).blur()
+        }
 
-    listenForOrganizationUpdates() {
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === 'visible') {
-                // TODO
-                console.info("Window became visible again")
-
-                if (!this.currentSession || !this.currentSession.isComplete()) {
-                    return
-                }
-
-                if (this.lastOrganizationFetch.getTime() + 1000 * 60 * 5 < new Date().getTime()) {
-                    // Update when at least 5 minutes inactive
-                    console.info("Updating organization")
-                    this.lastOrganizationFetch = new Date()
-
-                    this.currentSession.updateData(true, false, false).catch(console.error)
-                }
+        try {
+            const session = await this.getContextForOrganization(organization.id)
+            session.setOrganization(organization)
+            await this.prepareSessionForUsage(session, false)
+            return session;
+        } catch (e) {
+            if (e.hasCode("invalid_organization")) {
+                // Clear from session storage
+                await this.removeOrganizationFromStorage(organization.id)
+                throw new SimpleError({
+                    code: "invalid_organization",
+                    message: e.message,
+                    human: "Deze vereniging bestaat niet (meer)"
+                })
             }
-        });
+            throw e;
+        }
     }
 }
 

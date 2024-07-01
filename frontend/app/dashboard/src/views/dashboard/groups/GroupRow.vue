@@ -1,6 +1,6 @@
 <template>
     <STListItem v-long-press="(e) => showContextMenu(e)" :selectable="true" class="right-stack" @click="editProduct()" @contextmenu.prevent="showContextMenu">
-        <GroupAvatar slot="left" :group="group" />
+        <GroupAvatar #left :group="group" />
         
         <h2 class="style-title-list">
             {{ group.settings.name }}
@@ -9,7 +9,7 @@
             {{ group.settings.dateRangeDescription }}
         </p>
 
-        <template slot="right">
+        <template #right>
             <span class="button icon drag gray" @click.stop @contextmenu.stop />
             <span class="icon arrow-right-small gray" />
         </template>
@@ -22,7 +22,7 @@ import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-na
 import { ContextMenu, ContextMenuItem, GroupAvatar,LongPressDirective, STListItem } from "@stamhoofd/components";
 import { Group, GroupCategory, Organization, OrganizationMetaData } from "@stamhoofd/structures"
 import { v4 as uuidv4 } from "uuid";
-import { Component, Mixins,Prop } from "vue-property-decorator";
+import { Component, Mixins,Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import EditGroupGeneralView from './edit/EditGroupGeneralView.vue';
 

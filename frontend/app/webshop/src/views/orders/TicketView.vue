@@ -2,7 +2,7 @@
     <LoadingView v-if="loading" />
     <div v-else class="st-view ticket-view">
         <STNavigationBar v-if="!$isMobile" :large="!true" :sticky="false">
-            <OrganizationLogo slot="left" :organization="organization" />
+            <OrganizationLogo #left :organization="organization" />
         </STNavigationBar>
     </div>
 </template>
@@ -13,7 +13,7 @@ import { ComponentWithProperties, NavigationController, NavigationMixin } from "
 import { BackButton, DetailedTicketView,LoadingButton, LoadingView, OrganizationLogo, Radio, Spinner, STErrorsDefault, STList, STListItem, STNavigationBar, STToolbar, Toast } from "@stamhoofd/components";
 import { UrlHelper } from '@stamhoofd/networking';
 import { TicketPublic } from '@stamhoofd/structures';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import { WebshopManager } from '../../classes/WebshopManager';
 
@@ -42,20 +42,20 @@ export default class TicketView extends Mixins(NavigationMixin){
     tickets: TicketPublic[] = []
 
     get organization() {
-        return WebshopManager.organization
+        return this.$webshopManager.organization
     }
 
     get webshop() {
-        return WebshopManager.webshop
+        return this.$webshopManager.webshop
     }
 
     async downloadTickets() {
         this.loading = true
 
         try {
-            const response = await WebshopManager.server.request({
+            const response = await this.$webshopManager.server.request({
                 method: "GET",
-                path: "/webshop/" +WebshopManager.webshop.id + "/tickets",
+                path: "/webshop/" +this.$webshopManager.webshop.id + "/tickets",
                 query: {
                     // Required because we don't need to repeat item information (network + database impact)
                     secret: this.secret

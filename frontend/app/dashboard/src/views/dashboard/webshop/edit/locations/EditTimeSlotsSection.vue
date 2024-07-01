@@ -24,14 +24,14 @@
         <STList>
             <STListItem v-for="timeSlot in sortedSlots" :key="timeSlot.id" :selectable="true" class="right-stack" @click="editTimeSlot(timeSlot)">
                 <h3 class="style-title-list">
-                    {{ timeSlot.date | date }}
+                    {{ formatDate(timeSlot.date) }}
                 </h3>
                 <p class="style-description-small">
-                    {{ timeSlot.startTime | minutes }}
-                    - {{ timeSlot.endTime | minutes }}
+                    {{ formatMinutes(timeSlot.startTime) }}
+                    - {{ formatMinutes(timeSlot.endTime) }}
                 </p>
 
-                <template slot="right">
+                <template #right>
                     <span v-if="timeSlot.maxOrders" class="style-tag">{{ timeSlot.usedOrders }} / {{ timeSlot.maxOrders }}</span>
                     <span v-if="timeSlot.maxPersons" class="style-tag">{{ timeSlot.usedPersons }} / {{ timeSlot.maxPersons }}p</span>
                     <span class="icon arrow-right-small gray" />
@@ -47,7 +47,7 @@ import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-na
 import { STList, STListItem, STNavigationBar, STToolbar } from "@stamhoofd/components";
 import { PrivateWebshop, WebshopTimeSlot, WebshopTimeSlots } from "@stamhoofd/structures";
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import EditTimeSlotView from './EditTimeSlotView.vue';
 

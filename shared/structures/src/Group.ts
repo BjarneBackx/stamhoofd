@@ -1,13 +1,14 @@
-import { AutoEncoder, DateDecoder, EnumDecoder, field, IntegerDecoder,StringDecoder } from '@simonbackx/simple-encoding';
+import { AutoEncoder, DateDecoder, EnumDecoder, field, IntegerDecoder, StringDecoder } from '@simonbackx/simple-encoding';
 import { v4 as uuidv4 } from "uuid";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { GroupCategory } from './GroupCategory';
 import { GroupPrivateSettings } from './GroupPrivateSettings';
-import { CycleInformation, GroupSettings, WaitingListType } from './GroupSettings';
+import { GroupSettings, WaitingListType } from './GroupSettings';
 import { Organization } from './Organization';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { PermissionLevel, PermissionRoleDetailed, Permissions } from './Permissions';
+import { LoadedPermissions, PermissionLevel, PermissionsResourceType } from './Permissions';
+import { UserPermissions } from './UserPermissions';
 
 export enum GroupStatus {
     "Open" = "Open",
@@ -19,11 +20,17 @@ export class Group extends AutoEncoder {
     @field({ decoder: StringDecoder, defaultValue: () => uuidv4() })
     id: string;
 
+    @field({ decoder: StringDecoder, version: 250 })
+    organizationId: string = ""
+
+    @field({ decoder: StringDecoder, version: 265 })
+    periodId: string = ""
+
     @field({ decoder: IntegerDecoder })
     cycle = 0
 
     @field({ decoder: GroupSettings })
-    settings: GroupSettings
+    settings: GroupSettings = GroupSettings.create({})
 
     @field({ decoder: DateDecoder, version: 187 })
     createdAt: Date = new Date()
@@ -37,7 +44,7 @@ export class Group extends AutoEncoder {
     @field({ decoder: GroupPrivateSettings, nullable: true, version: 10 })
     privateSettings: GroupPrivateSettings | null = null
 
-        /**
+    /**
      * Manually close a group
      */
     @field({ decoder: new EnumDecoder(GroupStatus), version: 192 })
@@ -177,19 +184,19 @@ export class Group extends AutoEncoder {
         return [...map.values()]
     }
 
-    hasAccess(permissions: Permissions|null, organization: Organization, permissionLevel: PermissionLevel = PermissionLevel.Read) {
+    hasAccess(permissions: LoadedPermissions|null, allCategories: GroupCategory[], permissionLevel: PermissionLevel = PermissionLevel.Read) {
         if (!permissions) {
             return false
         }
 
-        if (this.privateSettings?.permissions.hasAccess(permissions, organization.privateMeta?.roles ?? [], permissionLevel)) {
+        if (permissions.hasResourceAccess(PermissionsResourceType.Groups, this.id, permissionLevel)) {
             return true;
         }
 
         // Check parent categories
-        const parentCategories = this.getParentCategories(organization.meta.categories)
+        const parentCategories = this.getParentCategories(allCategories)
         for (const category of parentCategories) {
-            if (category.settings.permissions.groupPermissions.hasAccess(permissions, organization.privateMeta?.roles ?? [], permissionLevel)) {
+            if (permissions.hasResourceAccess(PermissionsResourceType.GroupCategories, category.id, permissionLevel)) {
                 return true
             }
         }
@@ -206,26 +213,16 @@ export class Group extends AutoEncoder {
         return true;
     }
 
-    /**
-     * Whetever a given user has access to the members in this group. 
-     */
-    hasReadAccess(permissions: Permissions|null, organization: Organization): boolean {
-        return this.hasAccess(permissions, organization, PermissionLevel.Read)
-
+    hasReadAccess(permissions: LoadedPermissions|null, allCategories: GroupCategory[]): boolean {
+        return this.hasAccess(permissions, allCategories, PermissionLevel.Read)
     }
 
-    /**
-     * Whetever a given user has access to the members in this group. 
-     */
-    hasWriteAccess(permissions: Permissions|null, organization: Organization): boolean {
-        return this.hasAccess(permissions, organization, PermissionLevel.Write)
+    hasWriteAccess(permissions: LoadedPermissions|null, allCategories: GroupCategory[]): boolean {
+        return this.hasAccess(permissions, allCategories, PermissionLevel.Write)
     }
 
-    /**
-     * Whetever a given user has access to the members in this group. 
-     */
-    hasFullAccess(permissions: Permissions|null, organization: Organization): boolean {
-        return this.hasAccess(permissions, organization, PermissionLevel.Full)
+    hasFullAccess(permissions: LoadedPermissions|null, allCategories: GroupCategory[]): boolean {
+        return this.hasAccess(permissions, allCategories, PermissionLevel.Full)
     }
 
     get squareImage() {

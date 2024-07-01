@@ -1,6 +1,6 @@
 <template>
     <div class="st-view">
-        <STNavigationBar :title="title" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar :title="title" />
 
         <main>
             <h1>
@@ -14,7 +14,7 @@
             <Spinner v-if="loadingGroups" />
             <STList v-else-if="groups.length">
                 <STListItem v-for="group in groups" :key="group.id" :selectable="true" @click="restoreGroup($event, group)">
-                    <GroupAvatar slot="left" :group="group" />
+                    <GroupAvatar #left :group="group" />
                     
                     <h2 class="style-title-list">
                         {{ group.settings.name }}
@@ -26,7 +26,7 @@
                         Verwijderd op {{ formatDate(group.deletedAt) }}
                     </p>
 
-                    <template slot="right">
+                    <template #right>
                         <span class="icon undo gray" />
                     </template>
                 </STListItem>
@@ -46,9 +46,9 @@ import { CenteredMessage, ContextMenu, ContextMenuItem, GroupAvatar, Spinner,STL
 import { SessionManager } from "@stamhoofd/networking";
 import { Group, GroupCategory, GroupCategoryTree, Organization, OrganizationMetaData } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
+
 
 @Component({
     components: {
@@ -78,7 +78,7 @@ export default class GroupTrashView extends Mixins(NavigationMixin) {
 
     async load() {
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "GET",
                 path: "/organization/deleted-groups",
                 decoder: new ArrayDecoder(Group as Decoder<Group>),
@@ -92,17 +92,17 @@ export default class GroupTrashView extends Mixins(NavigationMixin) {
         this.loadingGroups = false
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         // Cancel all requests
         Request.cancelAll(this)
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get allCategories() {
-        return this.organization.getCategoryTree({admin: true, permissions: OrganizationManager.user?.permissions}).getAllCategories().filter(c => c.categories.length == 0)
+        return this.organization.getCategoryTree({admin: true, permissions: this.$context.organizationPermissions}).getAllCategories().filter(c => c.categories.length == 0)
     }
 
     async restoreGroup(event, group: Group) {
@@ -158,7 +158,7 @@ export default class GroupTrashView extends Mixins(NavigationMixin) {
         }))
 
         try {
-            await OrganizationManager.patch(patch)
+            await this.$organizationManager.patch(patch)
         } catch (e) {
             Toast.fromError(e).show()
         }

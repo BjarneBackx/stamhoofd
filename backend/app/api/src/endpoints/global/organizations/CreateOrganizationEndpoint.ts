@@ -4,7 +4,7 @@ import { DecodedRequest, Endpoint, Request, Response } from "@simonbackx/simple-
 import { SimpleError } from '@simonbackx/simple-errors';
 import { Email, EmailInterfaceBase } from '@stamhoofd/email';
 import { EmailVerificationCode, Organization, RegisterCode, User } from '@stamhoofd/models';
-import { CreateOrganization, PermissionLevel, Permissions, SignupResponse } from "@stamhoofd/structures";
+import { CreateOrganization, PermissionLevel, Permissions, SignupResponse, UserPermissions } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
 
 type Params = Record<string, never>;
@@ -29,6 +29,13 @@ export class CreateOrganizationEndpoint extends Endpoint<Params, Query, Body, Re
     }
 
     async handle(request: DecodedRequest<Params, Query, Body>) {
+        if (STAMHOOFD.userMode === 'platform') {
+            throw new SimpleError({
+                code: "invalid_field",
+                message: "Not allowed",
+                human: "Je kan geen vereniging aanmaken"
+            })
+        }
 
         if (request.body.organization.name.length < 4) {
             if (request.body.organization.name.length == 0) {
@@ -115,7 +122,8 @@ export class CreateOrganizationEndpoint extends Endpoint<Params, Query, Body, Re
         }
 
         // Should prevent this extra save
-        user.permissions = Permissions.create({ level: PermissionLevel.Full })
+        user.permissions = UserPermissions.create({})
+        user.permissions.organizationPermissions.set(organization.id, Permissions.create({ level: PermissionLevel.Full }))
         await user.save()
 
         for (const model of registerCodeModels) {

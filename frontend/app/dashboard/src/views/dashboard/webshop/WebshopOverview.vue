@@ -1,6 +1,6 @@
 <template>
     <div id="webshop-overview" class="st-view background">
-        <STNavigationBar :title="title" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar :title="title" />
 
         <main>
             <h1 class="style-navigation-title with-icons">
@@ -15,58 +15,58 @@
 
             <STList class="illustration-list">    
                 <STListItem v-if="hasReadPermissions" :selectable="true" class="left-center" @click="openOrders(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/cart.svg">
+                    <template #left><img src="@stamhoofd/assets/images/illustrations/cart.svg"></template>
                     <h2 class="style-title-list">
                         Bestellingen
                     </h2>
                     <p class="style-description">
                         Bekijk en exporteer bestellingen, e-mail en SMS klanten.
                     </p>
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right><span class="icon arrow-right-small gray" /></template>
                 </STListItem>
 
                 <STListItem v-if="hasSeating && hasReadPermissions" :selectable="true" class="left-center" @click="openSeating(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/seating-plan.svg">
+                    <template #left><img src="@stamhoofd/assets/images/illustrations/seating-plan.svg"></template>
                     <h2 class="style-title-list">
                         Zaaloverzicht
                     </h2>
                     <p class="style-description">
                         Bekijk welke plaatsen door welke personen zijn ingenomen.
                     </p>
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right><span class="icon arrow-right-small gray" /></template>
                 </STListItem>
 
                 <STListItem v-if="hasTickets && hasScanPermissions" :selectable="true" class="left-center" @click="openTickets(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/scanner.svg">
+                    <template #left><img src="@stamhoofd/assets/images/illustrations/scanner.svg"></template>
                     <h2 class="style-title-list">
                         Scan tickets
                     </h2>
                     <p class="style-description">
                         Gebruik je camera om snel tickets te scannen.
                     </p>
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right><span class="icon arrow-right-small gray" /></template>
                 </STListItem>
 
                 <STListItem v-if="hasReadPermissions" :selectable="true" class="left-center" @click="openStatistics(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/diagram.svg">
+                    <template #left><img src="@stamhoofd/assets/images/illustrations/diagram.svg"></template>
                     <h2 class="style-title-list">
                         Statistieken
                     </h2>
                     <p class="style-description">
                         Bekijk jouw omzet en andere statistieken.
                     </p>
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right><span class="icon arrow-right-small gray" /></template>
                 </STListItem>
 
                 <STListItem :selectable="true" class="left-center" element-name="a" :href="'https://'+webshopUrl" target="_blank">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/earth.svg">
+                    <template #left><img src="@stamhoofd/assets/images/illustrations/earth.svg"></template>
                     <h2 class="style-title-list">
                         Bekijk jouw webshop
                     </h2>
                     <p class="style-description">
                         Jouw webshop is bereikbaar via {{ webshopUrl }}
                     </p>
-                    <span slot="right" class="icon external gray" />
+                    <template #right><span class="icon external gray" /></template>
                 </STListItem>
             </STList>
 
@@ -76,73 +76,73 @@
 
                 <STList class="illustration-list">
                     <STListItem :selectable="true" class="left-center" @click="editGeneral(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/flag.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/flag.svg"></template>
                         <h2 class="style-title-list">
                             Algemeen
                         </h2>
                         <p class="style-description">
                             Naam, type en beschikbaarheid.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
                     <STListItem v-if="!isTicketsOnly" :selectable="true" class="left-center" @click="editProducts(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/edit-package.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/edit-package.svg"></template>
                         <h2 class="style-title-list">
                             Productaanbod
                         </h2>
                         <p class="style-description">
                             Bewerk welke artikels je verkoopt in jouw webshop.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
                     <STListItem v-else :selectable="true" class="left-center" @click="editProducts(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/tickets.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/tickets.svg"></template>
                         <h2 class="style-title-list">
                             Aanbod tickets en vouchers
                         </h2>
                         <p class="style-description">
                             Bewerk en voeg nieuwe tickets en vouchers toe aan je webshop.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
                     <STListItem v-if="!isTicketsOnly" :selectable="true" class="left-center" @click="editCheckoutMethods(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/bike.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/bike.svg"></template>
                         <h2 class="style-title-list">
                             Afhalen, leveren, ter plaatse eten
                         </h2>
                         <p class="style-description">
                             Wijzig tijdstippen, locaties en afhaalmethodes.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
                     <STListItem :selectable="true" class="left-center" @click="editPaymentMethods(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/creditcards.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/creditcards.svg"></template>
                         <h2 class="style-title-list">
                             Betaalmethodes
                         </h2>
                         <p class="style-description">
                             Kies welke betaalmethodes je wilt activeren, en stel eventueel administratiekosten in.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
-                    <STListItem :selectable="true" class="left-center" @click="editDiscounts(true)" v-if="getFeatureFlag('webshop-discounts')">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/discount.svg">
+                    <STListItem v-if="getFeatureFlag('webshop-discounts')" :selectable="true" class="left-center" @click="editDiscounts(true)">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/discount.svg"></template>
                         <h2 class="style-title-list">
                             Kortingen
                         </h2>
                         <p class="style-description">
                             Voeg kortingen toe aan je webshop.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
                     <STListItem v-if="preview.meta.customFields.length" :selectable="true" class="left-center" @click="editInputFields(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/edit-data.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/edit-data.svg"></template>
                         <h2 class="style-title-list">
                             Vrije invoervelden
                         </h2>
@@ -150,41 +150,43 @@
                             Verzamel extra informatie van bestellers bij het afrekenen.
                         </p>
 
-                        <span slot="right" v-tooltip="'Deze functie is verouderd. Als je alle vrije invoervelden wist, kan je gebruik maken van uitgebreidere vragenlijsten.'" class="icon error " />
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right>
+                            <span v-tooltip="'Deze functie is verouderd. Als je alle vrije invoervelden wist, kan je gebruik maken van uitgebreidere vragenlijsten.'" class="icon error " />
+                            <span class="icon arrow-right-small gray" />
+                        </template>
                     </STListItem>
 
                     <STListItem v-else :selectable="true" class="left-center" @click="editRecordSettings(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/edit-data.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/edit-data.svg"></template>
                         <h2 class="style-title-list">
                             Vragenlijsten en gegevens
                         </h2>
                         <p class="style-description">
                             Verzamel extra informatie van bestellers bij het afrekenen.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
                     <STListItem :selectable="true" class="left-center" @click="editPermissions(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/lock.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/lock.svg"></template>
                         <h2 class="style-title-list">
                             Toegangsbeheer
                         </h2>
                         <p class="style-description">
                             Bepaal wie bestellingen en instellingen van deze webshop kan bekijken of wijzigen.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
                     <STListItem :selectable="true" class="left-center" @click="editNotifications(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/notifications.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/notifications.svg"></template>
                         <h2 class="style-title-list">
                             Meldingen
                         </h2>
                         <p class="style-description">
                             Blijf zelf op de hoogte van nieuwe bestellingen.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
                 </STList>
 
@@ -193,36 +195,36 @@
 
                 <STList class="illustration-list">
                     <STListItem :selectable="true" class="left-center" @click="editPage(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/palette.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/palette.svg"></template>
                         <h2 class="style-title-list">
                             Tekst, uiterlijk, en externe links
                         </h2>
                         <p class="style-description">
                             Wijzig de teksten en uitzicht van jouw webshop.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
                     <STListItem :selectable="true" class="left-center" @click="editLink(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/compass.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/compass.svg"></template>
                         <h2 class="style-title-list">
                             Link
                         </h2>
                         <p class="style-description">
                             Wijzig de link van jouw webshop.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
                     <STListItem :selectable="true" class="left-center" @click="editEmails(true)">
-                        <img slot="left" src="~@stamhoofd/assets/images/illustrations/email.svg">
+                        <template #left><img src="@stamhoofd/assets/images/illustrations/email.svg"></template>
                         <h2 class="style-title-list">
                             E-mails
                         </h2>
                         <p class="style-description">
                             Wijzig de inhoud van automatische e-mails naar bestellers.
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
                 </STList>
 
@@ -237,11 +239,13 @@
                         <p class="style-description">
                             Sluit de webshop, zodat geen nieuwe bestellingen meer mogelijk zijn.
                         </p>
-                        <button slot="right" type="button" class="button secundary danger hide-smartphone">
-                            <span class="icon power" />
-                            <span>Sluiten</span>
-                        </button>
-                        <button slot="right" type="button" class="button icon power only-smartphone" />
+                        <template #right>
+                            <button type="button" class="button secundary danger hide-smartphone">
+                                <span class="icon power" />
+                                <span>Sluiten</span>
+                            </button>
+                            <button type="button" class="button icon power only-smartphone" />
+                        </template>
                     </STListItem>
 
                     <STListItem v-if="!isOpen && !isArchive" :selectable="true" @click="openWebshop()">
@@ -251,11 +255,13 @@
                         <p class="style-description">
                             Open de webshop opnieuw.
                         </p>
-                        <button slot="right" type="button" class="button secundary green hide-smartphone">
-                            <span class="icon power" />
-                            <span>Openen</span>
-                        </button>
-                        <button slot="right" type="button" class="button icon power only-smartphone" />
+                        <template #right>
+                            <button type="button" class="button secundary green hide-smartphone">
+                                <span class="icon power" />
+                                <span>Openen</span>
+                            </button>
+                            <button type="button" class="button icon power only-smartphone" />
+                        </template>
                     </STListItem>
 
                     <STListItem v-if="!isOpen && !isArchive" :selectable="true" @click="archiveWebshop()">
@@ -265,11 +271,13 @@
                         <p class="style-description">
                             Verplaats de webshop naar het archief, maar behoud alle gegevens. De webshop is dan niet meer zo prominent zichtbaar in het menu.
                         </p>
-                        <button slot="right" type="button" class="button secundary hide-smartphone">
-                            <span class="icon archive" />
-                            <span>Archiveren</span>
-                        </button>
-                        <button slot="right" type="button" class="button icon archive only-smartphone" />
+                        <template #right>
+                            <button type="button" class="button secundary hide-smartphone">
+                                <span class="icon archive" />
+                                <span>Archiveren</span>
+                            </button>
+                            <button type="button" class="button icon archive only-smartphone" />
+                        </template>
                     </STListItem>
 
                     <STListItem v-if="isArchive" :selectable="true" @click="closeWebshop()">
@@ -279,11 +287,13 @@
                         <p class="style-description">
                             Verplaats de webshop terug naar het hoofdmenu.
                         </p>
-                        <button slot="right" type="button" class="button secundary hide-smartphone">
-                            <span class="icon undo" />
-                            <span>Terugzetten</span>
-                        </button>
-                        <button slot="right" type="button" class="button icon undo only-smartphone" />
+                        <template #right>
+                            <button type="button" class="button secundary hide-smartphone">
+                                <span class="icon undo" />
+                                <span>Terugzetten</span>
+                            </button>
+                            <button type="button" class="button icon undo only-smartphone" />
+                        </template>
                     </STListItem>
 
                     <STListItem :selectable="true" @click="duplicateWebshop()">
@@ -293,11 +303,13 @@
                         <p class="style-description">
                             Maak een nieuwe webshop met dezelfde instellingen, maar met een andere naam en link.
                         </p>
-                        <button slot="right" type="button" class="button secundary hide-smartphone">
-                            <span class="icon copy" />
-                            <span>Dupliceren</span>
-                        </button>
-                        <button slot="right" type="button" class="button icon copy only-smartphone" />
+                        <template #right>
+                            <button type="button" class="button secundary hide-smartphone">
+                                <span class="icon copy" />
+                                <span>Dupliceren</span>
+                            </button>
+                            <button type="button" class="button icon copy only-smartphone" />
+                        </template>
                     </STListItem>
 
                     <STListItem v-if="isArchive" :selectable="true" @click="deleteWebshop()">
@@ -307,11 +319,13 @@
                         <p class="style-description">
                             Verwijder deze webshop en alle daarbij horende informatie en bestellingen. Dit is meestal niet nodig.
                         </p>
-                        <button slot="right" type="button" class="button secundary danger hide-smartphone">
-                            <span class="icon trash" />
-                            <span>Verwijderen</span>
-                        </button>
-                        <button slot="right" type="button" class="button icon trash only-smartphone" />
+                        <template #right>
+                            <button type="button" class="button secundary danger hide-smartphone">
+                                <span class="icon trash" />
+                                <span>Verwijderen</span>
+                            </button>
+                            <button type="button" class="button icon trash only-smartphone" />
+                        </template>
                     </STListItem>
                 </STList>
             </template>
@@ -323,13 +337,12 @@
 import { ArrayDecoder, Decoder, PatchableArray, PatchableArrayAutoEncoder } from '@simonbackx/simple-encoding';
 import { Request } from '@simonbackx/simple-networking';
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { BackButton, CenteredMessage, LoadComponent, PromiseView, STList, STListItem, STNavigationBar, Toast, TooltipDirective } from "@stamhoofd/components";
+import { BackButton, CenteredMessage, LoadComponent, PromiseView, STList, STListItem, STNavigationBar, Toast, TooltipDirective, EditResourceRolesView } from "@stamhoofd/components";
 import { SessionManager, UrlHelper } from '@stamhoofd/networking';
-import { EmailTemplate, PrivateWebshop, WebshopMetaData, WebshopPreview, WebshopStatus, WebshopTicketType } from '@stamhoofd/structures';
+import { AccessRight, EmailTemplate, PermissionsResourceType, PrivateWebshop, WebshopMetaData, WebshopPreview, WebshopStatus, WebshopTicketType } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
 import BillingWarningBox from '../settings/packages/BillingWarningBox.vue';
 import EditWebshopCheckoutMethodsView from './edit/EditWebshopCheckoutMethodsView.vue';
 import EditWebshopDiscountsView from './edit/EditWebshopDiscountsView.vue';
@@ -340,7 +353,6 @@ import EditWebshopLinkView from './edit/EditWebshopLinkView.vue';
 import EditWebshopNotificationsView from './edit/EditWebshopNotificationsView.vue';
 import EditWebshopPageView from './edit/EditWebshopPageView.vue';
 import EditWebshopPaymentMethodsView from './edit/EditWebshopPaymentMethodsView.vue';
-import EditWebshopPermissionsView from './edit/EditWebshopPermissionsView.vue';
 import EditWebshopProductsView from './edit/EditWebshopProductsView.vue';
 import EditWebshopRecordSettings from './edit/EditWebshopRecordSettings.vue';
 import WebshopOrdersView from './orders/WebshopOrdersView.vue';
@@ -367,7 +379,35 @@ export default class WebshopOverview extends Mixins(NavigationMixin) {
 
     loading = false
 
-    webshopManager = new WebshopManager(this.preview)
+    webshopManager = new WebshopManager(this.$context, (this.$props! as unknown as any).preview)
+
+    constructor() {
+        super()
+        console.log('Constructed new WebshopOverview', (this as any).$options.props)
+
+        // Fix
+        // proxy to actual vm
+        const keys = Object.getOwnPropertyNames(this)
+        // 2.2.0 compat (props are no longer exposed as self properties)
+        if (this.$options.props) {
+            for (const key in this.$options.props) {
+                if (!Object.prototype.hasOwnProperty.call(this, key)) {
+                    console.log('does not has own property', key)
+                    keys.push(key)
+                } else {
+                    console.log('has own property', key)
+                }
+            }
+        }
+        console.log('keys', keys)
+        // keys.forEach(key => {
+        //     Object.defineProperty(this, key, {
+        //         get: () => this[key],
+        //         set: value => { this[key] = value },
+        //         configurable: true
+        //     })
+        // })
+    }
 
     reload() {
         this.loading = true;
@@ -397,7 +437,7 @@ export default class WebshopOverview extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get title() {
@@ -405,35 +445,23 @@ export default class WebshopOverview extends Mixins(NavigationMixin) {
     }
 
     get webshopUrl() {
-        return this.preview.getUrl(OrganizationManager.organization)
+        return this.preview.getUrl(this.$organization)
     }
 
     get hasFullPermissions() {
-        if (!OrganizationManager.user.permissions) {
-            return false
-        }
-        return this.preview.privateMeta.permissions.hasFullAccess(OrganizationManager.user.permissions, OrganizationManager.organization.privateMeta?.roles ?? [])
+        return this.preview.privateMeta.permissions.hasFullAccess(this.$context.organizationPermissions)
     }
 
     get hasWritePermissions() {
-        if (!OrganizationManager.user.permissions) {
-            return false
-        }
-        return this.preview.privateMeta.permissions.hasWriteAccess(OrganizationManager.user.permissions, OrganizationManager.organization.privateMeta?.roles ?? [])
+        return this.preview.privateMeta.permissions.hasWriteAccess(this.$context.organizationPermissions)
     }
 
     get hasReadPermissions() {
-        if (!OrganizationManager.user.permissions) {
-            return false
-        }
-        return this.preview.privateMeta.permissions.hasReadAccess(OrganizationManager.user.permissions, OrganizationManager.organization.privateMeta?.roles ?? [])
+        return this.preview.privateMeta.permissions.hasReadAccess(this.$context.organizationPermissions)
     }
 
     get hasScanPermissions() {
-        if (!OrganizationManager.user.permissions) {
-            return false
-        }
-        return this.hasWritePermissions || this.preview.privateMeta.scanPermissions.hasWriteAccess(OrganizationManager.user.permissions, OrganizationManager.organization.privateMeta?.roles ?? [])
+        return this.hasWritePermissions || this.preview.privateMeta.scanPermissions.hasWriteAccess(this.$context.organizationPermissions)
     }
 
     get isTicketsOnly() {
@@ -533,7 +561,22 @@ export default class WebshopOverview extends Mixins(NavigationMixin) {
     }
 
     editPermissions(animated = true) {
-        this.displayEditComponent(EditWebshopPermissionsView, animated)
+        this.present({
+            animated,
+            adjustHistory: animated,
+            modalDisplayStyle: "popup",
+            components: [
+                new ComponentWithProperties(EditResourceRolesView, {
+                    description: 'Kies hier welke beheerdersrollen deze webshop kunnen bekijken, bewerken of beheren.',
+                    resource: {
+                        id: this.preview.id,
+                        name: this.preview.meta.name,
+                        type: PermissionsResourceType.Webshops
+                    },
+                    configurableAccessRights: this.preview.hasTickets ? [AccessRight.WebshopScanTickets] : []
+                })
+            ]
+        });
     }
 
     editEmails(animated = true) {
@@ -650,12 +693,12 @@ export default class WebshopOverview extends Mixins(NavigationMixin) {
     }
 
     get canCreateWebshops() {
-        const result = SessionManager.currentSession!.user!.permissions!.canCreateWebshops(this.organization.privateMeta?.roles ?? [])
-        return result
+        return this.$context.organizationAuth.hasAccessRight(AccessRight.OrganizationCreateWebshops)
     }
 
     duplicateWebshop() {
         if (!this.canCreateWebshops) {
+            new Toast('Je hebt geen toegang om nieuwe webshops te maken. Vraag toegang aan een hoofdbeheerder van je vereniging.').show()
             return;
         }
 
@@ -677,7 +720,7 @@ export default class WebshopOverview extends Mixins(NavigationMixin) {
                         // Set usedStock to 0
                         duplicate.clearStock();
 
-                        const response = await SessionManager.currentSession!.authenticatedServer.request({
+                        const response = await this.$context.authenticatedServer.request({
                             method: "GET",
                             path: "/email-templates",
                             query: { webshopId: webshop.id },
@@ -709,7 +752,7 @@ export default class WebshopOverview extends Mixins(NavigationMixin) {
                                     }
 
                                     if (patchedArray.getPuts().length > 0) {
-                                        await SessionManager.currentSession!.authenticatedServer.request({
+                                        await this.$context.authenticatedServer.request({
                                             method: "PATCH",
                                             path: "/email-templates",
                                             body: patchedArray,
@@ -811,17 +854,17 @@ export default class WebshopOverview extends Mixins(NavigationMixin) {
         }
 
         try {
-            await SessionManager.currentSession!.authenticatedServer.request({
+            await this.$context.authenticatedServer.request({
                 method: "DELETE",
                 path: "/webshop/"+this.webshopManager.preview.id,
                 shouldRetry: false
             })
             new Toast("Webshop verwijderd", "success green").show()
 
-            OrganizationManager.organization.webshops = OrganizationManager.organization.webshops.filter(w => w.id != this.webshopManager.preview.id)
+            this.$organization.webshops = this.$organization.webshops.filter(w => w.id != this.webshopManager.preview.id)
 
             // Save updated organization to cache
-            OrganizationManager.save().catch(console.error)
+            this.$organizationManager.save().catch(console.error)
 
             if (this.canPop) {
                 this.pop({ force: true })
@@ -829,7 +872,7 @@ export default class WebshopOverview extends Mixins(NavigationMixin) {
                 await this.splitViewController!.showDetail({
                     components: [
                         new ComponentWithProperties(NavigationController, { 
-                            root: await LoadComponent(() => import(/* webpackChunkName: "AccountSettingsView" */ '../account/AccountSettingsView.vue'), {}, { instant: false })
+                            root: await LoadComponent(() => import(/* webpackChunkName: "AccountSettingsView" */ '@stamhoofd/components/src/views/AccountSettingsView.vue'), {}, { instant: false })
                         })
                     ],
                     animated: false
@@ -840,7 +883,7 @@ export default class WebshopOverview extends Mixins(NavigationMixin) {
         }
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         // Clear all pending requests
         Request.cancelAll(this)
         this.webshopManager.close()

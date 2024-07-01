@@ -1,11 +1,11 @@
 <template>
-    <ContextMenuView v-bind="$attrs">
+    <ContextMenuView v-bind="$attrs" ref="contextMenuView">
         <template v-for="(actions, groupIndex) of groupedActions">
             <ContextMenuLine v-if="groupIndex > 0" :key="groupIndex+'-line'" />
-            <ContextMenuItemView v-for="(action, index) of actions" :key="groupIndex+'-'+index" :class="{'disabled': isDisabled(action)}" :child-context-menu="getChildContextMenu(action)" @click="handleAction(action, $event)">
+            <ContextMenuItemView v-for="(action, index) of actions" :contextMenuView="$refs.contextMenuView" :key="groupIndex+'-'+index" :class="{'disabled': isDisabled(action)}" :child-context-menu="getChildContextMenu(action)" @click="handleAction(action, $event)">
                 {{ action.name }}
-                <span v-if="action.hasChildActions" slot="right" class="icon arrow-right-small" />
-                <span v-else-if="action.icon" slot="right" :class="'icon '+action.icon" />
+                <template v-if="action.hasChildActions" #right><span class="icon arrow-right-small" /></template>
+                <template v-else-if="action.icon" #right><span :class="'icon '+action.icon" /></template>
             </ContextMenuItemView>
         </template>
     </ContextMenuView>
@@ -14,7 +14,7 @@
 <script lang="ts">
 import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { Checkbox, ContextMenuItemView, ContextMenuLine, ContextMenuView, FetchAllOptions, Toast } from "@stamhoofd/components";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import { TableAction } from "./TableAction";
 import TableView from "./TableView.vue";
@@ -69,9 +69,6 @@ export default class TableActionsContextMenu extends Mixins(NavigationMixin) {
                     return false
                 }
                 if (action.singleSelection && !this.selection.isSingle) {
-                    return false;
-                }
-                if (!action.needsSelection && this.selection.hasSelection) {
                     return false;
                 }
 

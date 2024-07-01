@@ -1,11 +1,11 @@
 <template>
     <section class="st-view box-shade choose-webshop-view">
         <STNavigationBar :large="true">
-            <template slot="left">
+            <template #left>
                 <OrganizationLogo :organization="organization" />
             </template>
 
-            <template slot="right">
+            <template #right>
                 <a v-if="organization.website" class="button text limit-space" :href="organization.website" target="_blank" rel="nofollow noreferrer noopener">
                     <span class="icon external" />
                     <span>Terug naar website</span>
@@ -20,8 +20,8 @@
 
                     <STList>
                         <STListItem v-for="webshop of webshops" :key="webshop.id" element-name="a" :selectable="true" :href="'https://'+webshop.getUrl(organization)" class="left-center">
-                            <img v-if="webshop.meta.hasTickets" slot="left" src="~@stamhoofd/assets/images/illustrations/tickets.svg" class="style-illustration-img">
-                            <img v-else slot="left" src="~@stamhoofd/assets/images/illustrations/cart.svg" class="style-illustration-img">
+                            <img v-if="webshop.meta.hasTickets" slot="left" src="@stamhoofd/assets/images/illustrations/tickets.svg" class="style-illustration-img">
+                            <img v-else slot="left" src="@stamhoofd/assets/images/illustrations/cart.svg" class="style-illustration-img">
                             <h3 class="style-title-list">
                                 {{ webshop.meta.name }}
                             </h3>
@@ -29,7 +29,7 @@
                                 {{ webshop.meta.description }}
                             </p>
 
-                            <span slot="right" class="icon arrow-right-small gray" />
+                            <template #right><span class="icon arrow-right-small gray" /></template>
                         </STListItem>
                     </STList>
                 </main>
@@ -53,7 +53,7 @@ import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { LegalFooter,OrganizationLogo, STList, STListItem, STNavigationBar, STToolbar } from "@stamhoofd/components";
 import { Organization, WebshopPreview } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {

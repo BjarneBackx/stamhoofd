@@ -7,7 +7,7 @@
 
 <script lang="ts">
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { Component, Mixins,Prop } from "vue-property-decorator";
+import { Component, Mixins,Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import { ContextMenu, ContextMenuItem } from "../overlays/ContextMenu";
 import { DateOption } from "./DateRange";
@@ -30,7 +30,7 @@ export default class GraphDateRangeSelector extends Mixins(NavigationMixin) {
                     return new ContextMenuItem({
                         name: option.name,
                         action: () => {
-                            this.$emit("input", option);
+                            this.$emit('update:modelValue', option);
                             return true;
                         }
                     })

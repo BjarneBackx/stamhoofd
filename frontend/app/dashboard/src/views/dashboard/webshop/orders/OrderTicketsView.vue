@@ -1,6 +1,6 @@
 <template>
     <div class="st-view order-tickets-view">
-        <STNavigationBar :title="'Tickets'" :pop="canPop" :dismiss="canDismiss" />
+        <STNavigationBar :title="'Tickets'" />
         <main>
             <h1 v-if="tickets.length > 1">
                 Tickets
@@ -15,10 +15,10 @@
         </main>
 
         <STToolbar>
-            <button slot="right" class="button primary" type="button" @click="downloadAllTickets">
+            <template #right><button class="button primary" type="button" @click="downloadAllTickets">
                 <span class="icon download" />
                 <span>Download</span>
-            </button>
+            </button></template>
         </STToolbar>
     </div>
 </template>
@@ -28,9 +28,9 @@ import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { ErrorBox, STList, STListItem, STNavigationBar, STToolbar } from "@stamhoofd/components";
 import { SessionManager } from "@stamhoofd/networking";
 import { PrivateOrderWithTickets, TicketPublic } from '@stamhoofd/structures';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../../../../registration/src/classes/OrganizationManager";
+
 import { WebshopManager } from "../WebshopManager";
 import TicketRow from "./TicketRow.vue";
 
@@ -64,7 +64,7 @@ export default class OrderTicketsView extends Mixins(NavigationMixin){
     }
 
     get hasWrite() {
-        return this.webshop.privateMeta.permissions.hasWriteAccess(SessionManager.currentSession?.user?.permissions, OrganizationManager.organization.privateMeta?.roles ?? [])
+        return this.webshop.privateMeta.permissions.hasWriteAccess(this.$context.organizationPermissions)
     }
 
     async downloadAllTickets() {
@@ -74,7 +74,7 @@ export default class OrderTicketsView extends Mixins(NavigationMixin){
             '@stamhoofd/ticket-builder'
         )).TicketBuilder
 
-        const builder = new TicketBuilder(this.tickets, this.webshop, OrganizationManager.organization, this.order)
+        const builder = new TicketBuilder(this.tickets, this.webshop, this.$organization, this.order)
         await builder.download()
     }
 

@@ -13,7 +13,7 @@
             <p>{{ category.description }}</p>
             <STList>
                 <STListItem v-for="emailDefinition in category.definitions" :key="emailDefinition.type" :selectable="true" class="left-center right-stack" @click="editEmail(emailDefinition)">
-                    <img slot="left" :src="emailDefinition.illustration" class="style-illustration-img">
+                    <template #left><img :src="emailDefinition.illustration" class="style-illustration-img"></template>
                     <h2 class="style-title-list">
                         {{ emailDefinition.name }}
                     </h2>
@@ -21,7 +21,7 @@
                         {{ emailDefinition.description }}
                     </p>
 
-                    <template slot="right">
+                    <template #right>
                         <span v-if="hasTemplate(emailDefinition.type)" class="style-tag">Aangepast</span>
                         <span class="icon arrow-right-small gray" />
                     </template>
@@ -42,9 +42,9 @@ import { CenteredMessage, EditEmailTemplateView, EditorSmartButton, EditorSmartV
 import { SessionManager, UrlHelper } from "@stamhoofd/networking";
 import { Address, Cart, CartItem, CartItemPrice, Country, Customer, EmailTemplate, EmailTemplateType, Order, OrderData, Payment, PaymentMethod, Product, ProductPrice, TransferDescriptionType, TransferSettings, ValidatedAddress, WebshopTakeoutMethod, WebshopTicketType, WebshopTimeSlot } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../../classes/OrganizationManager";
+
 import { WebshopManager } from "../WebshopManager";
 
 @Component({
@@ -73,7 +73,7 @@ export default class EditWebshopEmailsView extends Mixins(NavigationMixin) {
     async loadTemplates() {
         this.loading = true
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "GET",
                 path: "/email-templates",
                 query: { webshopId: this.webshopManager.preview.id },
@@ -94,7 +94,7 @@ export default class EditWebshopEmailsView extends Mixins(NavigationMixin) {
         this.loadTemplates().catch(console.error)
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
@@ -103,7 +103,7 @@ export default class EditWebshopEmailsView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get hasTickets() {
@@ -247,7 +247,7 @@ export default class EditWebshopEmailsView extends Mixins(NavigationMixin) {
         this.saving = true;
 
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "PATCH",
                 path: "/email-templates",
                 body: this.patchTemplates,

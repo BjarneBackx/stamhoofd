@@ -4,9 +4,9 @@
             <div class="centered-message" @mousedown.stop="" @touchdown.stop="">
                 <div class="header">
                     <Spinner v-if="centeredMessage.type == 'loading'" class="" />
-                    <img v-else-if="centeredMessage.type == 'clock'" class="center" src="~@stamhoofd/assets/images/illustrations/clock.svg">
-                    <img v-else-if="centeredMessage.type == 'health'" class="center" src="~@stamhoofd/assets/images/illustrations/health-data.svg">
-                    <img v-else-if="centeredMessage.type == 'sync'" class="center" src="~@stamhoofd/assets/images/illustrations/sync.svg">
+                    <img v-else-if="centeredMessage.type == 'clock'" class="center" src="@stamhoofd/assets/images/illustrations/clock.svg">
+                    <img v-else-if="centeredMessage.type == 'health'" class="center" src="@stamhoofd/assets/images/illustrations/health-data.svg">
+                    <img v-else-if="centeredMessage.type == 'sync'" class="center" src="@stamhoofd/assets/images/illustrations/sync.svg">
                     <span v-else-if="centeredMessage.type != 'none'" :class="'center icon '+centeredMessage.type" />
                 </div>
 
@@ -36,7 +36,7 @@
 
 <script lang="ts">
 import { NavigationMixin } from '@simonbackx/vue-app-navigation';
-import { Component, Mixins, Prop, Vue } from "vue-property-decorator";
+import { Component, Mixins, Prop, Vue } from "@simonbackx/vue-app-navigation/classes";
 
 import { ErrorBox } from '../errors/ErrorBox';
 import STErrorsDefault from "../errors/STErrorsDefault.vue"
@@ -213,8 +213,8 @@ export default class CenteredMessageView extends Mixins(NavigationMixin) {
 </script>
 
 <style lang="scss">
-@use "~@stamhoofd/scss/base/variables.scss" as *;
-@use '~@stamhoofd/scss/base/text-styles.scss';
+@use "@stamhoofd/scss/base/variables.scss" as *;
+@use '@stamhoofd/scss/base/text-styles.scss';
 
 .centered-message {
     position: fixed;
@@ -315,7 +315,7 @@ export default class CenteredMessageView extends Mixins(NavigationMixin) {
         }
     }
 
-    &.show-enter, &.show-leave-to /* .fade-leave-active below version 2.1.8 */ {
+    &.show-enter-from, &.show-leave-to /* .fade-leave-active below version 2.1.8 */ {
         // Instant appearing context menu! (only leave animation)
         opacity: 0;
 

@@ -1,7 +1,7 @@
 <template>
     <div class="st-view scanner-view">
         <STNavigationBar title="Scan een ticket" :show-title="true">
-            <button slot="left" class="icon button close" type="button" @click="dismiss" />
+            <template #left><button class="icon button close" type="button" @click="dismiss" /></template>
         </STNavigationBar>
 
         <div class="video-container" :class="{ native: disableWebVideo }">
@@ -52,9 +52,7 @@ import { Order, OrderStatus, PrivateOrder, Product, TicketPrivate } from "@stamh
 import { sleep } from "@stamhoofd/utility";
 // QR-scanner worker
 import QrScanner from 'qr-scanner';
-import { Component, Mixins, Prop } from "vue-property-decorator";
-
-import QrScannerWorkerPath from '!!file-loader!qr-scanner/qr-scanner-worker.min.js';
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import { WebshopManager } from "../WebshopManager";
 import TicketAlreadyScannedView from "./status/TicketAlreadyScannedView.vue";
@@ -514,8 +512,6 @@ export default class TicketScannerView extends Mixins(NavigationMixin) {
             return
         }
 
-        QrScanner.WORKER_PATH = QrScannerWorkerPath;
-
         if (this.pollInterval) {
             clearInterval(this.pollInterval)
             this.pollInterval = null
@@ -635,7 +631,7 @@ export default class TicketScannerView extends Mixins(NavigationMixin) {
         }
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         this.stopScanning()
     }
 }

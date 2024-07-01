@@ -1,12 +1,12 @@
 <template>
     <STInputBox :title="title" error-fields="*" :error-box="errorBox">
         <label class="image-input-box" :class="{square: isSquare, dark}" @click="onClick">
-            <span v-if="!required && value" class="icon trash" />
-            <span v-if="!required && !value && placeholder" class="icon sync" />
+            <span v-if="!required && modelValue" class="icon trash" />
+            <span v-if="!required && !modelValue && placeholder" class="icon sync" />
 
             <Spinner v-if="uploading" />
-            <img v-else-if="value === null && placeholder" :src="placeholderSrc" :width="placeholderShownResolution.width" :height="placeholderShownResolution.height">
-            <span v-else-if="value == null" class="icon upload" />
+            <img v-else-if="modelValue === null && placeholder" :src="placeholderSrc" :width="placeholderShownResolution.width" :height="placeholderShownResolution.height">
+            <span v-else-if="modelValue == null" class="icon upload" />
             <img v-else :src="src" :width="shownResolution.width" :height="shownResolution.height">
             <input type="file" class="file-upload" accept="image/png, image/jpeg, image/svg+xml" @change="changedFile">
         </label>
@@ -17,18 +17,20 @@
 import { SimpleError } from "@simonbackx/simple-errors";
 import { Request } from "@simonbackx/simple-networking";
 import { NavigationMixin } from '@simonbackx/vue-app-navigation';
-import { ErrorBox, STInputBox, Validator } from "@stamhoofd/components"
-import { SessionManager } from '@stamhoofd/networking';
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 import { Image, ResolutionRequest, Version } from "@stamhoofd/structures";
-import { Component, Mixins,Prop } from "vue-property-decorator";
 
+import { ErrorBox } from "../errors/ErrorBox";
+import { Validator } from "../errors/Validator";
 import Spinner from "../Spinner.vue";
+import STInputBox from "./STInputBox.vue";
 
 @Component({
     components: {
         Spinner,
         STInputBox
-    }
+    },
+    emits: ["update:modelValue"]
 })
 export default class ImageInput extends Mixins(NavigationMixin) {
     @Prop({ default: "" }) 
@@ -41,7 +43,7 @@ export default class ImageInput extends Mixins(NavigationMixin) {
         resolutions: ResolutionRequest[] | null
     
     @Prop({ default: null })
-        value: Image | null;
+        modelValue: Image | null;
 
     @Prop({ default: null })
         placeholder: Image | null;
@@ -68,7 +70,7 @@ export default class ImageInput extends Mixins(NavigationMixin) {
     }
 
     get shownResolution() {
-        return this.value!.getResolutionForSize(undefined, 220)
+        return this.modelValue!.getResolutionForSize(undefined, 220)
     }
 
     get placeholderSrc() {
@@ -80,13 +82,13 @@ export default class ImageInput extends Mixins(NavigationMixin) {
     }
 
     onClick(event) {
-        if (!this.required && this.value) {
+        if (!this.required && this.modelValue) {
             event.preventDefault();
-            this.$emit("input", null)
+            this.$emit('update:modelValue', null)
         }
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
@@ -118,7 +120,7 @@ export default class ImageInput extends Mixins(NavigationMixin) {
         this.errorBox = null;
 
         Request.cancelAll(this)
-        SessionManager.currentSession!.authenticatedServer
+        this.$context.authenticatedServer
             .request({
                 method: "POST",
                 path: "/upload-image",
@@ -129,7 +131,7 @@ export default class ImageInput extends Mixins(NavigationMixin) {
                 owner: this
             })
             .then(response => {
-                this.$emit("input", response.data)
+                this.$emit('update:modelValue', response.data)
             })
             .catch(e => {
                 console.error(e);

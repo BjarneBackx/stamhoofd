@@ -108,9 +108,8 @@ export class NetworkManagerStatic implements RequestMiddleware {
     }
 
     async shouldRetryError(request: Request<any>, response: XMLHttpRequest, error: SimpleErrors): Promise<boolean> {
-        console.error("response error", error)
+        console.error("response error")
         console.error(error)
-        console.error(response)
 
         try {
             if (error.hasCode("client_update_required")) {
@@ -173,6 +172,7 @@ export class NetworkManagerStatic implements RequestMiddleware {
                             checkTimeout: 15 * 1000
                         }).catch(console.error)
                     } else {
+                        console.info('Received latest version: ', latestVersion, 'got', Version)
                         new Toast("Er is een update beschikbaar. Herlaad de pagina zodra het kan om te vermijden dat bepaalde zaken stoppen met werken.", "yellow download").setHide(null).show()
                     }
                 }

@@ -15,8 +15,16 @@ export function load(settings?: { path?: string, service?: "redirecter" | "api" 
         return
     }
 
-    if (!STAMHOOFD.domains || !STAMHOOFD.domains.registration) {
-        throw new Error("Expected environment variable domains.registration")
+    if (!STAMHOOFD.domains) {
+        throw new Error("Expected environment variable domains")
+    }
+
+    if (!STAMHOOFD.userMode || !['platform', 'organization'].includes(STAMHOOFD.userMode)) {
+        throw new Error("Expected environment variable userMode")
+    }
+
+    if (!STAMHOOFD.translationNamespace) {
+        throw new Error("Expected environment variable translationNamespace")
     }
 
     // Database
@@ -29,6 +37,9 @@ export function load(settings?: { path?: string, service?: "redirecter" | "api" 
     process.env.AWS_ACCESS_KEY_ID = STAMHOOFD.AWS_ACCESS_KEY_ID+""
     process.env.AWS_SECRET_ACCESS_KEY = STAMHOOFD.AWS_SECRET_ACCESS_KEY+""
     process.env.AWS_REGION = STAMHOOFD.AWS_REGION+""
+
+    // Database
+    process.env.DB_MULTIPLE_STATEMENTS="true"
 }
 
 export function signInternal(...content: string[]) {

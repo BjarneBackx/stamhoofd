@@ -23,7 +23,9 @@
 
         <STList>
             <STListItem :selectable="true" element-name="label">
-                <Checkbox slot="left" v-model="requireOptimalReservation" />
+                <template #left>
+                    <Checkbox v-model="requireOptimalReservation" />
+                </template>
 
                 <h3 class="style-title-list">
                     Verplicht optimale zaalbezetting
@@ -39,13 +41,13 @@
         <p>Maak een zetelcategorie aan om een meerprijs in rekening te brengen voor sommige zetels of bepaalde zetels te reserveren. Selecteer daarna een rij of een zetel en klik op rechtermuisknop om de categorie van die rij of zetel te wijzigen.</p>
         <STList>
             <STListItem v-for="category in patchedSeatingPlan.categories" :key="category.id" :selectable="true" element-name="button" @click="editCategory(category)">
-                <span slot="left" class="icon dot gray custom-color" :style="{'--color': patchedSeatingPlan.getCategoryColor(category.id)}" />
+                <template #left><span class="icon dot gray custom-color" :style="{'--color': patchedSeatingPlan.getCategoryColor(category.id)}" /></template>
                 <h3 class="style-title-list">
                     {{ category.name }}
                 </h3>
             </STListItem>
             <STListItem :selectable="true" element-name="button" @click="addCategory">
-                <span slot="left" class="icon add gray" />
+                <template #left><span class="icon add gray" /></template>
                 <h3 class="style-title-list">
                     Nieuwe categorie
                 </h3>
@@ -98,16 +100,22 @@
 
             <STList class="illustration-list">    
                 <STListItem :selectable="true" class="left-center" @click="downloadSettings(true)">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/box-download.svg">
+                    <template #left>
+                        <img src="@stamhoofd/assets/images/illustrations/box-download.svg">
+                    </template>
+                    
                     <h2 class="style-title-list">
                         Exporteer zaalplan
                     </h2>
                     <p class="style-description">
                         Sla een kopie van jouw zaalplan op zodat je het kan delen met andere verenigingen.
                     </p>
-                    <LoadingButton slot="right" :loading="downloadingSettings">
-                        <span class="icon download gray" />
-                    </LoadingButton>
+
+                    <template #right>
+                        <LoadingButton :loading="downloadingSettings">
+                            <span class="icon download gray" />
+                        </LoadingButton>
+                    </template>
                 </STListItem>
             </STList>
         </template>
@@ -121,9 +129,9 @@ import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-na
 import { CenteredMessage, Checkbox,ErrorBox, LoadingButton,Radio, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Toast, Validator } from "@stamhoofd/components";
 import { PrivateWebshop, SeatingPlan, SeatingPlanCategory, SeatingPlanRow, SeatingPlanSection, Version, WebshopMetaData } from "@stamhoofd/structures";
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from '../../../../../classes/OrganizationManager';
+
 import EditSeatingPlanCategoryView from './EditSeatingPlanCategoryView.vue';
 import EditSeatingPlanSectionBox from './EditSeatingPlanSectionBox.vue';
 
@@ -173,7 +181,7 @@ export default class EditSeatingPlanView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get title() {

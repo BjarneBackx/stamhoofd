@@ -1,6 +1,6 @@
 <template>
     <div class="st-view">
-        <STNavigationBar :title="title" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar :title="title" />
 
         <main>
             <h1>
@@ -14,7 +14,7 @@
             <Spinner v-if="loadingGroups" />
             <STList v-else-if="groups.length">
                 <STListItem v-for="group in groups" :key="group.id" :selectable="true" @click="openGroup(group)">
-                    <GroupAvatar slot="left" :group="group" />
+                    <GroupAvatar #left :group="group" />
                     
                     <h2 class="style-title-list">
                         {{ group.settings.name }}
@@ -23,7 +23,7 @@
                         {{ group.settings.dateRangeDescription }}
                     </p>
 
-                    <template slot="right">
+                    <template #right>
                         <span v-if="group.settings.registeredMembers !== null" class="style-description-small">{{ group.settings.registeredMembers }}</span>
                         <span class="icon arrow-right-small gray" />
                     </template>
@@ -43,9 +43,9 @@ import { GroupAvatar, Spinner,STList, STListItem, STNavigationBar, Toast } from 
 import { UrlHelper } from "@stamhoofd/networking";
 import { Group } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
+
 import GroupOverview from "./GroupOverview.vue";
 
 @Component({
@@ -80,24 +80,24 @@ export default class ArchivedGroupsView extends Mixins(NavigationMixin) {
 
     async load() {
         try {
-            this.groups = await OrganizationManager.loadArchivedGroups({owner: this})
+            this.groups = await this.$organizationManager.loadArchivedGroups({owner: this})
         } catch (e) {
             Toast.fromError(e).show()
         }
         this.loadingGroups = false
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         // Cancel all requests
         Request.cancelAll(this)
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get allCategories() {
-        return this.organization.getCategoryTree({admin: true, permissions: OrganizationManager.user?.permissions}).getAllCategories().filter(c => c.categories.length == 0)
+        return this.organization.getCategoryTree({admin: true, permissions: this.$context.organizationPermissions}).getAllCategories().filter(c => c.categories.length == 0)
     }
 
     openGroup(group: Group) {

@@ -11,13 +11,10 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop,Vue } from "vue-property-decorator";
+import { Component, Prop,Vue } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
-    "model": {
-        "prop": "modelValue",
-        "event": "change"
-    },
+    emits: ["update:modelValue"]
 })
 export default class Radio extends Vue {
     @Prop({ default: "", type: String })
@@ -44,7 +41,7 @@ export default class Radio extends Vue {
     }
 
     set radioButtonValue(value) {
-        this.$emit("change", value)
+        this.$emit("update:modelValue", value)
 
         // Add support for a model that doesn't change
         this.$nextTick(() => {

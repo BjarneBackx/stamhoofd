@@ -1,43 +1,48 @@
 <template>
-    <div class="st-navigation-bar" :class="{ scrolled, sticky, large, fixed, 'show-title': showTitle}" :style="{'grid-template-columns': templateColumns}">
-        <div v-if="hasLeft || hasRight" class="left">
-            <BackButton v-if="pop" @click="$parent.pop" />
-            <button v-else-if="dismiss && $isAndroid" class="button navigation icon close" type="button" @click="$parent.dismiss" />
-            <slot name="left" />
+    <header class="st-navigation-bar-container">
+        <div v-if="!hasLeft && !hasRight && !popup" class="st-navigation-bar-background" :class="{ scrolled }">
+            <InheritComponent name="tabbar-replacement" />
         </div>
+        <div class="st-navigation-bar" :class="{ scrolled, large, 'show-title': showTitle}" :style="{'grid-template-columns': templateColumns}">
+            <div v-if="hasLeft || hasRight" class="left">
+                <BackButton v-if="canPop && !disablePop" @click="pop()" />
+                <button v-else-if="canDismiss && !disableDismiss && $isAndroid" class="button navigation icon close" type="button" @click="dismiss()" />
+                <slot name="left" />
+            </div>
 
-        <slot v-if="hasMiddle" name="middle">
-            <h1>
-                {{ title }}
-            </h1>
-        </slot>
+            <slot v-if="hasMiddle" name="middle">
+                <h1>
+                    {{ title }}
+                </h1>
+            </slot>
 
-        <div v-if="hasRight || hasRight" class="right">
-            <slot name="right" />
-            <button v-if="dismiss && $isIOS" class="button navigation" type="button" @click="$parent.dismiss">
-                Sluiten
-            </button>
-            <button v-else-if="dismiss && !$isAndroid" class="button navigation icon close" type="button" @click="$parent.dismiss" />
+            <div v-if="hasRight || hasRight" class="right">
+                <slot name="right" />
+                <button v-if="canDismiss && !disableDismiss && $isIOS" class="button navigation" type="button" @click="dismiss()">
+                    Sluiten
+                </button>
+                <button v-else-if="canDismiss && !disableDismiss && !$isAndroid" class="button navigation icon close" type="button" @click="dismiss()" />
+            </div>
         </div>
-    </div>
+    </header>
 </template>
 
 <script lang="ts">
-import { Component, Prop,Vue } from "vue-property-decorator";
+import { NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import BackButton from ".//BackButton.vue";
+import InheritComponent from "../containers/InheritComponent.vue";
+import BackButton from "./BackButton.vue";
 
 @Component({
     components: {
-        BackButton
+        BackButton,
+        InheritComponent
     }
 })
-export default class STNavigationBar extends Vue {
+export default class STNavigationBar extends Mixins(NavigationMixin) {
     @Prop({ default: "", type: String })
         title!: string;
-
-    @Prop({ default: false, type: Boolean })
-        sticky!: boolean;
 
     @Prop({ default: true, type: Boolean })
         addShadow!: boolean;
@@ -49,30 +54,23 @@ export default class STNavigationBar extends Vue {
         showTitle!: boolean;
 
     @Prop({ default: false, type: Boolean })
-        fixed!: boolean;
-
-    @Prop({ default: false, type: Boolean })
         large!: boolean;
 
-    /// Add dismiss button (location depending on the OS)
     @Prop({ default: false, type: Boolean })
-        dismiss!: boolean;
+        disableDismiss!: boolean;
 
-    /// Add pop button (location depending on the OS)
     @Prop({ default: false, type: Boolean })
-        pop!: boolean;
+        disablePop!: boolean;
 
     scrolled = false;
     scrollElement!: HTMLElement | null;
 
-    $slots;
-
     get hasLeft() {
-        return this.pop || (this.dismiss && (this as any).$isAndroid) || !!this.$slots['left']
+        return (this.canPop  && !this.disablePop) || (this.canDismiss && !this.disableDismiss && (this as any).$isAndroid) || !!this.$slots['left']
     }
 
     get hasRight() {
-        return (this.dismiss && !(this as any).$isAndroid) || !!this.$slots['right']
+        return ((this.canDismiss  && !this.disableDismiss) && !(this as any).$isAndroid) || !!this.$slots['right']
     }
 
     get hasMiddle() {
@@ -96,29 +94,7 @@ export default class STNavigationBar extends Vue {
 
 
     getScrollElement(element: HTMLElement | null = null): HTMLElement {
-        // If we are in modern mode, always choose the main element, which is the next sibling
-        if (!this.sticky && document.body.className.indexOf("modern") > -1) {
-            return this.$el.nextElementSibling as HTMLElement;
-        }
-
-        if (!element) {
-            element = this.$el as HTMLElement;
-        }
-
-        const style = window.getComputedStyle(element);
-        if (
-            style.overflowY == "scroll" ||
-            style.overflow == "scroll" ||
-            style.overflow == "auto" ||
-            style.overflowY == "auto"
-        ) {
-            return element;
-        } else {
-            if (!element.parentElement) {
-                return document.documentElement;
-            }
-            return this.getScrollElement(element.parentElement);
-        }
+        return this.$el.nextElementSibling as HTMLElement;
     }
 
     addListener() {
@@ -126,6 +102,12 @@ export default class STNavigationBar extends Vue {
             return;
         }
         this.scrollElement = this.getScrollElement();
+        
+        if (!this.scrollElement) {
+            console.error("No scroll element found for STNavigationBar");
+            return;
+        }
+        
         if (this.scrollElement === document.documentElement) {
             window.addEventListener("scroll", this.onScroll, { passive: true });
         } else {
@@ -134,14 +116,23 @@ export default class STNavigationBar extends Vue {
     }
 
     mounted() {
+        if (this.title) {
+            this.$url.setTitle(this.title);
+        }
+
+        // fix for element not yet in dom
         this.addListener();
+        this.onScroll();
     }
 
     activated() {
+        if (this.title) {
+            this.$url.setTitle(this.title);
+        }
+
         // fix for element not yet in dom
-        window.setTimeout(() => {
-            this.addListener();
-        }, 500);
+        this.addListener();
+        this.onScroll();
     }
 
     deactivated() {
@@ -157,6 +148,9 @@ export default class STNavigationBar extends Vue {
     }
 
     onScroll() {
+        if (!this.scrollElement) {
+            return;
+        }
         const scroll = this.scrollElement!.scrollTop;
         if (scroll > 20) {
             this.scrolled = true;
@@ -168,19 +162,47 @@ export default class STNavigationBar extends Vue {
 </script>
 
 <style lang="scss">
-@use "~@stamhoofd/scss/base/variables.scss" as *;
-@use '~@stamhoofd/scss/layout/split-inputs.scss';
-@use '~@stamhoofd/scss/base/text-styles.scss';
+@use "@stamhoofd/scss/base/variables.scss" as *;
+@use '@stamhoofd/scss/layout/split-inputs.scss';
+@use '@stamhoofd/scss/base/text-styles.scss';
 
-.st-view > .st-navigation-bar.sticky {
-    // Old sticky behaviour
-    position: sticky;
-    top: 0;
+.st-navigation-bar-container {
+    position: relative;
+
+    &.transparent {
+        > .st-navigation-bar {
+            background: transparent;
+        }
+    }
+}
+
+.st-navigation-bar-background {
+    position: absolute;
+    display: grid;
+    padding: var(--st-safe-area-top, 0px) var(--navigation-bar-horizontal-padding, var(--st-horizontal-padding, 40px)) 0 var(--navigation-bar-horizontal-padding, var(--st-horizontal-padding, 40px));
+    box-sizing: border-box;
+    width: 100%;
+    height: 56px;
+    opacity: 1;
+    transition: opacity 0.2s;
+    z-index: 1;
+
+    @media (min-width: 550px) {
+        height: 55px;
+    }
+
+    body.native-iOS & {
+        height: 42px; // 44px - 2 x border width thin
+    }
+
+    &.scrolled {
+        opacity: 0;
+        pointer-events: none;
+    }
 }
 
 .st-navigation-bar {
     margin: 0;
-    margin-top: calc(-1 * var(--st-vertical-padding, 20px) + var(--navigation-bar-margin, 10px) - var(--st-safe-area-top, 0px));
     padding: var(--st-safe-area-top, 0px) var(--navigation-bar-horizontal-padding, var(--st-horizontal-padding, 40px)) 0 var(--navigation-bar-horizontal-padding, var(--st-horizontal-padding, 40px));
 
     height: 56px;
@@ -216,25 +238,6 @@ export default class STNavigationBar extends Vue {
     }
     -webkit-app-region: drag;
 
-    &.fixed {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        margin: 0;
-    }
-
-    &.sticky {
-        position: sticky;
-        top: calc(-1 * var(--st-vertical-padding, 20px));
-        margin-left: calc(-1 * var(--st-horizontal-padding, 20px));
-        margin-right: calc(-1 * var(--st-horizontal-padding, 20px));
-        margin-top: 0;
-        padding-top: calc(var(--st-vertical-padding, 20px) + var(--current-view-safe-area-top, 0px)); 
-        margin-bottom: 10px;
-        //margin-top: calc(-1 * var(--st-vertical-padding, 20px));
-    }
-
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     align-items: center;
@@ -242,10 +245,6 @@ export default class STNavigationBar extends Vue {
     background: var(--color-current-background, white);
     transition: background-color 0.3s, border-color 0.3s;
     z-index: 200;
-
-    &.transparent {
-        background: transparent;
-    }
 
     > div {
         display: flex;

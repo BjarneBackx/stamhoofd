@@ -8,18 +8,16 @@
 <script lang="ts">
 import { Decoder } from '@simonbackx/simple-encoding';
 import { isSimpleError, isSimpleErrors } from '@simonbackx/simple-errors';
-import { ComponentWithProperties, HistoryManager, ModalStackComponent, NavigationController, PushOptions } from "@simonbackx/vue-app-navigation";
-import { AuthenticatedView, CenteredMessage, CenteredMessageView, ColorHelper, ErrorBox, LoadingView, ModalStackEventBus, PromiseView, Toast, ToastBox } from '@stamhoofd/components';
+import { ComponentWithProperties, HistoryManager, ModalStackComponent, PushOptions } from "@simonbackx/vue-app-navigation";
+import { Component, Vue } from "@simonbackx/vue-app-navigation/classes";
+import { CenteredMessage, CenteredMessageView, ColorHelper, ErrorBox, LoadingView, ModalStackEventBus, PromiseView, Toast, ToastBox } from '@stamhoofd/components';
 import { I18nController } from '@stamhoofd/frontend-i18n';
-import { LoginHelper, NetworkManager, Session, SessionManager, UrlHelper } from '@stamhoofd/networking';
+import { LoginHelper, NetworkManager, SessionContext, SessionManager, UrlHelper } from '@stamhoofd/networking';
 import { Organization } from '@stamhoofd/structures';
 import { GoogleTranslateHelper } from '@stamhoofd/utility';
-import { Component, Vue } from "vue-property-decorator";
 
-import { MemberManager } from './classes/MemberManager';
+import { getRootView } from './getRootView';
 import InvalidOrganizationView from './views/errors/InvalidOrganizationView.vue';
-import HomeView from './views/login/HomeView.vue';
-import NewOverviewView from './views/overview/NewOverviewView.vue';
 
 @Component({
     components: {
@@ -43,31 +41,27 @@ export default class App extends Vue {
             })
 
             // Do we need to redirect?
-            if (window.location.hostname.toLowerCase() != response.data.resolvedRegisterDomain.toLowerCase()) {
+            if (response.data.resolvedRegisterDomain && window.location.hostname.toLowerCase() != response.data.resolvedRegisterDomain.toLowerCase()) {
                 // Redirect
                 window.location.href = UrlHelper.initial.getFullHref({ host: response.data.resolvedRegisterDomain })
                 return new ComponentWithProperties(LoadingView, {})
             }
             I18nController.skipUrlPrefixForLocale = "nl-"+response.data.address.country
-            await I18nController.loadDefault("registration", response.data.address.country, "nl", response.data.address.country)
-
+            
             if (!response.data.meta.modules.useMembers) {
                 throw new Error("Member module disabled")
             }
 
             // Set organization and session
-            const session = new Session(response.data.id)
-            await session.loadFromStorage()       
-            session.setOrganization(response.data)        
-            
-            document.title = "Schrijf je in bij "+response.data.name
+            const session = new SessionContext(response.data)
+            await session.loadFromStorage()                   
 
             // Set color
             if (response.data.meta.color) {
                 ColorHelper.setColor(response.data.meta.color)
             }
 
-            await SessionManager.setCurrentSession(session)
+            await SessionManager.prepareSessionForUsage(session)
 
             const parts =  UrlHelper.shared.getParts()
             const queryString = UrlHelper.shared.getSearchParams()
@@ -90,31 +84,11 @@ export default class App extends Vue {
                 }
             }
 
-            return new ComponentWithProperties(AuthenticatedView, {
-                root: new ComponentWithProperties(PromiseView, {
-                    promise: async () => {
-                        await MemberManager.loadMembers();
-                        try {
-                            await MemberManager.loadDocuments();
-                        } catch (e) {
-                            console.error(e)
-                        }
-
-                        return new ComponentWithProperties(ModalStackComponent, {
-                            root: new ComponentWithProperties(NavigationController, { 
-                                root: new ComponentWithProperties(NewOverviewView, {})
-                            })
-                        })
-                    }
-                }),
-                loginRoot: new ComponentWithProperties(ModalStackComponent, {
-                    root: new ComponentWithProperties(HomeView, {}) 
-                })
-            });
+            return getRootView(session, true)
         } catch (e) {
             if (!I18nController.shared) {
                 try {
-                    await I18nController.loadDefault("registration", undefined, "nl")
+                    await I18nController.loadDefault(null, undefined, "nl")
                 } catch (e) {
                     console.error(e)
                 }
@@ -179,6 +153,6 @@ export default class App extends Vue {
 
 <style lang="scss">
 // We need to include the component styling of vue-app-navigation first
-@use "~@stamhoofd/scss/main";
-@import "~@simonbackx/vue-app-navigation/dist/main.css";
+@use "@stamhoofd/scss/main";
+@import "@simonbackx/vue-app-navigation/dist/main.css";
 </style>

@@ -1,8 +1,8 @@
 <template>
     <STInputBox :title="title" error-fields="*" :error-box="errorBox">
         <label for="color-input" class="input color-input-box" :class="{ hasColor: !!hasColor }">
-            <input v-model="colorRaw" class="text-input" pattern="#[0-9A-Fa-f]{6}" type="text" :placeholder="placeholder" :autocomplete="autocomplete" @input="colorRaw = $event.target.value;" @blur="validate(false, false)">
-            <input id="color-input" v-model="pickerColor" pattern="#[0-9A-Fa-f]{6}" class="color-input" type="color" @input="pickerColor = $event.target.value;">
+            <input v-model="colorRaw" class="text-input" pattern="#[0-9A-Fa-f]{6}" type="text" :placeholder="placeholder" :autocomplete="autocomplete" @blur="validate(false, false)">
+            <input id="color-input" v-model="pickerColor" pattern="#[0-9A-Fa-f]{6}" class="color-input" type="color">
             <span class="color" :style="{ backgroundColor: myColor }" :class="{empty: !myColor}" />
             <span v-if="!myColor" class="icon arrow-down-small" />
         </label>
@@ -11,13 +11,17 @@
 
 <script lang="ts">
 import { SimpleError } from '@simonbackx/simple-errors';
-import { ErrorBox, STInputBox, Validator } from "@stamhoofd/components"
-import { Component, Prop,Vue, Watch } from "vue-property-decorator";
+import { Component, Prop,Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
+
+import {ErrorBox} from "../errors/ErrorBox";
+import {Validator} from "../errors/Validator";
+import STInputBox from "./STInputBox.vue";
 
 @Component({
     components: {
         STInputBox
-    }
+    },
+    emits: ['update:modelValue']
 })
 export default class ColorInput extends Vue {
     @Prop({ default: "" }) 
@@ -33,7 +37,7 @@ export default class ColorInput extends Vue {
     hasColor = "";
 
     @Prop({ default: null })
-        value!: string | null
+        modelValue!: string | null
 
     @Prop({ default: true })
         required!: boolean
@@ -46,7 +50,7 @@ export default class ColorInput extends Vue {
 
     errorBox: ErrorBox | null = null
 
-    @Watch('value')
+    @Watch('modelValue')
     onValueChanged(val: string | null) {
         if (val === null) {
             return
@@ -74,11 +78,11 @@ export default class ColorInput extends Vue {
             })
         }
 
-        this.colorRaw = this.value ?? ""
+        this.colorRaw = this.modelValue ?? ""
         this.hasColor = this.colorRaw
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -97,8 +101,8 @@ export default class ColorInput extends Vue {
             }
             this.hasColor = ""
 
-            if (this.value !== null) {
-                this.$emit("input", null)
+            if (this.modelValue !== null) {
+                this.$emit('update:modelValue', null)
             }
             return true
         }
@@ -119,8 +123,8 @@ export default class ColorInput extends Vue {
                     "field": "color"
                 }))
             }
-            if (this.value !== null) {
-                this.$emit("input", null)
+            if (this.modelValue !== null) {
+                this.$emit('update:modelValue', null)
             }
             return false
 
@@ -137,8 +141,8 @@ export default class ColorInput extends Vue {
                 }))
             }
 
-            if (this.value !== null) {
-                this.$emit("input", null)
+            if (this.modelValue !== null) {
+                this.$emit('update:modelValue', null)
             }
             
             return false
@@ -146,8 +150,8 @@ export default class ColorInput extends Vue {
 
         this.hasColor = this.colorRaw
 
-        if (this.colorRaw !== this.value) {
-            this.$emit("input", this.colorRaw)
+        if (this.colorRaw !== this.modelValue) {
+            this.$emit('update:modelValue', this.colorRaw)
         }
         if (!silent) {
             this.errorBox = null
@@ -160,7 +164,7 @@ export default class ColorInput extends Vue {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang="scss">
-@use "~@stamhoofd/scss/base/variables.scss" as *;
+@use "@stamhoofd/scss/base/variables.scss" as *;
 
 
 .color-input-box {

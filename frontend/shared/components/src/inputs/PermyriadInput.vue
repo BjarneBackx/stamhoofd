@@ -27,7 +27,7 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop,Vue, Watch } from "vue-property-decorator";
+import { Component, Prop,Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 
 @Component
 export default class PermyriadInput extends Vue {
@@ -44,7 +44,7 @@ export default class PermyriadInput extends Vue {
 
     /** Price in cents */
     @Prop({ default: null })
-        value!: number | null
+        modelValue!: number | null
 
     suffix = "%";
 
@@ -54,7 +54,7 @@ export default class PermyriadInput extends Vue {
     @Prop({ default: true })
         required!: boolean
 
-    @Watch('value')
+    @Watch('modelValue')
     onRealValueChanged(val: number | null, old: number | null) {
         if (old === val) {
             return
@@ -67,7 +67,7 @@ export default class PermyriadInput extends Vue {
 
         if (val === null)  {
             if (this.required) {
-                this.internalValue = this.constrain(this.value ?? this.min ?? 0);
+                this.internalValue = this.constrain(this.modelValue ?? this.min ?? 0);
             }
             this.clean();
             return;
@@ -78,11 +78,11 @@ export default class PermyriadInput extends Vue {
     }
 
     get internalValue() {
-        return this.value
+        return this.modelValue
     }
 
     set internalValue(val: number | null) {
-        this.$emit("input", val)
+        this.$emit('update:modelValue', val)
     }
 
     mounted() {
@@ -185,7 +185,7 @@ export default class PermyriadInput extends Vue {
         if (!this.valid) {
             return;
         }
-        this.internalValue = this.constrain((this.value ?? this.min ?? 0) + add);
+        this.internalValue = this.constrain((this.modelValue ?? this.min ?? 0) + add);
         this.$nextTick(() => {
             this.clean();
         })
@@ -195,7 +195,7 @@ export default class PermyriadInput extends Vue {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang="scss">
-@use "~@stamhoofd/scss/base/variables.scss" as *;
+@use "@stamhoofd/scss/base/variables.scss" as *;
 
 .permyriad-input {
     position: relative;

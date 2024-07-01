@@ -1,6 +1,6 @@
 <template>
     <div class="st-view">
-        <STNavigationBar title="DNS-instellingen" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="DNS-instellingen" />
 
         <main>
             <h1>
@@ -30,7 +30,7 @@
         </main>
 
         <STToolbar>
-            <template slot="right">
+            <template #right>
                 <button class="button secundary" type="button" @click="skip">
                     Overslaan
                 </button>
@@ -50,7 +50,7 @@ import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { BackButton, Checkbox, ErrorBox, LoadingButton, STErrorsDefault, STInputBox, STNavigationBar, STToolbar, Toast, TooltipDirective } from "@stamhoofd/components";
 import { SessionManager } from '@stamhoofd/networking';
 import { DNSRecordStatus, PrivateWebshop } from "@stamhoofd/structures";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import DNSRecordBox from '../../../../components/DNSRecordBox.vue';
 import { WebshopManager } from '../WebshopManager';
@@ -72,12 +72,12 @@ import { WebshopManager } from '../WebshopManager';
 })
 export default class WebshopDNSRecordsView extends Mixins(NavigationMixin) {
     @Prop({ required: true })
-    webshopManager: WebshopManager
+        webshopManager: WebshopManager
 
     errorBox: ErrorBox | null = null
     saving = false
 
-    session = SessionManager.currentSession
+    session = this.$context
 
     get records() {
         return this.webshopManager.webshop?.privateMeta.dnsRecords ?? []
@@ -102,7 +102,7 @@ export default class WebshopDNSRecordsView extends Mixins(NavigationMixin) {
         this.saving = true
 
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "POST",
                 path: "/webshop/"+this.webshopManager.webshop!.id+"/verify-domain",
                 decoder: PrivateWebshop as Decoder<PrivateWebshop>,

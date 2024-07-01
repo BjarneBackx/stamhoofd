@@ -39,7 +39,9 @@
             <hr>
             <h2>Categorieën</h2>
             <STList v-model="draggableCategories" :draggable="true">
-                <GroupCategoryRow v-for="category in categories" :key="category.id" :category="category" :organization="patchedOrganization" @patch="addPatch" @delete="deleteCategory(category)" @move-up="moveCategoryUp(category)" @move-down="moveCategoryDown(category)" />
+                <template #item="{item: category}">
+                    <GroupCategoryRow :category="category" :organization="patchedOrganization" @patch="addPatch" @delete="deleteCategory(category)" @move-up="moveCategoryUp(category)" @move-down="moveCategoryDown(category)" />
+                </template>
             </STList>
         </template>
 
@@ -47,7 +49,9 @@
             <hr>
             <h2>Groepen</h2>
             <STList v-model="draggableGroups" :draggable="true">
-                <GroupRow v-for="group in groups" :key="group.id" :group="group" :organization="patchedOrganization" @patch="addPatch" @delete="deleteGroup(group)" @move-up="moveGroupUp(group)" @move-down="moveGroupDown(group)" />
+                <template #item="{item: group}">
+                    <GroupRow :group="group" :organization="patchedOrganization" @patch="addPatch" @delete="deleteGroup(group)" @move-up="moveGroupUp(group)" @move-down="moveGroupDown(group)" />
+                </template>
             </STList>
         </template>
 
@@ -64,24 +68,6 @@
                 <span v-else>Opdelen in categorieën</span>
             </button>
         </p>
-
-        <div v-if="!isRoot && enableActivities" class="container">
-            <hr>
-            <h2>Toegangsbeheer</h2>
-            <p>Je kan toegang tot leden instellen per inschrijvingsgroep (instellingen van groep zelf) of per categorie (hieronder). Je kan de beschikbare rollen bewerken bij de instellingen van je vereniging, daar kan je ook instellen welke rollen elke beheerder heeft.</p>
-    
-            <STList v-if="roles.length > 0">
-                <STListItem>
-                    <Checkbox slot="left" :checked="true" :disabled="true" />
-                    Hoofdbeheerders
-                </STListItem>
-                <GroupCategoryPermissionRow v-for="role in roles" :key="role.id" type="role" :role="role" :category="patchedCategory" :organization="patchedOrganization" @patch="addCategoryPatch" />
-            </STList>
-
-            <p v-else-if="fullAccess" class="info-box">
-                Je hebt nog geen rollen aangemaakt. Maak rollen aan via Instellingen → Beheerders
-            </p>
-        </div>
 
         <div v-if="isRoot && fullAccess" class="container">
             <hr>
@@ -109,12 +95,10 @@
 <script lang="ts">
 import { AutoEncoderPatchType, patchContainsChanges } from '@simonbackx/simple-encoding';
 import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 import { BackButton, CenteredMessage, Checkbox, ErrorBox, LoadingButton, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Validator } from "@stamhoofd/components";
-import { SessionManager } from '@stamhoofd/networking';
-import { Group, GroupCategory, GroupCategoryPermissions, GroupCategorySettings, GroupGenderType, GroupPrivateSettings, GroupSettings, Organization, OrganizationGenderType, OrganizationMetaData, PermissionRole, Version } from "@stamhoofd/structures";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Group, GroupCategory, GroupCategoryPermissions, GroupCategorySettings, GroupGenderType, GroupPrivateSettings, GroupSettings, Organization, OrganizationGenderType, OrganizationMetaData, Version } from "@stamhoofd/structures";
 
-import GroupCategoryPermissionRow from '../admins/GroupCategoryPermissionRow.vue';
 import EditGroupGeneralView from './edit/EditGroupGeneralView.vue';
 import GroupCategoryRow from "./GroupCategoryRow.vue";
 import GroupRow from "./GroupRow.vue";
@@ -131,8 +115,7 @@ import GroupTrashView from './GroupTrashView.vue';
         LoadingButton,
         BackButton,
         Checkbox,
-        STListItem,
-        GroupCategoryPermissionRow
+        STListItem
     },
 })
 export default class EditCategoryGroupsView extends Mixins(NavigationMixin) {
@@ -182,7 +165,7 @@ export default class EditCategoryGroupsView extends Mixins(NavigationMixin) {
     }
 
     get fullAccess() {
-        return SessionManager.currentSession!.user!.permissions!.hasFullAccess(this.patchedOrganization.privateMeta?.roles ?? [])
+        return this.$context.organizationAuth.hasFullAccess()
     }
 
     get roles() {
@@ -381,6 +364,8 @@ export default class EditCategoryGroupsView extends Mixins(NavigationMixin) {
 
     createGroup() {
         const group = Group.create({
+            organizationId: this.organization.id,
+            periodId: this.organization.period.period.id,
             settings: GroupSettings.create({
                 name: "",
                 startDate: this.organization.meta.defaultStartDate,

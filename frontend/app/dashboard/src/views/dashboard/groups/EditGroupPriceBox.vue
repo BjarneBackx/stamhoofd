@@ -19,26 +19,27 @@
 
             <div v-if="priceGroup.startDate !== null" class="split-inputs">
                 <STInputBox title="Vanaf" error-fields="startDate" :error-box="errorBox">
-                    <DateSelection :value="priceGroup.startDate" @input="setStartDate(priceGroup, $event)" />
+                    <DateSelection :model-value="priceGroup.startDate" @update:model-value="setStartDate(priceGroup, $event)" />
                 </STInputBox>
 
-                <TimeInput :value="priceGroup.startDate" title="Tijdstip" placeholder="Tijdstip" :validator="validator" @input="setStartDate(priceGroup, $event)" />
+                <TimeInput :model-value="priceGroup.startDate" title="Tijdstip" placeholder="Tijdstip" :validator="validator" @update:model-value="setStartDate(priceGroup, $event)" />
             </div>
 
             <STList>
                 <STListItem v-for="(p, index) of priceGroup.prices" :key="index">
                     <div class="split-inputs">
                         <STInputBox :title="priceGroup.prices.length <= 1 ? 'Prijs' : (ordinalNumber(priceGroup, index + 1, priceGroup.prices.length))" error-fields="price" :error-box="errorBox">
-                            <PriceInput :value="p.price" placeholder="Gratis" @input="setPrice(priceGroup, index, $event)" />
+                            <PriceInput :model-value="p.price" placeholder="Gratis" @update:model-value="setPrice(priceGroup, index, $event)" />
 
-                            <button v-if="index > 0 && index == priceGroup.prices.length - 1" slot="right" type="button" class="button text" @click="removeFamilyPrice(priceGroup, index)">
+                            <template v-if="index > 0 && index == priceGroup.prices.length - 1" #right><button type="button" class="button text" @click="removeFamilyPrice(priceGroup, index)">
                                 <span class="icon trash" />
                             </button>
+                            </template>
                         </STInputBox>
 
                         <div v-if="p.reducedPrice !== null || enableFinancialSupport">
                             <STInputBox title="Verlaagd tarief*" error-fields="reducedPrice" :error-box="errorBox">
-                                <PriceInput :value="p.reducedPrice" :placeholder="formatPrice(p.price)" :required="false" @input="setReducedPrice(priceGroup, index, $event)" />
+                                <PriceInput :model-value="p.reducedPrice" :placeholder="formatPrice(p.price)" :required="false" @update:model-value="setReducedPrice(priceGroup, index, $event)" />
                             </STInputBox>
                         </div>
                     </div>
@@ -73,14 +74,14 @@
             
             <STInputBox v-if="!priceGroup.sameMemberOnlyDiscount && priceGroup.prices.length > 1" title="Aantal gezinsleden tellen als..." error-fields="genderType" :error-box="errorBox" class="max">
                 <RadioGroup>
-                    <Radio :model-value="getOnlySameGroup(priceGroup)" :value="true" @change="setOnlySameGroup(priceGroup, $event)">
+                    <Radio :model-value="getOnlySameGroup(priceGroup)" :value="true" @update:model-value="setOnlySameGroup(priceGroup, $event)">
                         Gezinsleden die inschrijven voor deze inschrijvingsgroep
                         <template v-if="group">
                             ({{ group.settings.name }})
                         </template>
                     </Radio>
 
-                    <Radio :model-value="getOnlySameGroup(priceGroup)" :value="false" @change="setOnlySameGroup(priceGroup, $event)">
+                    <Radio :model-value="getOnlySameGroup(priceGroup)" :value="false" @update:model-value="setOnlySameGroup(priceGroup, $event)">
                         Gezinsleden die inschrijven voor gelijk welke inschrijvingsgroep in de bovenliggende categorie
                         <template v-if="category">
                             ({{ category.settings.name }})
@@ -106,9 +107,9 @@ import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { Checkbox, DateSelection, ErrorBox, PriceInput, Radio, RadioGroup, STErrorsDefault, STInputBox, STList, STListItem, STNavigationBar, STToolbar, TimeInput, Validator } from "@stamhoofd/components";
 import { Group, GroupPrice, GroupPrices, Organization } from "@stamhoofd/structures";
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from '../../../classes/OrganizationManager';
+
 
 @Component({
     components: {
@@ -146,14 +147,14 @@ export default class EditGroupPriceBox extends Mixins(NavigationMixin) {
         patchedOrganization!: Organization | null
 
     get enableFinancialSupport() {
-        return (this.patchedOrganization ?? OrganizationManager.organization).meta.recordsConfiguration.financialSupport !== null
+        return (this.patchedOrganization ?? this.$organization).meta.recordsConfiguration.financialSupport !== null || this.$platform.config.recordsConfiguration.financialSupport !== null
     }
 
     get canRegisterMultipleGroups() {
         if (!this.group) {
             return true
         }
-        const parents = this.group.getParentCategories((this.patchedOrganization ?? OrganizationManager.organization).meta.categories, false)
+        const parents = this.group.getParentCategories((this.patchedOrganization ?? this.$organization).meta.categories, false)
         for (const parent of parents) {
             if (parent.settings.maximumRegistrations !== 1) {
                 return true
@@ -250,7 +251,7 @@ export default class EditGroupPriceBox extends Mixins(NavigationMixin) {
         if (!this.group) {
             return null
         }
-        const parents = this.group.getParentCategories((this.patchedOrganization ?? OrganizationManager.organization).meta.categories, false)
+        const parents = this.group.getParentCategories((this.patchedOrganization ?? this.$organization).meta.categories, false)
         return parents[0] ?? null
     }
 

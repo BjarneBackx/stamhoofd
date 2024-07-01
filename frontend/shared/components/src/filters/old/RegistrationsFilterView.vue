@@ -16,7 +16,9 @@
         </Dropdown>
         <STList>
             <STListItem v-for="choice of choices" :key="choice.id" :selectable="true" element-name="label">
-                <Checkbox slot="left" :checked="isChoiceSelected(choice)" @change="setChoiceSelected(choice, $event)" />
+                <template #left>
+                    <Checkbox :model-value="isChoiceSelected(choice)" @update:model-value="setChoiceSelected(choice, $event)" />
+                </template>
                 <p>
                     {{ choice.name }}
                 </p>
@@ -27,9 +29,13 @@
 
 
 <script lang="ts">
-import { Checkbox, Dropdown,STList, STListItem } from "@stamhoofd/components"
 import { Organization, RegistrationsFilter,RegistrationsFilterChoice, RegistrationsFilterMode } from "@stamhoofd/structures";
-import { Component, Prop,Vue } from "vue-property-decorator";
+import { Component, Prop,Vue } from "@simonbackx/vue-app-navigation/classes";
+
+import Checkbox from "../../inputs/Checkbox.vue";
+import Dropdown from "../../inputs/Dropdown.vue";
+import STList from "../../layout/STList.vue";
+import STListItem from "../../layout/STListItem.vue";
 
 @Component({
     components: {
@@ -41,10 +47,10 @@ import { Component, Prop,Vue } from "vue-property-decorator";
 })
 export default class RegistrationsFilterView extends Vue {
     @Prop({ required: true }) 
-    filter: RegistrationsFilter<any>
+        filter: RegistrationsFilter<any>
 
     @Prop({ required: true }) 
-    organization: Organization
+        organization: Organization
 
     get RegistrationsFilterMode() {
         return RegistrationsFilterMode

@@ -16,7 +16,7 @@
             :private-config="privateConfig" 
             :validator="validator"
             @patch:config="patchConfig($event)" 
-            @patch:privateConfig="patchPrivateConfig($event)" 
+            @patch:private-config="patchPrivateConfig($event)" 
         />
     </SaveView>
 </template>
@@ -25,12 +25,11 @@
 import { AutoEncoder, AutoEncoderPatchType, PartialWithoutMethods, patchContainsChanges } from '@simonbackx/simple-encoding';
 import { SimpleErrors } from '@simonbackx/simple-errors';
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 import { CenteredMessage, Checkbox, ErrorBox, IBANInput, LoadingButton, Radio, RadioGroup, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Toast, Validator } from "@stamhoofd/components";
 import { UrlHelper } from '@stamhoofd/networking';
 import { Country, Organization, OrganizationMetaData, OrganizationPatch, OrganizationPrivateMetaData, PaymentConfiguration, PaymentMethod, PrivatePaymentConfiguration, Version } from "@stamhoofd/structures";
-import { Component, Mixins } from "vue-property-decorator";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
 import EditPaymentMethodsBox from '../../../components/EditPaymentMethodsBox.vue';
 
 @Component({
@@ -52,13 +51,17 @@ export default class RegistrationPaymentSettingsView extends Mixins(NavigationMi
     errorBox: ErrorBox | null = null
     validator = new Validator()
     saving = false
-    temp_organization = OrganizationManager.organization
+    temp_organization = this.$organization
     loadingMollie = false
 
-    organizationPatch: AutoEncoderPatchType<Organization> & AutoEncoder = OrganizationPatch.create({ id: OrganizationManager.organization.id })
+    organizationPatch: AutoEncoderPatchType<Organization> & AutoEncoder = OrganizationPatch.create({})
+
+    created() {
+        this.organizationPatch.id = this.$organization.id
+    }
 
     get organization() {
-        return OrganizationManager.organization.patch(this.organizationPatch)
+        return this.$organization.patch(this.organizationPatch)
     }
 
     get isBelgium() {
@@ -125,8 +128,8 @@ export default class RegistrationPaymentSettingsView extends Mixins(NavigationMi
         this.saving = true
 
         try {
-            await OrganizationManager.patch(this.organizationPatch)
-            this.organizationPatch = OrganizationPatch.create({ id: OrganizationManager.organization.id })
+            await this.$organizationManager.patch(this.organizationPatch)
+            this.organizationPatch = OrganizationPatch.create({ id: this.$organization.id })
             new Toast('De wijzigingen zijn opgeslagen', "success green").show()
             this.dismiss({ force: true })
         } catch (e) {
@@ -137,7 +140,7 @@ export default class RegistrationPaymentSettingsView extends Mixins(NavigationMi
     }
 
     get hasChanges() {
-        return patchContainsChanges(this.organizationPatch, OrganizationManager.organization, { version: Version })
+        return patchContainsChanges(this.organizationPatch, this.$organization, { version: Version })
     }
 
     async shouldNavigateAway() {
@@ -150,7 +153,7 @@ export default class RegistrationPaymentSettingsView extends Mixins(NavigationMi
     mounted() {
         // We can clear now
         UrlHelper.shared.clear()
-        UrlHelper.setUrl("/settings/registration-payments")
+        this.setUrl("/registration-payments")
     }
 }
 </script>

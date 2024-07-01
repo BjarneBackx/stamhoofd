@@ -1,7 +1,7 @@
 <template>
     <div class="st-view background category-view">
-        <STNavigationBar :title="title" :dismiss="canDismiss" :pop="canPop">
-            <template slot="right">
+        <STNavigationBar :title="title">
+            <template #right>
                 <button v-if="canEdit" class="navigation button icon settings" type="button" @click="editMe" />
             </template>
         </STNavigationBar>
@@ -22,7 +22,7 @@
             <template v-if="categories.length > 0">
                 <STList>
                     <STListItem v-if="categories.length > 1" :selectable="true" class="left-center" @click="openAll(true)">
-                        <span slot="left" class="icon group" />
+                        <template #left><span class="icon group" /></template>
 
                         <h2 class="style-title-list bolder">
                             Alle leden
@@ -30,11 +30,11 @@
                         <p class="style-description-small">
                             Bekijk alle leden samen
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
                     <STListItem v-if="categories.length > 1 && hasMultipleWaitingLists" :selectable="true" class="left-center" @click="openWaitingList(true)">
-                        <span slot="left" class="icon clock" />
+                        <template #left><span class="icon clock" /></template>
 
                         <h2 class="style-title-list bolder">
                             Gemeenschappelijke wachtlijsten
@@ -42,18 +42,18 @@
                         <p class="style-description-small">
                             Bekijk alle wachtlijsten samen
                         </p>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
                     <STListItem v-for="category in categories" :key="category.id" :selectable="true" @click="openCategory(category)">
-                        <template slot="left">
+                        <template #left>
                             <span v-if="category.categories.length" class="icon category" />
                             <span v-else class="icon category" />
                         </template>
 
                         {{ category.settings.name }}
 
-                        <template slot="right">
+                        <template #right>
                             <span class="icon arrow-right-small gray" />
                         </template>
                     </STListItem>
@@ -63,27 +63,27 @@
             <template v-else-if="groups.length > 0">
                 <STList>
                     <STListItem v-if="groups.length > 1" :selectable="true" class="left-center" @click="openAll(true)">
-                        <span slot="left" class="icon group" />
+                        <template #left><span class="icon group" /></template>
 
                         <h2 class="style-title-list bolder">
                             Alle leden
                         </h2>
-                        <span v-if="getMemberCount() !== null" slot="right" class="style-description-small">{{ getMemberCount() }}</span>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span v-if="getMemberCount() !== null" class="style-description-small">{{ getMemberCount() }}</span>
+                        <span class="icon arrow-right-small gray" /></template>
                     </STListItem>
 
                     <STListItem v-if="hasMultipleWaitingLists" :selectable="true" class="left-center" @click="openWaitingList(true)">
-                        <span slot="left" class="icon clock" />
+                        <template #left><span class="icon clock" /></template>
 
                         <h2 class="style-title-list bolder">
                             Gemeenschappelijke wachtlijsten
                         </h2>
-                        <span v-if="getMemberCount({waitingList: true}) !== null" slot="right" class="style-description-small">{{ getMemberCount({waitingList: true}) }}</span>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span v-if="getMemberCount({waitingList: true}) !== null" class="style-description-small">{{ getMemberCount({waitingList: true}) }}</span>
+                        <span class="icon arrow-right-small gray" /></template>
                     </STListItem>
                     
                     <STListItem v-for="group in groups" :key="group.id" :selectable="true" @click="openGroup(group)">
-                        <GroupAvatar slot="left" :group="group" />
+                        <template #left><GroupAvatar :group="group" /></template>
                         <h3 class="style-title-list">
                             {{ group.settings.name }}
                         </h3>
@@ -91,7 +91,7 @@
                             {{ group.settings.dateRangeDescription }}
                         </p>
 
-                        <template slot="right">
+                        <template #right>
                             <span v-if="group.getMemberCount() !== null" class="style-description-small">{{ group.getMemberCount() }}</span>
                             <span class="icon arrow-right-small gray" />
                         </template>
@@ -110,7 +110,7 @@
                     <h2>Vorige periodes</h2>
                     <STList class="illustration-list">
                         <STListItem v-for="offset in cycleOffsets" :key="'offset-' + offset" :selectable="true" class="left-center" @click="openAll(true, offset)">
-                            <img slot="left" src="~@stamhoofd/assets/images/illustrations/package-members.svg">
+                            <template #left><img src="@stamhoofd/assets/images/illustrations/package-members.svg"></template>
                             <h2 v-if="offset === 1" class="style-title-list">
                                 Vorige inschrijvingsperiode
                             </h2>
@@ -122,8 +122,8 @@
                                 {{ getTimeRangeOffset(offset) }}
                             </p>
 
-                            <span v-if="getMemberCount({cycleOffset: offset}) !== null" slot="right" class="style-description-small">{{ getMemberCount({cycleOffset: offset}) }}</span>
-                            <span slot="right" class="icon arrow-right-small gray" />
+                            <template #right><span v-if="getMemberCount({cycleOffset: offset}) !== null" class="style-description-small">{{ getMemberCount({cycleOffset: offset}) }}</span>
+                            <span class="icon arrow-right-small gray" /></template>
                         </STListItem>
                     </STList>
                 </template>
@@ -149,16 +149,15 @@
 <script lang="ts">
 import { AutoEncoderPatchType } from "@simonbackx/simple-encoding";
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { BackButton, ContextMenu, ContextMenuItem, ErrorBox, GroupAvatar, STErrorsDefault, STInputBox, STList, STListItem, STNavigationBar, STToolbar, Validator } from "@stamhoofd/components";
+import { BackButton, ContextMenu, ContextMenuItem, ErrorBox, GroupAvatar, MembersTableView, STErrorsDefault, STInputBox, STList, STListItem, STNavigationBar, STToolbar, Validator } from "@stamhoofd/components";
 import { UrlHelper } from '@stamhoofd/networking';
 import { Group, GroupCategory, GroupCategoryTree, GroupGenderType, GroupPrivateSettings, GroupSettings, GroupStatus, Organization, OrganizationGenderType, OrganizationMetaData } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from '../../../classes/OrganizationManager';
+
 import EditGroupGeneralView from "./edit/EditGroupGeneralView.vue";
 import EditCategoryGroupsView from "./EditCategoryGroupsView.vue";
-import GroupMembersView from "./GroupMembersView.vue";
 import GroupOverview from "./GroupOverview.vue";
 
 @Component({
@@ -294,11 +293,11 @@ export default class CategoryView extends Mixins(NavigationMixin) {
     }
 
     get tree() {
-        return GroupCategoryTree.build(this.reactiveCategory, this.organization, {permissions: OrganizationManager.user.permissions})
+        return GroupCategoryTree.build(this.reactiveCategory, this.organization, {permissions: this.$context.organizationPermissions})
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get isRoot() {
@@ -314,11 +313,11 @@ export default class CategoryView extends Mixins(NavigationMixin) {
     }
 
     get canEdit() {
-        return OrganizationManager.user.permissions ? this.category.canEdit(OrganizationManager.user.permissions, this.organization.privateMeta?.roles ?? []) : false
+        return this.$organizationManager.user.permissions ? this.category.canEdit(this.$context.organizationPermissions) : false
     }
 
     get canCreate() {
-        return OrganizationManager.user.permissions ? this.category.canCreate(OrganizationManager.user.permissions, this.organization.meta.categories, this.organization.privateMeta?.roles ?? []) : false
+        return this.$organizationManager.user.permissions ? this.category.canCreate(this.$context.organizationPermissions, this.organization.meta.categories) : false
     }
 
     get groups() {
@@ -344,7 +343,7 @@ export default class CategoryView extends Mixins(NavigationMixin) {
     openAll(animated = true, cycleOffset?: number) {
         this.show({
             components: [
-                new ComponentWithProperties(GroupMembersView, {
+                new ComponentWithProperties(MembersTableView, {
                     category: this.tree,
                     initialCycleOffset: cycleOffset
                 })
@@ -356,7 +355,7 @@ export default class CategoryView extends Mixins(NavigationMixin) {
     openWaitingList(animated = true) {
         this.show({
             components: [
-                new ComponentWithProperties(GroupMembersView, {
+                new ComponentWithProperties(MembersTableView, {
                     category: this.tree,
                     waitingList: true
                 })
@@ -367,6 +366,8 @@ export default class CategoryView extends Mixins(NavigationMixin) {
 
     createGroup() {
         const group = Group.create({
+            organizationId: this.organization.id,
+            periodId: this.organization.period.period.id,
             settings: GroupSettings.create({
                 name: "",
                 startDate: this.organization.meta.defaultStartDate,
@@ -393,7 +394,7 @@ export default class CategoryView extends Mixins(NavigationMixin) {
             group, 
             organization: this.organization.patch(p), 
             saveHandler: async (patch: AutoEncoderPatchType<Organization>) => {
-                await OrganizationManager.patch(p.patch(patch))
+                await this.$organizationManager.patch(p.patch(patch))
             }
         }).setDisplayStyle("popup"))
     }
@@ -405,7 +406,7 @@ export default class CategoryView extends Mixins(NavigationMixin) {
                 organization: this.organization, 
                 saveHandler: async (patch) => {
                     patch.id = this.organization.id
-                    await OrganizationManager.patch(patch)
+                    await this.$organizationManager.patch(patch)
                 }
             })
         }).setDisplayStyle("popup"))

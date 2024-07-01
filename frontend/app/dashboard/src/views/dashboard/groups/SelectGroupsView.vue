@@ -1,6 +1,6 @@
 <template>
     <div id="parent-view" class="st-view">
-        <STNavigationBar title="Kies inschrijvingsgroepen" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Kies inschrijvingsgroepen" />
         
         <main>
             <h1>
@@ -14,7 +14,9 @@
                 <h2>{{ category.settings.name }}</h2>
                 <STList>
                     <STListItem v-for="group in category.groups" :key="group.id" :selectable="true" element-name="label" class="right-stack left-center">
-                        <Checkbox slot="left" :checked="getSelectedGroup(group)" @change="setSelectedGroup(group, $event)" />
+                        <template #left>
+                            <Checkbox :model-value="getSelectedGroup(group)" @update:model-value="setSelectedGroup(group, $event)" />
+                        </template>
                         <h2 class="style-title-list">
                             {{ group.settings.name }}
                         </h2>
@@ -33,7 +35,9 @@
 
                     <STList>
                         <STListItem v-for="group in archivedGroups" :key="group.id" :selectable="true" element-name="label" class="right-stack left-center">
-                            <Checkbox slot="left" :checked="getSelectedGroup(group)" @change="setSelectedGroup(group, $event)" />
+                            <template #left>
+                                <Checkbox :model-value="getSelectedGroup(group)" @update:model-value="setSelectedGroup(group, $event)" />
+                            </template>
                             <h2 class="style-title-list">
                                 {{ group.settings.name }}
                             </h2>
@@ -51,11 +55,11 @@
         </main>
 
         <STToolbar>
-            <LoadingButton slot="right" :loading="loading">
+            <template #right><LoadingButton :loading="loading">
                 <button class="button primary" type="button" @click="save">
                     Opslaan
                 </button>
-            </LoadingButton>
+            </LoadingButton></template>
         </STToolbar>
     </div>
 </template>
@@ -65,9 +69,9 @@ import { Request } from "@simonbackx/simple-networking";
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, Checkbox, ErrorBox, LoadingButton, Spinner, STErrorsDefault, STInputBox, STList, STListItem, STNavigationBar, STToolbar, Toast, Validator } from "@stamhoofd/components";
 import { Group } from "@stamhoofd/structures";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from '../../../classes/OrganizationManager';
+
 
 @Component({
     components: {
@@ -105,7 +109,7 @@ export default class SelectGroupsView extends Mixins(NavigationMixin) {
     loadingGroups = true
 
     get categoryTree() {
-        return OrganizationManager.organization.getCategoryTree({maxDepth: 1, admin: true, smartCombine: true, filterGroups: this.filterGroup})
+        return this.$organization.getCategoryTree({maxDepth: 1, admin: true, smartCombine: true, filterGroups: this.filterGroup})
     }
 
     filterGroup(group: Group) {
@@ -167,14 +171,14 @@ export default class SelectGroupsView extends Mixins(NavigationMixin) {
         }
 
         try {
-            this.archivedGroups = (await OrganizationManager.loadArchivedGroups({owner: this})).filter(this.filterGroup)
+            this.archivedGroups = (await this.$organizationManager.loadArchivedGroups({owner: this})).filter(this.filterGroup)
         } catch (e) {
             Toast.fromError(e).show()
         }
         this.loadingGroups = false
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         // Cancel all requests
         Request.cancelAll(this)
     }

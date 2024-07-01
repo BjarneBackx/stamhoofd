@@ -1,25 +1,31 @@
 <template>
-    <div>
+    <LoadingView v-if="loadingDefault" />
+    <div v-else>
         <STGradientBackground />
 
         <div class="st-view background transparent">
             <STNavigationBar v-if="!isNative" :large="true" class="transparent">
-                <template slot="left">
+                <template #left>
                     <a alt="Stamhoofd" :href="'https://'+$t('shared.domains.marketing')+''" rel="noopener" class="logo-container">
                         <Logo class="responsive" />
-                        <span class="logo-text horizontal hide-medium">Beheerders</span>
+                        <span class="logo-text horizontal hide-medium" v-if="!isPlatform">Beheerders</span>
                     </a>
                 </template>
 
-                <template slot="right">
-                    <a v-if="!isNative" class="button text only-icon-smartphone" :href="'https://'+$t('shared.domains.marketing')+''" rel="noopener">
-                        <span class="icon external" />
-                        <span>Terug naar website</span>
-                    </a>
+                <template #right>
+                    <template v-if="$context.user">
+                        <InheritComponent name="tabbar-right" />
+                    </template>
+                    <template v-else>
+                        <a v-if="!isNative" class="button text only-icon-smartphone" :href="'https://'+$t('shared.domains.marketing')+''" rel="noopener">
+                            <span class="icon external" />
+                            <span>Terug naar website</span>
+                        </a>
 
-                    <a v-if="!isNative" class="button primary" href="/aansluiten" @click.prevent="gotoSignup">
-                        {{ $t("dashboard.join") }}
-                    </a>
+                        <a v-if="!isNative" class="button primary" href="/aansluiten" @click.prevent="$navigate('join')">
+                            {{ $t("dashboard.join") }}
+                        </a>
+                    </template>
                 </template>
             </STNavigationBar>
             <STNavigationBar v-else title="Beheer jouw vereniging" class="transparent" />
@@ -27,42 +33,47 @@
             <main class="limit-width">
                 <div class="organization-selection-view" :class="{native: isNative}">
                     <h1>
-                        Beheer jouw vereniging
+                        {{ $t('dashboard.organization-selection.welcome-title') }}
                     </h1>
-                    <p v-if="!isNative" class="style-description-block style-description-large">
-                        Welkom op het dashboard voor beheerders van verenigingen op Stamhoofd. Als jouw vereniging als is aangesloten bij Stamhoofd, kan je die hieronder zoeken.
-                    </p>
-                    <p v-else class="style-description-block style-description-large">
-                        Welkom in de Stamhoofd app voor beheerders. Als jouw vereniging al is aangesloten bij Stamhoofd, kan je die hieronder zoeken.
+
+                    <p class="style-description-block style-description-large">
+                        {{ $t('dashboard.organization-selection.welcome-description') }}
                     </p>
 
                     <form class="input-icon-container icon search gray" @submit.prevent>
-                        <input ref="input" v-model="query" class="input" placeholder="Zoek op naam of postcode" name="search" inputmode="search" type="search" enterkeyhint="search" autocorrect="off" autocomplete="off" spellcheck="false" autocapitalize="off" @input="query = $event.target.value" @keydown.down.prevent="selectResult(0)">
+                        <input ref="input" v-model="query" autofocus class="input" :placeholder="$t('dashboard.organization-selection.search-placeholder')" name="search" inputmode="search" type="search" enterkeyhint="search" autocorrect="off" autocomplete="off" :spellcheck="false" autocapitalize="off" @keydown.down.prevent="focusResult(0)">
                     </form>
 
                     <div v-if="showDevelopment" class="version-box">
                         <VersionFooter />
                     </div>
-                    <Spinner v-else-if="loading" class="gray center" />
+                    <Spinner v-else-if="loadingResults" class="gray center" />
                     <template v-else>
-                        <button v-for="(organization, index) in filteredResults" :key="organization.id" ref="results" type="button" class="search-result" @keydown.down.prevent="selectResult(index + 1)" @keydown.up.prevent="selectResult(index - 1)" @click="loginOrganization(organization.id)">
-                            <OrganizationAvatar :organization="organization" />
+                        <button v-for="(option, index) in visibleOptions" ref="resultElements" :key="option.id" type="button" class="search-result" @keydown.down.prevent="focusResult(index + 1)" @keydown.up.prevent="focusResult(index - 1)" @click="selectOption(option)">
+                            <ContextLogo :organization="option.organization" :app="option.app" />
                             <div>
-                                <h1>{{ organization.name }}</h1>
-                                <p>{{ organization.address.anonymousString($country) }}</p>
-                                <Spinner v-if="loadingSession === organization.id" class="floating" />
-                                <span v-else-if="isSignedInFor(organization.id)" class="icon success primary floating" />
-                                <span v-else class="icon arrow-right-small gray floating" />
+                                <h1>{{ getAppTitle(option.app, option.organization) }}</h1>
+
+                                <p v-if="getAppDescription(option.app, option.organization)" class="style-description">
+                                    {{ getAppDescription(option.app, option.organization) }}
+                                </p>
+                                <p v-if="option.userDescription" class="style-description-small style-em">
+                                    Ingelogd als {{ option.userDescription }}
+                                </p>
+                                
+                                <span v-if="option.userDescription" class="icon gray sync floating" />
+                                <span v-if="!isPlatform && option.context.canGetCompleted()" class="icon success primary floating" />
+                                <span v-if="isPlatform && option.context.hasPermissions()" class="icon privacy gray floating" />
                             </div>
                         </button>
                     </template>
 
-                    <p v-if="!loading && filteredResults.length == 0 && query && !showDevelopment" class="info-box">
+                    <p v-if="!loadingResults && visibleOptions.length == 0 && query && !showDevelopment" class="info-box">
                         Geen verenigingen gevonden. Probeer te zoeken op postcode of naam. Is jouw vereniging nog niet aangesloten? Maak dan eerst een vereniging aan.
                     </p>
 
-                    <footer v-if="!showDevelopment">
-                        <a v-if="!isNative" href="/aansluiten" class="button text full selected" @click.prevent="gotoSignup">
+                    <footer v-if="!showDevelopment && !isPlatform">
+                        <a v-if="!isNative" href="/aansluiten" class="button text full selected" @click.prevent="$navigate('join')">
                             <span class="icon add" />
                             <span>Mijn vereniging aansluiten</span>
                         </a>
@@ -78,286 +89,192 @@
     </div>
 </template>
 
-<script lang="ts">
+<script setup lang="ts">
 import { ArrayDecoder, Decoder } from '@simonbackx/simple-encoding';
 import { Request } from '@simonbackx/simple-networking';
-import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { AsyncComponent, CenteredMessage, Logo, OrganizationAvatar, Spinner, STGradientBackground,STNavigationBar, Toast } from '@stamhoofd/components';
-import { AppManager, NetworkManager, Session, SessionManager, Storage, UrlHelper } from '@stamhoofd/networking';
+import { defineRoutes, useNavigate } from '@simonbackx/vue-app-navigation';
+import { ContextLogo, getAppDescription, getAppTitle, InheritComponent, Logo, Option, Spinner, STGradientBackground, Toast, useContextOptions, useUser } from '@stamhoofd/components';
+import { AppManager, NetworkManager, useRequestOwner } from '@stamhoofd/networking';
 import { Organization } from '@stamhoofd/structures';
-import { Component, Mixins } from "vue-property-decorator";
+import {throttle} from "@stamhoofd/utility"
+import { computed, getCurrentInstance, onMounted, reactive, Ref, ref, shallowRef, watch } from 'vue';
 
-import { OrganizationManager } from '../../classes/OrganizationManager';
 import VersionFooter from '../dashboard/settings/VersionFooter.vue';
 
-const throttle = (func, limit) => {
-    let lastFunc;
-    let lastRan;
-    return function() {
-        const context = this;
-        // eslint-disable-next-line prefer-rest-params
-        const args = arguments;
-        if (lastRan) {
-            clearTimeout(lastFunc);
-        }
-        lastRan = Date.now();
-            
-        lastFunc = setTimeout(function() {
-            if (Date.now() - lastRan >= limit) {
-                func.apply(context, args);
-                lastRan = Date.now();
-            }
-        }, limit - (Date.now() - lastRan));
-    };
-};
+const isNative = ref(AppManager.shared.isNative)
+const loadingDefault = ref(true)
+const loadingResults = ref(false)
+const showDevelopment = ref(false)
+const query = ref("");
+const defaultOptions: Ref<Option[]> = shallowRef([]);
+const results: Ref<Option[]> = shallowRef([]);
+const owner = useRequestOwner()
+const input = ref<HTMLInputElement | null>(null)
+const resultElements = reactive<HTMLElement[]>([])
+const visibleOptions = computed(() => query.value.length == 0 ? defaultOptions.value : results.value)
+const isPlatform = STAMHOOFD.userMode === 'platform'
+const instance = getCurrentInstance();
 
-
-// The header component detects if the user scrolled past the header position and adds a background gradient in an animation
-@Component({
-    components: {
-        Spinner,
-        STNavigationBar,
-        Logo,
-        OrganizationAvatar,
-        STGradientBackground,
-        VersionFooter
-    },
-    metaInfo() {
-        return {
-            title: "Stamhoofd webapp | Beheer je vereniging",
-            meta: [
-                {
-                    vmid: 'description',
-                    name: 'description',
-                    content: "Via de Stamhoofd webapp kan je jouw vereniging beheren in je browser.",
-                }
-            ]
-        }
-    }
+onMounted(() => {
+    console.info('Mounted OrganizationSelectionView', instance)
 })
-export default class OrganizationSelectionView extends Mixins(NavigationMixin){
-    loading = false;
-    loadingSession: string | null = null;
-    q = ""
-    results: Organization[] = []
 
-    get isNative() {
-        return AppManager.shared.isNative
-    }
+const {getDefaultOptions, selectOption, getOptionForOrganization} = useContextOptions()
 
-    get query() {
-        return this.q
-    }
+getDefaultOptions().then((opts) => {
+    defaultOptions.value = opts;
+    loadingDefault.value = false
+}).catch(console.error);
 
-    set query(query: string) {
-        this.q = query
+let lastQuery = '';
+let counter = 0;
 
-        // update
-        this.startUpdateResults();
-    }
+const help = () => {
+    // todo
+}
 
-    get showDevelopment() {
-        return this.q.toLocaleLowerCase().trim() === 'stamhoofd dev'
-    }
-
-    help() {
-        if (this.isNative) {
-            new CenteredMessage("Vereniging niet gevonden", "In dit overzicht staan enkel verenigingen die al aangesloten zijn bij Stamhoofd. Een vereniging moet eerst aansluiten voor je kan inloggen.").addCloseButton("Sluiten").show()
-        } else {
-            new CenteredMessage("Vereniging niet gevonden", "In dit overzicht staan enkel verenigingen die al aangesloten zijn bij Stamhoofd. Je kan zelf een nieuwe vereniging aansluiten via de knop 'Nieuwe vereniging' bovenaan.").addCloseButton("Sluiten").show()
+const focusResult = (index: number) => {
+    if (index === -1) {
+        if (input.value) {
+            input.value.focus();
         }
+        return
     }
-
-    gotoSignup() {
-        this.present(
-            new ComponentWithProperties(NavigationController, {
-                root: AsyncComponent(() => import(/* webpackChunkName: "SignupGeneralView" */ '../signup/SignupGeneralView.vue'), {})
-            }).setDisplayStyle("popup")
-        )
-        plausible('openSignup');
-    }
-
-    mounted() {
-        const parts =  UrlHelper.shared.getParts()
-        const queryString =  UrlHelper.shared.getSearchParams()
-
-        if (parts.length >= 1 && parts[0] == 'aansluiten') {
-            try {
-                let code = queryString.get("code")
-                let organization = queryString.get("org")
-                this.present({
-                    url: UrlHelper.transformUrl("/aansluiten"),
-                    adjustHistory: false,
-                    components: [
-                        new ComponentWithProperties(NavigationController, {
-                            root: AsyncComponent(() => import(/* webpackChunkName: "SignupGeneralView" */ '../signup/SignupGeneralView.vue'), { 
-                                initialRegisterCode: code && organization ? {
-                                    code,
-                                    organization
-                                } : null,
-                                visitViaUrl: true
-                            })
-                        }).setDisplayStyle("popup").setAnimated(false)
-                    ]
-                })
-                
-            } catch (e) {
-                console.error(e)
-            }
+    if (resultElements) {
+        if (resultElements[index]) {
+            resultElements[index].focus()
         }
-
-        if (parts.length >= 2 && parts[0] == 'login') {
-            const id = parts[1]
-            this.loginOrganization(id, false).catch(console.error);
-        }
-
-        if ((parts.length == 2 && parts[0] == 'auth' && parts[1] == 'nolt')) {
-            // do not clear url here, so we can pass on the auth to the dashboard menu
-            new Toast("Kies een vereniging en log in. Daarna kan je inloggen in het feedback systeem.", "error red").setHide(15*1000).show()
-        } else {
-            UrlHelper.shared.clear()
-
-            // Reset url if we log out
-            UrlHelper.setUrl("/")
-        }
-
-
-        this.updateDefault().catch(console.error)
-    }
-
-    activated() {
-        this.updateDefault().catch(console.error)
-    }
-
-    beforeDestroy() {
-        Request.cancelAll(this)
-    }
-
-    throttleUpdateResults = throttle(this.updateResults.bind(this), 500);
-
-    availableSessions: Session[] = []
-    get defaultOrganizations(): Organization[] {
-        return this.availableSessions.filter(s => !!s.organization).map(s => s.organization!)
-    }
-
-    async updateDefault() {
-        this.availableSessions = await SessionManager.availableSessions()
-    }
-
-    get filteredResults() {
-        if (this.query.length == 0) {
-            return this.defaultOrganizations
-        }
-        return this.results
-    }
-
-    startUpdateResults() {
-        if (this.query === this.lastQuery) {
-            return
-        }
-        this.lastQuery = this.query
-        this.loading = true
-        this.counter++
-        Request.cancelAll(this)
-
-        if (this.query.length == 0) {
-            this.results = []
-            this.loading = false
-            return
-        }
-        this.throttleUpdateResults()
-    }
-
-    counter = 0
-    lastQuery = ""
-
-    updateResults() {
-        if (this.query.length == 0 || this.showDevelopment) {
-            this.results = []
-            this.loading = false
-            return
-        }
-        this.loading = true
-        let cachedCount = this.counter
-        NetworkManager.server.request({
-            method: "GET",
-            path: "/organizations/search",
-            query: {query: this.query },
-            decoder: new ArrayDecoder(Organization as Decoder<Organization>),
-            owner: this
-        }).then((response) => {
-            if (cachedCount !== this.counter) {
-                // A new request have started already
-                return
-            }
-            this.results = response.data
-        }).catch(e => {
-            if (cachedCount !== this.counter) {
-                // A new request have started already
-                return
-            }
-            console.error(e)
-            Toast.fromError(e).show()
-            this.results = []
-        }).finally(() => {
-            if (cachedCount !== this.counter) {
-                // A new request have started already
-                return
-            }
-            this.loading = false
-        })
-    }
-
-    selectResult(index: number) {
-        if (index === -1) {
-            (this.$refs.input as HTMLInputElement).focus();
-            return
-        }
-        if (this.$refs.results && this.$refs.results[index]) {
-            this.$refs.results[index].focus()
-        }
-    }
-
-    async loginOrganization(organizationId: string, animated = true) {
-        if (this.loadingSession) {
-            return
-        }
-        this.loadingSession = organizationId
-
-        if (animated == true && organizationId === "34541097-44dd-4c68-885e-de4f42abae4c") {
-            await Storage.keyValue.setItem('next_url_load', '/login/34541097-44dd-4c68-885e-de4f42abae4c')
-            await AppManager.shared.checkUpdates({
-                // Always load the staging build
-                customText: 'Bezig met laden...',
-                visibleDownload: true,
-                installAutomatically: true,
-                force: STAMHOOFD.environment !== 'staging',
-                channel: 'https://files.stamhoofd.be/releases/app/staging/latest.json',
-                checkTimeout: 15 * 1000
-            })
-            await Storage.keyValue.removeItem('next_url_load')
-        }
-        
-        try {
-            await OrganizationManager.switchOrganization(this, organizationId, animated)
-        } catch (e) {
-            Toast.fromError(e).show()
-        }
-
-        this.loadingSession = null;
-        await this.updateDefault()
-    }
-
-    isSignedInFor(organizationId: string) {
-        const session = this.availableSessions.find(s => s.organizationId === organizationId)
-        return session && session.canGetCompleted()
     }
 }
+
+const setResults = async (cachedCount: number, organizations: Organization[]) => {
+    if (cachedCount !== counter) {
+        // A new request have started already
+        // (race condition if this was scheduled)
+        return
+    }
+
+    if (organizations.length == 0) {
+        results.value = []
+        return;
+    }
+
+    // Start loading the options
+    const options = await Promise.all(organizations.map(async (organization) => {
+        const option = await getOptionForOrganization(organization) as Option
+        return option
+    }))
+
+    if (cachedCount !== counter) {
+        // A new request have started already
+        return
+    }
+
+    results.value = options
+}
+
+const updateResults = async () => {
+    const q = query.value
+    const cachedCount = counter
+
+    if (q.length == 0 || showDevelopment.value) {
+        await setResults(cachedCount, [])
+        loadingResults.value = false
+        return
+    }
+    loadingResults.value = true
+
+    try {
+        const response = await NetworkManager.server.request({
+            method: "GET",
+            path: "/organizations/search",
+            query: {query: q },
+            decoder: new ArrayDecoder(Organization as Decoder<Organization>),
+            owner
+        })
+
+        if (cachedCount !== counter) {
+            // A new request have started already
+            return
+        }
+        await setResults(cachedCount, response.data)
+    } catch (e) {
+        if (cachedCount !== counter) {
+            // A new request have started already
+            return
+        }
+        if (!Request.isAbortError(e)) {
+            console.error(e)
+            Toast.fromError(e).show()
+        }
+        await setResults(cachedCount, [])
+    }
+
+    if (cachedCount !== counter) {
+        // A new request have started already
+        return
+    }
+    loadingResults.value = false
+}
+
+const throttleUpdateResults = throttle(updateResults, 500);
+
+const startUpdateResults = async () => {
+    const value = query.value
+    if (value === lastQuery) {
+        return
+    }
+    lastQuery = value
+    loadingResults.value = true
+    counter += 1;
+
+    Request.cancelAll(owner)
+
+    if (value.length == 0) {
+        await setResults(counter, [])
+        loadingResults.value = false
+        return
+    }
+    throttleUpdateResults()
+}
+
+watch(query, startUpdateResults);
+
+defineRoutes([
+    {
+        url: 'aansluiten',
+        name: 'join',
+        component: async () => (await import('../signup/SignupGeneralView.vue')).default as any,
+        paramsToProps(_, query) {
+            const code = query?.get("code")
+            const organization = query?.get("org")
+
+            if (code && organization) {
+                return {
+                    initialRegisterCode: {
+                        code,
+                        organization
+                    },
+                    visitViaUrl: true
+                }
+            }
+            
+            return {
+                initialRegisterCode: null,
+                visitViaUrl: !!query
+            }
+        },
+        present: 'popup'
+    }
+])
+
+const $navigate = useNavigate()
+
 </script>
 
 <style lang="scss">
-@use "~@stamhoofd/scss/base/variables.scss" as *;
-@use "~@stamhoofd/scss/base/text-styles.scss" as *;
+@use "@stamhoofd/scss/base/variables.scss" as *;
+@use "@stamhoofd/scss/base/text-styles.scss" as *;
 
 .organization-selection-view {
     max-width: 600px;

@@ -2,10 +2,9 @@ import { ArrayDecoder, AutoEncoderPatchType, Decoder, ObjectData, PatchableArray
 import { isSimpleErrors, SimpleError } from "@simonbackx/simple-errors";
 import { Request, RequestResult } from "@simonbackx/simple-networking";
 import { EventBus, Toast } from "@stamhoofd/components";
-import { SessionManager } from "@stamhoofd/networking";
+import { OrganizationManager, SessionContext } from "@stamhoofd/networking";
 import { OrderStatus, PaginatedResponse, PaginatedResponseDecoder, PrivateOrder, PrivateWebshop, TicketPrivate, Version, WebshopOrdersQuery, WebshopPreview, WebshopTicketsQuery } from "@stamhoofd/structures";
-
-import { OrganizationManager } from "../../../classes/OrganizationManager";
+import { toRaw, unref } from "vue";
 
 /**
  * Responsible for managing a single webshop orders and tickets
@@ -39,24 +38,19 @@ export class WebshopManager {
     ticketsEventBus = new EventBus<string, TicketPrivate[]>()
     ticketPatchesEventBus = new EventBus<string, AutoEncoderPatchType<TicketPrivate>[]>()
 
-    constructor(preview: WebshopPreview) {
+    context: SessionContext
+
+    constructor(context: SessionContext, preview: WebshopPreview) {
+        this.context = context
         this.preview = preview
     }
 
     get hasWrite() {
-        const p = SessionManager.currentSession?.user?.permissions
-        if (!p) {
-            return false
-        }
-        return this.preview.privateMeta.permissions.hasWriteAccess(p, SessionManager.currentSession!.organization?.privateMeta?.roles ?? [])
+        return this.preview.privateMeta.permissions.hasWriteAccess(this.context.organizationPermissions)
     }
 
     get hasRead() {
-        const p = SessionManager.currentSession?.user?.permissions
-        if (!p) {
-            return false
-        }
-        return this.preview.privateMeta.permissions.hasReadAccess(p, SessionManager.currentSession!.organization?.privateMeta?.roles ?? [])
+        return this.preview.privateMeta.permissions.hasReadAccess(this.context.organizationPermissions)
     }
 
     /**
@@ -70,7 +64,7 @@ export class WebshopManager {
      * Fetch a webshop every time
      */
     private async fetchWebshop(shouldRetry = true) {
-        const response = await SessionManager.currentSession!.authenticatedServer.request({
+        const response = await this.context.authenticatedServer.request({
             method: "GET",
             path: "/webshop/"+this.preview.id,
             decoder: PrivateWebshop as Decoder<PrivateWebshop>,
@@ -79,7 +73,7 @@ export class WebshopManager {
         })
 
         // Clone data and keep references
-        OrganizationManager.organization.webshops.find(w => w.id == this.preview.id)?.set(response.data)
+        this.context.organization!.webshops.find(w => w.id == this.preview.id)?.set(response.data)
         this.preview.set(response.data)
 
         // Save async (could fail in some unsupported browsers)
@@ -89,7 +83,7 @@ export class WebshopManager {
     }
 
     async patchWebshop(webshopPatch: AutoEncoderPatchType<PrivateWebshop>) {
-        const response = await SessionManager.currentSession!.authenticatedServer.request({
+        const response = await this.context.authenticatedServer.request({
             method: "PATCH",
             path: "/webshop/"+this.preview.id,
             body: webshopPatch,
@@ -108,9 +102,9 @@ export class WebshopManager {
         }
 
         // Clone data and keep references
-        OrganizationManager.organization.webshops.find(w => w.id == this.preview.id)?.set(webshop)
+        this.context.organization!.webshops.find(w => w.id == this.preview.id)?.set(webshop)
         this.preview.set(webshop)
-        OrganizationManager.save().catch(console.error)
+        new OrganizationManager(this.context).save().catch(console.error)
 
         // Save async (could fail in some unsupported browsers)
         this.storeWebshop(webshop).catch(console.error)
@@ -124,7 +118,7 @@ export class WebshopManager {
         const webshop = PrivateWebshop.decode(new ObjectData(raw, { version: Version }))
 
         // Clone data and keep references
-        OrganizationManager.organization.webshops.find(w => w.id == this.preview.id)?.set(webshop)
+        this.context.organization!.webshops.find(w => w.id == this.preview.id)?.set(webshop)
         this.preview.set(webshop)
 
         return webshop
@@ -357,7 +351,9 @@ export class WebshopManager {
 
             // Do the actual saving
             const objectStore = transaction.objectStore("settings");
-            objectStore.put(value, key)
+
+            // Unref potential proxies here
+            objectStore.put(toRaw(value), key)
         })
     }
 
@@ -682,13 +678,13 @@ export class WebshopManager {
         })
     }
 
-    async fetchOrders(query: WebshopOrdersQuery, retry = false): Promise<PaginatedResponse<PrivateOrder, WebshopOrdersQuery>> {
-        const response = await SessionManager.currentSession!.authenticatedServer.request({
+    async fetchOrders(query: WebshopOrdersQuery, retry = false): Promise<PaginatedResponse<PrivateOrder[], WebshopOrdersQuery>> {
+        const response = await this.context.authenticatedServer.request({
             method: "GET",
             path: "/webshop/"+this.preview.id+"/orders",
             query,
             shouldRetry: retry,
-            decoder: new PaginatedResponseDecoder(PrivateOrder as Decoder<PrivateOrder>, WebshopOrdersQuery as Decoder<WebshopOrdersQuery>),
+            decoder: new PaginatedResponseDecoder(new ArrayDecoder(PrivateOrder as Decoder<PrivateOrder>), WebshopOrdersQuery as Decoder<WebshopOrdersQuery>),
             owner: this
         })
 
@@ -696,7 +692,7 @@ export class WebshopManager {
     }
 
     async patchOrders(patches: PatchableArrayAutoEncoder<PrivateOrder>) {
-        const response = await SessionManager.currentSession!.authenticatedServer.request({
+        const response = await this.context.authenticatedServer.request({
             method: "PATCH",
             path: "/webshop/"+this.preview.id+"/orders",
             decoder: new ArrayDecoder(PrivateOrder as Decoder<PrivateOrder>),
@@ -784,7 +780,7 @@ export class WebshopManager {
         // Then make one try for a request (might fail if we don't have internet)
         let response: RequestResult<TicketPrivate[]>
         try {
-            response = await SessionManager.currentSession!.authenticatedServer.request({
+            response = await this.context.authenticatedServer.request({
                 method: "PATCH",
                 path: "/webshop/"+this.preview.id+"/tickets/private",
                 decoder: new ArrayDecoder(TicketPrivate as Decoder<TicketPrivate>),
@@ -861,7 +857,7 @@ export class WebshopManager {
             })
 
             while (query) {
-                const response: PaginatedResponse<PrivateOrder, WebshopOrdersQuery> = await this.fetchOrders(query, retry)
+                const response: PaginatedResponse<PrivateOrder[], WebshopOrdersQuery> = await this.fetchOrders(query, retry)
 
                 if (reset && !didClear) {
                     // Clear only if we have internet access
@@ -1082,13 +1078,13 @@ export class WebshopManager {
         })
     }
 
-    async fetchTickets(query: WebshopOrdersQuery, retry = false): Promise<PaginatedResponse<TicketPrivate, WebshopTicketsQuery>> {
-        const response = await SessionManager.currentSession!.authenticatedServer.request({
+    async fetchTickets(query: WebshopOrdersQuery, retry = false): Promise<PaginatedResponse<TicketPrivate[], WebshopTicketsQuery>> {
+        const response = await this.context.authenticatedServer.request({
             method: "GET",
             path: "/webshop/"+this.preview.id+"/tickets/private",
             query,
             shouldRetry: retry,
-            decoder: new PaginatedResponseDecoder(TicketPrivate as Decoder<TicketPrivate>, WebshopTicketsQuery as Decoder<WebshopTicketsQuery>),
+            decoder: new PaginatedResponseDecoder(new ArrayDecoder(TicketPrivate as Decoder<TicketPrivate>), WebshopTicketsQuery as Decoder<WebshopTicketsQuery>),
             owner: this
         })
 
@@ -1136,7 +1132,7 @@ export class WebshopManager {
             })
 
             while (query) {
-                const response: PaginatedResponse<TicketPrivate, WebshopTicketsQuery> = await this.fetchTickets(query, retry)
+                const response: PaginatedResponse<TicketPrivate[], WebshopTicketsQuery> = await this.fetchTickets(query, retry)
 
                 if (response.results.length > 0) {
                     // Save these orders to the local database

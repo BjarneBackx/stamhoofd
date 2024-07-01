@@ -13,40 +13,52 @@
 
         <STList class="illustration-list">    
             <STListItem :selectable="true" class="left-center" @click="openApiUsers(true)">
-                <img slot="left" src="~@stamhoofd/assets/images/illustrations/laptop.svg">
+                <template #left>
+                    <img src="@stamhoofd/assets/images/illustrations/laptop.svg">
+                </template>
                 <h2 class="style-title-list">
                     API-keys
                 </h2>
                 <p class="style-description">
                     Maak API-keys aan om toegang te krijgen tot de Stamhoofd-API.
                 </p>
-                <span slot="right" class="icon arrow-right-small gray" />
+                <template #right>
+                    <span class="icon arrow-right-small gray" />
+                </template>
             </STListItem>
 
             <STListItem v-if="isStamhoofd" :selectable="true" class="left-center" @click="downloadSettings(true)">
-                <img slot="left" src="~@stamhoofd/assets/images/illustrations/box-download.svg">
+                <template #left>
+                    <img src="@stamhoofd/assets/images/illustrations/box-download.svg">
+                </template>
                 <h2 class="style-title-list">
                     Exporteer instellingen
                 </h2>
                 <p class="style-description">
                     Maak een kopie van de instellingen van jouw vereniging.
                 </p>
-                <LoadingButton slot="right" :loading="downloadingSettings">
-                    <span class="icon download gray" />
-                </LoadingButton>
+                <template #right>
+                    <LoadingButton :loading="downloadingSettings">
+                        <span class="icon download gray" />
+                    </LoadingButton>
+                </template>
             </STListItem>
 
             <STListItem v-if="isStamhoofd" :selectable="true" class="left-center" @click="uploadSettings(true)">
-                <img slot="left" src="~@stamhoofd/assets/images/illustrations/box-upload.svg">
+                <template #left>
+                    <img src="@stamhoofd/assets/images/illustrations/box-upload.svg">
+                </template>
                 <h2 class="style-title-list">
                     Importeer instellingen
                 </h2>
                 <p class="style-description">
                     Overschrijf alle instellingen.
                 </p>
-                <LoadingButton slot="right" :loading="uploadingSettings">
-                    <span class="icon upload gray" />
-                </LoadingButton>
+                <template #right>
+                    <LoadingButton :loading="uploadingSettings">
+                        <span class="icon upload gray" />
+                    </LoadingButton>
+                </template>
             </STListItem>
         </STList>
 
@@ -60,7 +72,7 @@
             Hou er rekening mee dat de tarieven van Mollie hoger liggen dan degene die Stamhoofd bij Stripe aanbiedt. <a :href="'https://'+ $t('shared.domains.marketing') +'/docs/transactiekosten/'" class="inline-link" target="_blank">Meer info</a>
         </p>
 
-        <Checkbox :checked="getFeatureFlag('webshop-discounts')" @change="setFeatureFlag('webshop-discounts', !!$event)">
+        <Checkbox :model-value="getFeatureFlag('webshop-discounts')" @update:model-value="setFeatureFlag('webshop-discounts', !!$event)">
             Kortingen en kortingscodes in webshops
         </Checkbox>
         <p class="style-description-small">
@@ -77,19 +89,19 @@
                 Activeer test-modus voor betalingen
             </Checkbox>
 
-            <Checkbox :checked="getFeatureFlag('stamhoofd-pay-by-transfer')" @change="setFeatureFlag('stamhoofd-pay-by-transfer', !!$event)">
+            <Checkbox :model-value="getFeatureFlag('stamhoofd-pay-by-transfer')" @update:model-value="setFeatureFlag('stamhoofd-pay-by-transfer', !!$event)">
                 Stamhoofd betalen via overschrijving
             </Checkbox>
 
-            <Checkbox :checked="getFeatureFlag('stamhoofd-pay-by-saved')" @change="setFeatureFlag('stamhoofd-pay-by-saved', !!$event)">
+            <Checkbox :model-value="getFeatureFlag('stamhoofd-pay-by-saved')" @update:model-value="setFeatureFlag('stamhoofd-pay-by-saved', !!$event)">
                 Stamhoofd betalen via opgeslagen betaalmethode
             </Checkbox>
 
-            <Checkbox :checked="getFeatureFlag('sso')" @change="setFeatureFlag('sso', !!$event)">
+            <Checkbox :model-value="getFeatureFlag('sso')" @update:model-value="setFeatureFlag('sso', !!$event)">
                 Single-Sign-On
             </Checkbox>
 
-            <Checkbox :checked="getFeatureFlag('webshop-auth')" @change="setFeatureFlag('webshop-auth', !!$event)">
+            <Checkbox :model-value="getFeatureFlag('webshop-auth')" @update:model-value="setFeatureFlag('webshop-auth', !!$event)">
                 Webshop auth
             </Checkbox>
 
@@ -107,13 +119,12 @@ import { AutoEncoder, AutoEncoderPatchType, Decoder, ObjectData, patchContainsCh
 import { SimpleError, SimpleErrors } from '@simonbackx/simple-errors';
 import { Request } from '@simonbackx/simple-networking';
 import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 import { CenteredMessage, Checkbox, ErrorBox, InputSheet, LoadingButton, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Toast, Validator } from "@stamhoofd/components";
 import { SessionManager, UrlHelper } from '@stamhoofd/networking';
 import { Country, Organization, OrganizationMetaData, OrganizationPatch, OrganizationPrivateMetaData, PrivatePaymentConfiguration, Version } from "@stamhoofd/structures";
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins } from "vue-property-decorator";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
 import ApiUsersView from '../admins/ApiUsersView.vue';
 
 @Component({
@@ -133,10 +144,14 @@ export default class LabsView extends Mixins(NavigationMixin) {
     saving = false
     downloadingSettings = false
     uploadingSettings = false
-    organizationPatch: AutoEncoderPatchType<Organization> & AutoEncoder = OrganizationPatch.create({ id: OrganizationManager.organization.id })
+    organizationPatch: AutoEncoderPatchType<Organization> & AutoEncoder = OrganizationPatch.create({})
+    
+    created() {
+        this.organizationPatch.id = this.$organization.id
+    }
 
     get organization() {
-        return OrganizationManager.organization.patch(this.organizationPatch)
+        return this.$organization.patch(this.organizationPatch)
     }
 
     openApiUsers(animated = true) {
@@ -153,7 +168,7 @@ export default class LabsView extends Mixins(NavigationMixin) {
     }
 
     get isStamhoofd() {
-        return OrganizationManager.user.email.endsWith("@stamhoofd.be") || OrganizationManager.user.email.endsWith("@stamhoofd.nl")
+        return this.$organizationManager.user.email.endsWith("@stamhoofd.be") || this.$organizationManager.user.email.endsWith("@stamhoofd.nl")
     }
 
     get enableBuckaroo() {
@@ -237,8 +252,8 @@ export default class LabsView extends Mixins(NavigationMixin) {
         this.saving = true
 
         try {
-            await OrganizationManager.patch(this.organizationPatch)
-            this.organizationPatch = OrganizationPatch.create({ id: OrganizationManager.organization.id })
+            await this.$organizationManager.patch(this.organizationPatch)
+            this.organizationPatch = OrganizationPatch.create({ id: this.$organization.id })
             new Toast('De wijzigingen zijn opgeslagen', "success green").show()
             this.dismiss({ force: true })
         } catch (e) {
@@ -249,7 +264,7 @@ export default class LabsView extends Mixins(NavigationMixin) {
     }
 
     get hasChanges() {
-        return patchContainsChanges(this.organizationPatch, OrganizationManager.organization, { version: Version })
+        return patchContainsChanges(this.organizationPatch, this.$organization, { version: Version })
     }
 
     async shouldNavigateAway() {
@@ -262,10 +277,10 @@ export default class LabsView extends Mixins(NavigationMixin) {
     mounted() {
         // We can clear now
         UrlHelper.shared.clear()
-        UrlHelper.setUrl("/settings/labs")
+        this.setUrl("/labs")
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
@@ -276,7 +291,7 @@ export default class LabsView extends Mixins(NavigationMixin) {
 
         // Remove private data
         const organization = Organization.create({
-            ...OrganizationManager.organization,
+            ...this.$organization,
             admins: [],
             webshops: []
         });
@@ -354,7 +369,7 @@ export default class LabsView extends Mixins(NavigationMixin) {
             })
         }
 
-        const existing = OrganizationManager.organization;
+        const existing = this.$organization;
 
         const privatePatch = OrganizationPrivateMetaData.patch({});
         
@@ -407,7 +422,7 @@ export default class LabsView extends Mixins(NavigationMixin) {
         }
 
         // Send to server
-        await OrganizationManager.patch(organizationPatch)
+        await this.$organizationManager.patch(organizationPatch)
     }
 
     applyDiscountCode() {
@@ -418,7 +433,7 @@ export default class LabsView extends Mixins(NavigationMixin) {
                     description: 'De kortingscode zal meteen worden toegepast op deze vereniging. De andere vereniging ontvangt een e-mail dat de kortingscode is gebruikt, en zal meteen tegoed ontvangen als de vereniging al een betalende klant is (in het andere geval pas later).',
                     placeholder: 'Vul hier de code in',
                     saveHandler: async (code: string) => {
-                        await SessionManager.currentSession!.authenticatedServer.request({
+                        await this.$context.authenticatedServer.request({
                             method: 'POST',
                             path: '/organization/register-code',
                             body: {

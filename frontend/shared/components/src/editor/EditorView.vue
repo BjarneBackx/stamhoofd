@@ -1,20 +1,22 @@
 <template>
     <form class="editor-view st-view" @submit.prevent="$emit('save')">
         <STNavigationBar :title="title">
-            <BackButton v-if="$parent.canPop" slot="left" @click="$parent.pop" />
-            <template v-else-if="$isMobile || $isIOS || $isAndroid" slot="left">
-                <button v-if="$isAndroid" class="button navigation icon close" type="button" @click="$parent.pop" />
-                <button v-else class="button text selected unbold" type="button" @click="$parent.pop">
-                    {{ cancelText }}
-                </button>
+            <template #left>
+                <BackButton v-if="canPop" @click="pop" />
+                <template v-else-if="$isMobile || $isIOS || $isAndroid" >
+                    <button v-if="$isAndroid" class="button navigation icon close" type="button" @click="pop" />
+                    <button v-else class="button text selected unbold" type="button" @click="pop">
+                        {{ cancelText }}
+                    </button>
+                </template>
             </template>
 
-            <LoadingButton v-if="$isMobile || $isIOS || $isAndroid" slot="right" :loading="loading">
+            <template v-if="$isMobile || $isIOS || $isAndroid" #right><LoadingButton :loading="loading">
                 <button class="button navigation highlight" :disabled="disabled" type="submit">
                     {{ saveText }}
                 </button>
-            </LoadingButton>
-            <button v-else-if="$parent.canDismiss" slot="right" class="button navigation icon close" type="button" @click="$parent.dismiss" />
+            </LoadingButton></template>
+            <template v-else-if="canDismiss" #right><button class="button navigation icon close" type="button" @click="dismiss" /></template>
         </STNavigationBar>
         <main ref="main" class="flex">
             <slot />
@@ -54,10 +56,10 @@
 
                             <input ref="linkInput" v-model="editLink" class="list-input" type="url" placeholder="https://" enterkeyhint="go">
                         </div>
-                        <button slot="right" class="button text" type="submit" @mousedown.prevent>
+                        <template #right><button class="button text" type="submit" @mousedown.prevent>
                             {{ editLink.length == 0 ? "Sluiten" : "Opslaan" }}
-                        </button>
-                        <button v-if="editor.isActive('link')" slot="right" v-tooltip="'Link verwijderen'" class="button icon trash gray" type="button" @mousedown.prevent @click.stop.prevent="clearLink()" />
+                        </button></template>
+                        <template v-if="editor.isActive('link')" #right><button v-tooltip="'Link verwijderen'" class="button icon trash gray" type="button" @mousedown.prevent @click.stop.prevent="clearLink()" /></template>
                     </STListItem>
                 </STList>
             </form>
@@ -106,8 +108,8 @@ import Link from '@tiptap/extension-link'
 import Typography from "@tiptap/extension-typography";
 import Underline from '@tiptap/extension-underline'
 import StarterKit from '@tiptap/starter-kit'
-import { Editor, EditorContent } from '@tiptap/vue-2'
-import { Component,Prop,Vue, Watch } from "vue-property-decorator";
+import { Editor, EditorContent } from '@tiptap/vue-3'
+import { Component,Mixins,Prop,Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 
 import { default as TooltipDirective } from "../directives/Tooltip";
 import UploadButton from "../inputs/UploadButton.vue"
@@ -124,6 +126,7 @@ import { DescriptiveText } from "./EditorDescriptiveText";
 import { EditorSmartButton, SmartButtonInlineNode,SmartButtonNode } from './EditorSmartButton';
 import { EditorSmartVariable, SmartVariableNode, SmartVariableNodeBlock } from './EditorSmartVariable';
 import TextStyleButtonsView from './TextStyleButtonsView.vue';
+import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 
 declare module '@tiptap/core' {
     interface Commands<ReturnType> {
@@ -168,7 +171,7 @@ const CustomImage = ImageExtension.extend({
         Tooltip: TooltipDirective
     }
 })
-export default class EditorView extends Vue {
+export default class EditorView extends Mixins(NavigationMixin) {
     @Prop({ default: false })
         loading!: boolean;
 
@@ -201,7 +204,7 @@ export default class EditorView extends Vue {
 
     editor = this.buildEditor()
 
-    beforeDestroy() {
+    beforeUnmount() {
         this.editor.destroy()
     }
 

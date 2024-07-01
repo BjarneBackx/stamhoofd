@@ -1,8 +1,8 @@
 <template>
     <LoadingView v-if="loading" />
     <div v-else class="st-view background">
-        <STNavigationBar title="Beheerders" :dismiss="canDismiss" :pop="canPop">
-            <button slot="right" class="button navigation icon add" aria-label="Nieuwe beheerder" type="button" @click="createUser" />
+        <STNavigationBar title="Beheerders">
+            <template #right><button class="button navigation icon add" aria-label="Nieuwe beheerder" type="button" @click="createUser" /></template>
         </STNavigationBar>
 
     
@@ -13,14 +13,14 @@
 
             <STList class="illustration-list">    
                 <STListItem :selectable="true" class="left-center" @click="createUser">
-                    <img slot="left" src="~@stamhoofd/assets/images/illustrations/laptop-add.svg">
+                    <template #left><img src="@stamhoofd/assets/images/illustrations/laptop-add.svg"></template>
                     <h2 class="style-title-list">
                         Nieuwe API-key
                     </h2>
                     <p class="style-description">
                         Maak een nieuwe key aan.
                     </p>
-                    <template slot="right">
+                    <template #right>
                         <span class="icon arrow-right-small gray" />
                     </template>
                 </STListItem>
@@ -34,7 +34,7 @@
             </p>
             <STList v-else>
                 <STListItem v-for="user in apiUsers" :key="user.id" :selectable="true" class="right-stack" @click="editUser(user)">
-                    <template slot="left">
+                    <template #left>
                         <span class="icon key" />
                     </template>
 
@@ -51,7 +51,7 @@
                         Geldig tot {{ formatDate(user.expiresAt) }}
                     </p>
 
-                    <template slot="right">
+                    <template #right>
                         <span><span class="icon gray edit" /></span>
                     </template>
                 </STListItem>
@@ -65,14 +65,12 @@
 import { ArrayDecoder, Decoder } from '@simonbackx/simple-encoding';
 import { Request } from '@simonbackx/simple-networking';
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 import { BackButton, Checkbox, LoadingView, STList, STListItem, STNavigationBar, STToolbar, Toast, TooltipDirective } from "@stamhoofd/components";
 import { SessionManager, UrlHelper } from '@stamhoofd/networking';
-import { ApiUser, PermissionLevel, Permissions, User } from '@stamhoofd/structures';
-import { Formatter, Sorter } from '@stamhoofd/utility';
-import { Component, Mixins } from "vue-property-decorator";
+import { ApiUser, PermissionLevel, Permissions, User, UserPermissions } from '@stamhoofd/structures';
+import { Sorter } from '@stamhoofd/utility';
 
-import { OrganizationManager } from '../../../classes/OrganizationManager';
-import AdminView from './AdminView.vue';
 import ApiUserView from './ApiUserView.vue';
 
 @Component({
@@ -99,14 +97,14 @@ export default class ApiUsersView extends Mixins(NavigationMixin) {
             console.error(e)
         })
 
-        UrlHelper.setUrl("/settings/api-keys")
+        this.setUrl("/api-keys")
         document.title = "Stamhoofd - API-keys"
         UrlHelper.shared.clear()
     }
 
     async load() {
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "GET",
                 path: "/api-keys",
                 decoder: new ArrayDecoder(ApiUser as Decoder<ApiUser>),
@@ -123,20 +121,17 @@ export default class ApiUsersView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
-    }
-
-    formatDate(date: Date) {
-        return Formatter.date(date, true)
+        return this.$organization
     }
 
     permissionList(user: User) {
         const list: string[] = []
-        if (user.permissions?.hasFullAccess(this.organization.privateMeta?.roles ?? [])) {
+        const o = user.permissions?.forOrganization(this.organization);
+        if (o?.hasFullAccess()) {
             list.push("Hoofdbeheerders")
         }
 
-        for (const role of user.permissions?.roles ?? []) {
+        for (const role of o?.roles ?? []) {
             list.push(role.name)
         }
         return list.join(", ")
@@ -147,10 +142,13 @@ export default class ApiUsersView extends Mixins(NavigationMixin) {
     }
 
     createUser() {
+        const p = UserPermissions.create({});
+        p.organizationPermissions.set(this.organization.id, Permissions.create({ level: PermissionLevel.Full }))
         this.present(new ComponentWithProperties(NavigationController, { 
             root: new ComponentWithProperties(ApiUserView, {
                 user: ApiUser.create({
-                    permissions: Permissions.create({ level: PermissionLevel.Full })
+                    organizationId: this.organization.id,
+                    permissions: p
                 }),
                 isNew: true,
                 callback: () => {

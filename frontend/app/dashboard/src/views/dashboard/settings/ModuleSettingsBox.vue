@@ -2,7 +2,7 @@
     <div class="module-settings-box">
         <div class="module-box">
             <label class="box" :class="{ selected: enableWebshopModule }">
-                <div><img slot="left" src="~@stamhoofd/assets/images/illustrations/cart.svg"></div>
+                <div><img src="@stamhoofd/assets/images/illustrations/cart.svg"></div>
                 <div>
                     <h2 class="style-title-list">Webshops, tickets, geldinzameling en openbare inschrijvingen</h2>
                     <p v-if="enableWebshopModule && !isWebshopsTrial && !loadingWebshopModule" class="style-description">Dit zit in jouw pakket inbegrepen</p>
@@ -17,7 +17,7 @@
             </label>
             
             <label v-if="!hasLegacy" class="box" :class="{ selected: enableMemberModule }">
-                <div><img slot="left" src="~@stamhoofd/assets/images/illustrations/group.svg"></div>
+                <div><img src="@stamhoofd/assets/images/illustrations/group.svg"></div>
                 <div>
                     <h2 class="style-title-list">Ledenadministratie en online inschrijvingen</h2>
                     <p v-if="enableMemberModule && !isMembersTrial && !loadingMembers" class="style-description">Dit zit in jouw pakket inbegrepen</p>
@@ -30,7 +30,7 @@
             </label>
 
             <label v-else class="box" :class="{ selected: enableActivities }">
-                <div><img slot="left" src="~@stamhoofd/assets/images/illustrations/group.svg"></div>
+                <div><img src="@stamhoofd/assets/images/illustrations/group.svg"></div>
                 <div>
                     <h2 class="style-title-list">Ledenadministratie</h2>
                     <p class="style-description-small">Laat leden inschrijven voor meerdere groepen (bv. voor activiteiten) en maak documenten/attesten aan.</p>
@@ -47,15 +47,11 @@
 <script lang="ts">
 import { Decoder } from '@simonbackx/simple-encoding';
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 import { Checkbox, LoadComponent, Spinner, Toast } from "@stamhoofd/components";
-import { SessionManager } from '@stamhoofd/networking';
 import { OrganizationType, PaymentMethod, STInvoiceResponse, STPackageBundle, STPackageType, UmbrellaOrganization } from "@stamhoofd/structures";
-import { Component, Mixins } from "vue-property-decorator";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
-import ActivatedView from './modules/members/ActivatedView.vue';
 import MembersStructureSetupView from './modules/members/MembersStructureSetupView.vue';
-
 
 @Component({
     components: {
@@ -65,10 +61,9 @@ import MembersStructureSetupView from './modules/members/MembersStructureSetupVi
 })
 export default class ModuleSettingsView extends Mixins(NavigationMixin) {
     loadingModule: STPackageType | null = null
-    OrganizationManager = OrganizationManager
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get isMembersTrial() {
@@ -97,39 +92,8 @@ export default class ModuleSettingsView extends Mixins(NavigationMixin) {
     }
 
     set enableMemberModule(enable: boolean) {
-        /*if (!enable || this.organization.groups.length > 0) {
-            this.organization.meta.modules.useMembers = enable
-            this.patchModule({ useMembers: enable }, enable ? "De ledenadministratie module is nu actief" : "De ledenadministratie module is nu uitgeschakeld").catch(e => console.error(e))
-        } else {
-            if (enable && this.organization.meta.umbrellaOrganization && [UmbrellaOrganization.ChiroNationaal, UmbrellaOrganization.ScoutsEnGidsenVlaanderen].includes(this.organization.meta.umbrellaOrganization)) {
-                // We have an automated flow for these organizations
-                this.present(new ComponentWithProperties(NavigationController, {
-                    root: new ComponentWithProperties(MembersStructureSetupView, {})
-                }).setDisplayStyle("popup"))
-            } else {
-                // Activate + show groups
-                this.patchModule({ useMembers: enable }, enable ? "De ledenadministratie module is nu actief" : "De ledenadministratie module is nu uitgeschakeld").then(() => {
-                    // Wait for the backend to fill in all the default categories and groups
-                    this.manageGroups(true)
-                }).catch(e => console.error(e))
-            }
-            
-        }*/
-
         if (enable && !this.enableMemberModule) {
-            if (this.organization.meta.type === OrganizationType.Youth && this.organization.meta.umbrellaOrganization && [UmbrellaOrganization.ChiroNationaal, UmbrellaOrganization.ScoutsEnGidsenVlaanderen].includes(this.organization.meta.umbrellaOrganization)) {
-                // We have an automated flow for these organizations
-                this.present(new ComponentWithProperties(NavigationController, {
-                    root: new ComponentWithProperties(MembersStructureSetupView, {})
-                }).setDisplayStyle("popup"))
-            } else {
-                this.checkout(STPackageBundle.TrialMembers, "Je kan nu de ledenadministratie uittesten.").then(() => {
-                    // Wait for the backend to fill in all the default categories and groups
-                    this.present(new ComponentWithProperties(NavigationController, {
-                        root: new ComponentWithProperties(ActivatedView, {})
-                    }).setDisplayStyle("popup"))
-                }).catch(e => console.error(e))
-            }
+            this.checkout(STPackageBundle.TrialMembers, "Je kan nu de ledenadministratie uittesten.").catch(e => console.error(e))
         } else {
             if (!enable && this.enableMemberModule) {
                 this.deactivate(STPackageType.TrialMembers, "Het testen van de ledenadministratie is uitgeschakeld").catch(console.error)
@@ -206,7 +170,7 @@ export default class ModuleSettingsView extends Mixins(NavigationMixin) {
         this.loadingModule = bundle as any as STPackageType
 
         try {
-            await SessionManager.currentSession!.authenticatedServer.request({
+            await this.$context.authenticatedServer.request({
                 method: "POST",
                 path: "/billing/activate-packages",
                 body: {
@@ -216,7 +180,7 @@ export default class ModuleSettingsView extends Mixins(NavigationMixin) {
                 decoder: STInvoiceResponse as Decoder<STInvoiceResponse>,
                 shouldRetry: false
             })
-            await SessionManager.currentSession!.fetchOrganization(false)
+            await this.$context.fetchOrganization(false)
             new Toast(message, "success green").show()
         } catch (e) {
             Toast.fromError(e).show()
@@ -232,7 +196,7 @@ export default class ModuleSettingsView extends Mixins(NavigationMixin) {
         this.loadingModule = type
 
         try {
-            const status = await OrganizationManager.loadBillingStatus({
+            const status = await this.$organizationManager.loadBillingStatus({
                 shouldRetry: false,
                 owner: this
             })
@@ -240,17 +204,17 @@ export default class ModuleSettingsView extends Mixins(NavigationMixin) {
             const pack = packages.find(p => p.meta.type === type)
 
             if (pack) {
-                await SessionManager.currentSession!.authenticatedServer.request({
+                await this.$context.authenticatedServer.request({
                     method: "POST",
                     path: "/billing/deactivate-package/"+pack.id,
                     owner: this,
                     shouldRetry: false
                 })
-                await SessionManager.currentSession!.fetchOrganization(false)
+                await this.$context.fetchOrganization(false)
                 new Toast(message, "success green").show()
             } else {
                 // Update out of date
-                await SessionManager.currentSession!.fetchOrganization(false)
+                await this.$context.fetchOrganization(false)
             }
         } catch (e) {
             Toast.fromError(e).show()

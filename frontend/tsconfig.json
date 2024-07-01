@@ -1,37 +1,43 @@
 {
     "compilerOptions": {
-        "target": "es2017",
-        "module": "esnext",
+        "target": "ES2020",
+        "useDefineForClassFields": false, /* this makes sue we can still use this in class property definitions */
+        "module": "ESNext",
+        "lib": [
+            "ES2020",
+            "DOM",
+            "DOM.Iterable"
+        ],
+        "skipLibCheck": true,
+        /* Bundler mode */
+        "moduleResolution": "bundler",
+        "allowImportingTsExtensions": true,
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true,
         "jsx": "preserve",
-        "importHelpers": true,
-        "moduleResolution": "node",
+        /* Linting */
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
         "experimentalDecorators": true,
+        "sourceMap": true,
+        "strict": true,
+        "importHelpers": true,
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "sourceMap": true,
-        "strictNullChecks": true,
-        "lib": [
-            "esnext",
-            "dom",
-            "dom.iterable",
-            "scripthost"
-        ],
-        "types": [
-            "node",
-            "jest"
-        ]
+        "strictPropertyInitialization": false,
     },
     "include": [
-        "app/**/*.ts",
-        "app/**/*.ts.map",
-        "app/**/*.vue",
-        "shared/**/*.ts",
-        "shared/**/*.ts.map",
-        "shared/**/*.vue",
         "../*.d.ts",
-        "*.d.ts"
+        "*.ts",
+        "**/*.ts",
+        "**/*.tsx",
+        "**/*.vue"
     ],
-    "exclude": [
-        "node_modules"
+    "references": [
+        {
+            "path": "./tsconfig.node.json"
+        }
     ]
 }

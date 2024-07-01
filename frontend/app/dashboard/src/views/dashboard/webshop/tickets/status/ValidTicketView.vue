@@ -1,6 +1,6 @@
 <template>
     <div class="st-view valid-ticket-view">
-        <STNavigationBar title="Geldig ticket" :pop="canPop" />
+        <STNavigationBar title="Geldig ticket" />
 
         <main v-if="!publicTicket.isSingle">
             <h1>
@@ -55,7 +55,7 @@
                         Totaal te betalen
                     </h3>
                     <p class="style-definition-text">
-                        {{ order.totalToPay | price }}
+                        {{ formatPrice(order.totalToPay) }}
                     </p>
                 </STListItem>
 
@@ -64,7 +64,7 @@
                         Betaald bedrag
                     </h3>
                     <p class="style-definition-text">
-                        {{ order.pricePaid | price }}
+                        {{ formatPrice(order.pricePaid) }}
                     </p>
                 </STListItem>
 
@@ -73,7 +73,7 @@
                         Geplaatst op
                     </h3>
                     <p class="style-definition-text">
-                        {{ order.validAt | dateTime | capitalizeFirstLetter }}
+                        {{ capitalizeFirstLetter(formatDateTime(order.validAt)) }}
                     </p>
                 </STListItem>
 
@@ -85,7 +85,7 @@
                         <span>{{ statusName }}</span>
                         <span v-if="isCanceled" class="icon canceled" />
                     </p>
-                    <span v-if="hasWrite" slot="right" class="icon arrow-down-small gray" />
+                    <template v-if="hasWrite" #right><span class="icon arrow-down-small gray" /></template>
                 </STListItem>
 
                 <STListItem
@@ -104,8 +104,10 @@
                         <span v-else class="icon clock" />
                     </p>
 
-                    <span v-if="order.payments.length > 1" slot="right">{{ payment.price | price }}</span>
-                    <span v-if="hasPaymentsWrite" slot="right" class="icon arrow-right-small gray" />
+                    <template #right v-if="order.payments.length > 1 || hasPaymentsWrite" >
+                        <span v-if="order.payments.length > 1">{{ formatPrice(payment.price) }}</span>
+                        <span v-if="hasPaymentsWrite" class="icon arrow-right-small gray" />
+                    </template>
                 </STListItem>
             </STList>
 
@@ -174,7 +176,7 @@
                         </h3>
 
                         <p class="style-definition-text">
-                            {{ order.data.timeSlot.date | date | capitalizeFirstLetter }}<br>{{ order.data.timeSlot.startTime | minutes }} - {{ order.data.timeSlot.endTime | minutes }}
+                            {{ capitalizeFirstLetter(formatDate(order.data.timeSlot.date)) }}<br>{{ formatMinutes(order.data.timeSlot.startTime) }} - {{ formatMinutes(order.data.timeSlot.endTime) }}
                         </p>
                     </STListItem>
                     <STListItem v-if="order.data.deliveryPrice > 0" class="right-description">
@@ -183,7 +185,7 @@
                         </h3>
 
                         <p class="style-definition-text">
-                            {{ order.data.deliveryPrice | price }}
+                            {{ formatPrice(order.data.deliveryPrice) }}
                         </p>
                     </STListItem>
                     <STListItem v-if="order.data.administrationFee > 0" class="right-description">
@@ -192,7 +194,7 @@
                         </h3>
 
                         <p class="style-definition-text">
-                            {{ order.data.administrationFee | price }}
+                            {{ formatPrice(order.data.administrationFee) }}
                         </p>
                     </STListItem>
                 </STList>
@@ -245,7 +247,7 @@
                 <h2>
                     {{ category.name }}
                 </h2>
-                <RecordCategoryAnswersBox :category="category" :answers="recordAnswers" :data-permission="true" />
+                <ViewRecordCategoryAnswersBox :category="category" :value="order.data" />
             </div>
 
             <div v-if="order.data.comments" class="container">
@@ -361,7 +363,7 @@
                         {{ order.number }}
                     </p>
 
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right><span class="icon arrow-right-small gray" /></template>
                 </STListItem>
             </STList>
         </main>
@@ -374,27 +376,28 @@
         </main>
 
         <STToolbar>
-            <button v-if="ticket.scannedAt" slot="right" class="button secundary" type="button" @click="cancelScan">
-                Markering ongedaan maken
-            </button>
-            <button slot="right" class="button primary" type="button" @click="markScanned">
-                <span class="icon qr-code" />
-                <span>Markeer als gescand</span>
-            </button>
+            <template #right>
+                <button v-if="ticket.scannedAt" class="button secundary" type="button" @click="cancelScan">
+                    Markering ongedaan maken
+                </button>
+                <button class="button primary" type="button" @click="markScanned">
+                    <span class="icon qr-code" />
+                    <span>Markeer als gescand</span>
+                </button>
+            </template>
         </STToolbar>
     </div>
 </template>
 
 <script lang="ts">
-import { ArrayDecoder,AutoEncoderPatchType, PatchableArray, PatchableArrayAutoEncoder } from "@simonbackx/simple-encoding";
+import { ArrayDecoder, AutoEncoderPatchType, PatchableArray, PatchableArrayAutoEncoder } from "@simonbackx/simple-encoding";
 import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { CartItemRow, ColorHelper, GlobalEventBus, LongPressDirective, RecordCategoryAnswersBox, Spinner, STList, STListItem, STNavigationBar, STToolbar, TableActionsContextMenu } from "@stamhoofd/components";
-import { SessionManager } from "@stamhoofd/networking";
-import { BalanceItemDetailed, OrderStatus, OrderStatusHelper, Payment, PaymentGeneral, PaymentMethod, PaymentMethodHelper, PaymentStatus, PrivateOrder, PrivateOrderWithTickets, ProductDateRange, RecordCategory, RecordWarning, TicketPrivate, TicketPublicPrivate } from "@stamhoofd/structures";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
+import { CartItemRow, ColorHelper, GlobalEventBus, LongPressDirective, Spinner, STList, STListItem, STNavigationBar, STToolbar, TableActionsContextMenu, ViewRecordCategoryAnswersBox } from "@stamhoofd/components";
+import { AccessRight, BalanceItemDetailed, OrderStatus, OrderStatusHelper, Payment, PaymentGeneral, PaymentMethod, PaymentMethodHelper, PaymentStatus, PrivateOrder, PrivateOrderWithTickets, ProductDateRange, RecordCategory, RecordWarning, TicketPrivate, TicketPublicPrivate } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
 
-import { OrganizationManager } from "../../../../../classes/OrganizationManager";
+
 import EditPaymentView from "../../../member/EditPaymentView.vue";
 import PaymentView from "../../../payments/PaymentView.vue";
 import { OrderActionBuilder } from "../../orders/OrderActionBuilder";
@@ -408,7 +411,7 @@ import { WebshopManager } from "../../WebshopManager";
         STListItem,
         STToolbar,
         Spinner,
-        RecordCategoryAnswersBox,
+        ViewRecordCategoryAnswersBox,
         CartItemRow
     },
     filters: {
@@ -489,6 +492,7 @@ export default class ValidTicketView extends Mixins(NavigationMixin) {
 
     get actionBuilder() {
         return new OrderActionBuilder({
+            organizationManager: this.$organizationManager,
             webshopManager: this.webshopManager,
             component: this,
         })
@@ -507,22 +511,26 @@ export default class ValidTicketView extends Mixins(NavigationMixin) {
     }
 
     get hasWrite() {
-        const p = SessionManager.currentSession?.user?.permissions
+        const p = this.$context.organizationPermissions
         if (!p) {
             return false
         }
-        return this.webshop.privateMeta.permissions.hasWriteAccess(p, OrganizationManager.organization.privateMeta?.roles ?? [])
+        return this.webshop.privateMeta.permissions.hasWriteAccess(p)
     }
 
     get hasPaymentsWrite() {
-        const p = SessionManager.currentSession?.user?.permissions
+        const p = this.$context.organizationPermissions
         if (!p) {
             return false
         }
-        if (p.canManagePayments(OrganizationManager.organization.privateMeta?.roles ?? [])) {
+        if (p.hasAccessRight(AccessRight.OrganizationManagePayments)) {
             return true
         }
-        return this.webshop.privateMeta.permissions.hasWriteAccess(p, OrganizationManager.organization.privateMeta?.roles ?? [])
+
+        if (p.hasAccessRight(AccessRight.OrganizationFinanceDirector)) {
+            return true
+        }
+        return this.webshop.privateMeta.permissions.hasWriteAccess(p)
     }
 
     openPayment(payment: Payment) {
@@ -596,7 +604,7 @@ export default class ValidTicketView extends Mixins(NavigationMixin) {
                 id: this.ticket.id,
                 secret: this.ticket.secret, // needed for lookups
                 scannedAt: new Date(),
-                scannedBy: SessionManager.currentSession!.user?.firstName ?? null
+                scannedBy: this.$context.user?.firstName ?? null
             }))
         }
 
@@ -606,7 +614,7 @@ export default class ValidTicketView extends Mixins(NavigationMixin) {
     get recordCategories(): RecordCategory[] {
         return RecordCategory.flattenCategoriesForAnswers(
             this.webshop.meta.recordCategories,
-            this.order.data.recordAnswers
+            [...this.order.data.recordAnswers.values()]
         )
     }
 
@@ -645,7 +653,7 @@ export default class ValidTicketView extends Mixins(NavigationMixin) {
         })
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         this.webshopManager.ordersEventBus.removeListener(this)
     }
 
@@ -666,7 +674,7 @@ export default class ValidTicketView extends Mixins(NavigationMixin) {
             saveHandler: async (patch: AutoEncoderPatchType<PaymentGeneral>) => {
                 const arr: PatchableArrayAutoEncoder<PaymentGeneral> = new PatchableArray();
                 arr.addPut(payment.patch(patch))
-                await SessionManager.currentSession!.authenticatedServer.request({
+                await this.$context.authenticatedServer.request({
                     method: 'PATCH',
                     path: '/organization/payments',
                     body: arr,

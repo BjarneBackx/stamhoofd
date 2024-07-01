@@ -1,6 +1,6 @@
 <template>
     <div class="st-view">
-        <STNavigationBar title="Tickets scannen" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Tickets scannen" />
 
         <main>
             <h1>
@@ -31,7 +31,9 @@
                     </h2>
                     <STList>
                         <STListItem v-for="product in getCategoryProducts(category)" :key="product.id" :selectable="true" element-name="label">
-                            <Checkbox slot="left" :checked="isProductSelected(product)" @change="setProductSelected(product, $event)" />
+                            <template #left>
+                                <Checkbox :model-value="isProductSelected(product)" @update:model-value="setProductSelected(product, $event)" />
+                            </template>
 
                             <h3 class="style-title-list">
                                 {{ product.name }}
@@ -45,10 +47,10 @@
         </main>
 
         <STToolbar v-if="!noDatabaseSupport">
-            <button slot="right" class="button primary" type="button" @click="start">
+            <template #right><button class="button primary" type="button" @click="start">
                 <span class="icon play" />
                 <span>Starten</span>
-            </button>
+            </button></template>
         </STToolbar>
     </div>
 </template>
@@ -59,7 +61,7 @@ import { BackButton, Checkbox, Spinner, STList, STListItem, STNavigationBar, STT
 import { UrlHelper } from '@stamhoofd/networking';
 import { Category, Product, ProductDateRange, ProductType, WebshopTicketType } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import { WebshopManager } from "../WebshopManager";
 import TicketScannerView from "./TicketScannerView.vue";

@@ -10,13 +10,13 @@
         <STErrorsDefault :error-box="errorBox" />
 
         <!-- Buttons -->
-        <template slot="buttons">
+        <template #buttons>
             <hr v-if="!$isMobile">
             <button v-if="!$isMobile" v-tooltip="'Voorbeeld tonen'" class="button icon eye" type="button" @click="openPreview" />
         </template>
 
         <!-- List -->
-        <template slot="list">
+        <template #list>
             <STListItem class="no-padding" element-name="label">
                 <div class="list-input-box">
                     <span>Onderwerp:</span>
@@ -31,20 +31,22 @@
 import { AutoEncoderPatchType, PartialWithoutMethods, patchContainsChanges } from '@simonbackx/simple-encoding';
 import { SimpleError } from '@simonbackx/simple-errors';
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { CenteredMessage, Checkbox, Dropdown, EditorSmartButton, EditorSmartVariable, EditorView, EmailStyler, ErrorBox, STErrorsDefault, STInputBox, STList, STListItem, TooltipDirective } from "@stamhoofd/components";
 import { Replacement } from '@stamhoofd/structures';
 import { EmailTemplate, Group, Version, WebshopPreview } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
+
+import TooltipDirective from '../directives/Tooltip';
+import STErrorsDefault from '../errors/STErrorsDefault.vue';
+import STList from '../layout/STList.vue';
+import STListItem from '../layout/STListItem.vue';
+import EditorView from './EditorView.vue';
 
 @Component({
     components: {
         EditorView,
-        STInputBox,
         STList,
         STListItem,
-        Checkbox,
-        Dropdown,
         STErrorsDefault,
     },
     directives: {

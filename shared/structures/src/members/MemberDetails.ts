@@ -1,22 +1,15 @@
-import { ArrayDecoder,AutoEncoder, BooleanDecoder,Data,DateDecoder,EnumDecoder,field, StringDecoder } from '@simonbackx/simple-encoding';
+import { ArrayDecoder, AutoEncoder, AutoEncoderPatchType, BooleanDecoder, DateDecoder, EnumDecoder, field, MapDecoder, PatchableArray, PatchableArrayAutoEncoder, StringDecoder } from '@simonbackx/simple-encoding';
 import { Formatter, StringCompare } from '@stamhoofd/utility';
 
 import { Address } from '../addresses/Address';
 import { Replacement } from '../endpoints/EmailRequest';
-import { ChoicesFilterChoice, ChoicesFilterDefinition, ChoicesFilterMode } from '../filters/ChoicesFilter';
-import { NumberFilterDefinition } from '../filters/NumberFilter';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Group } from '../Group';
 import { GroupGenderType } from '../GroupGenderType';
-import { OrganizationMetaData } from '../OrganizationMetaData';
 import { EmergencyContact } from './EmergencyContact';
 import { Gender } from './Gender';
 import { Parent } from './Parent';
-import { LegacyRecord,OldRecord } from './records/LegacyRecord';
-import { LegacyRecordType,OldRecordType } from './records/LegacyRecordType';
-import { RecordAnswer, RecordAnswerDecoder, RecordCheckboxAnswer, RecordChooseOneAnswer, RecordTextAnswer } from './records/RecordAnswer';
-import { RecordFactory } from './records/RecordFactory';
-import { RecordChoice, RecordType, RecordWarning, RecordWarningType } from './records/RecordSettings';
+import { RecordAnswer, RecordAnswerDecoder } from './records/RecordAnswer';
 import { ReviewTimes } from './ReviewTime';
 
 /**
@@ -80,73 +73,53 @@ export class MemberDetails extends AutoEncoder {
     emergencyContacts: EmergencyContact[] = [];
 
     @field({ decoder: new ArrayDecoder(RecordAnswerDecoder), version: 120 })
-    recordAnswers: RecordAnswer[] = []
-
-    /**
-     * @deprecated
-     */
-    @field({ decoder: new ArrayDecoder(OldRecord) })
     @field({ 
-        decoder: new ArrayDecoder(LegacyRecord), version: 54, upgrade: (old: OldRecord[]): LegacyRecord[] => {
-            const addIfNotFound = new Map<LegacyRecordType, boolean>()
-            addIfNotFound.set(LegacyRecordType.DataPermissions, true)
-            addIfNotFound.set(LegacyRecordType.PicturePermissions, true)
-            addIfNotFound.set(LegacyRecordType.GroupPicturePermissions, false)
-            addIfNotFound.set(LegacyRecordType.MedicinePermissions, true)
-            
-            const result = old.flatMap((o) => {
-                // Does this type exist in LegacyRecordType?
-                if (Object.values(LegacyRecordType).includes(o.type as any)) {
-                    return [LegacyRecord.create(o as any)] // compatible
-                }
-
-                if (o.type === OldRecordType.NoPictures) {
-                    // Do not add picture permissions
-                    addIfNotFound.set(LegacyRecordType.PicturePermissions, false)
-                }
-                if (o.type === OldRecordType.OnlyGroupPictures) {
-                    // Yay
-                    addIfNotFound.set(LegacyRecordType.PicturePermissions, false)
-                    addIfNotFound.set(LegacyRecordType.GroupPicturePermissions, true)
-                }
-                if (o.type === OldRecordType.NoData) {
-                    // Yay
-                    addIfNotFound.set(LegacyRecordType.DataPermissions, false)
-                }
-                if (o.type === OldRecordType.NoPermissionForMedicines) {
-                    // Yay
-                    addIfNotFound.set(LegacyRecordType.MedicinePermissions, false)
-                }
-                return []
-            })
-
-            for (const [key, add] of addIfNotFound.entries()) {
-                if (add) {
-                    result.push(LegacyRecord.create({
-                        type: key
-                    }))
-                }
+        decoder: new MapDecoder(StringDecoder, RecordAnswerDecoder), 
+        version: 252, 
+        upgrade: (old: RecordAnswer[]) => {
+            const map = new Map<string, RecordAnswer>()
+            for (const answer of old) {
+                map.set(answer.settings.id, answer)
             }
-
-            return result
+            return map;
         } 
     })
-    records: LegacyRecord[] = [];    
+    recordAnswers: Map<string, RecordAnswer> = new Map()
 
     @field({ decoder: BooleanStatus, version: 117, optional: true })
-    requiresFinancialSupport?: BooleanStatus
+    @field({ 
+        decoder: BooleanStatus, 
+        version: 258, 
+        optional: false, 
+        nullable: true,
+        downgrade: (newValue: BooleanStatus | null) => newValue === null ? undefined : newValue,
+        upgrade: (oldValue: BooleanStatus | undefined) => {
+            if (!oldValue) {
+                return null
+            }
+            return oldValue
+        }
+    })
+    requiresFinancialSupport: BooleanStatus|null = null
 
     /**
      * Gave permission to collect sensitive information
      */
     @field({ decoder: BooleanStatus, version: 117, optional: true })
-    dataPermissions?: BooleanStatus
-
-    /**
-     * @deprecated
-     */
-    @field({ decoder: EmergencyContact, nullable: true })
-    doctor: EmergencyContact | null = null;
+    @field({ 
+        decoder: BooleanStatus, 
+        version: 256, 
+        optional: true, 
+        nullable: true,
+        downgrade: (newValue: BooleanStatus | null) => newValue === null ? undefined : newValue,
+        upgrade: (oldValue: BooleanStatus | undefined) => {
+            if (!oldValue) {
+                return null
+            }
+            return oldValue
+        }
+    })
+    dataPermissions: BooleanStatus|null = null
 
     /**
      * Last time the records were reviewed
@@ -163,15 +136,6 @@ export class MemberDetails extends AutoEncoder {
         return times
     } })
     reviewTimes = ReviewTimes.create({})
-
-    /**
-     * @deprecated
-     * Keep track whether this are recovered member details. Only set this back to false when:
-     * - The data is entered manually again (by member / parents)
-     * - Warning message is dismissed / removed in the dashboard by organization
-     */
-    @field({ decoder: BooleanDecoder, version: 69 })
-    isRecovered = false
 
     /**
      * Call this to clean up capitals in all the available data
@@ -201,6 +165,37 @@ export class MemberDetails extends AutoEncoder {
         for (const contact of this.emergencyContacts) {
             contact.cleanData()
         }
+    }
+
+    isEqual(other: MemberDetails): boolean {
+        if (!this.firstName || !other.firstName) {
+            // Not possible to compare
+            return false
+        }
+
+        if (!this.lastName || !other.lastName) {
+            // Not possible to compare
+            return false
+        }
+
+        if (!this.birthDay || !other.birthDay) {
+            // Not possible to compare
+            return false
+        }
+
+        if (this.firstName != other.firstName) {
+            return false
+        }
+
+        if (this.lastName != other.lastName) {
+            return false
+        }
+
+        if (this.birthDayFormatted != other.birthDayFormatted) {
+            return false
+        }
+
+        return true;
     }
 
     get name() {
@@ -322,6 +317,7 @@ export class MemberDetails extends AutoEncoder {
         return groups.filter(g => this.doesMatchGroup(g))
     }
 
+
     updateAddress(oldValue: Address, newValue: Address) {
         const str = oldValue.toString()
 
@@ -336,6 +332,32 @@ export class MemberDetails extends AutoEncoder {
         }
     }
 
+    updateAddressPatch(oldValue: Address, newValue: Address): AutoEncoderPatchType<MemberDetails>|null {
+        const str = oldValue.toString()
+        let patch = MemberDetails.patch({})
+        let changed = false
+
+        if (this.address && this.address.toString() == str) {
+            patch = patch.patch({ address: newValue })
+            changed = true
+        }
+
+        for (const parent of this.parents) {
+            if (parent.address && parent.address.toString() == str) {
+                //parent.address = newValue
+                const arr = new PatchableArray() as PatchableArrayAutoEncoder<Parent>
+                arr.addPatch(Parent.patch({ id: parent.id, address: newValue }))
+                patch = patch.patch({ parents: arr })
+                changed = true
+            }
+        }
+
+        if (changed) {
+            return patch;
+        }
+        return null;
+    }
+
     /**
      * This will SET the parent
      */
@@ -345,6 +367,60 @@ export class MemberDetails extends AutoEncoder {
                 this.parents[index] = parent
             }
         }
+    }
+
+     /**
+     * This will SET the parent
+     */
+     updateParentPatch(parent: Parent): AutoEncoderPatchType<MemberDetails>|null {
+        let patch = MemberDetails.patch({})
+        let changed = false
+
+        for (const [index, _parent] of this.parents.entries()) {
+            if (_parent.id == parent.id || _parent.isEqual(parent)) {
+                const arr = new PatchableArray() as PatchableArrayAutoEncoder<Parent>
+                
+                // Assure we auto correct possible duplicates
+                arr.addDelete(_parent.id)
+                arr.addDelete(_parent.id)
+
+                arr.addPut(parent)
+                patch = patch.patch({ parents: arr })
+                changed = true
+            }
+        }
+
+        if (changed) {
+            return patch;
+        }
+        return null;
+    }
+
+     /**
+     * This will SET the parent
+     */
+    updateEmergencyContactPatch(emergencyContact: EmergencyContact): AutoEncoderPatchType<MemberDetails>|null {
+        let patch = MemberDetails.patch({})
+        let changed = false
+
+        for (const [index, _emergencyContact] of this.emergencyContacts.entries()) {
+            if (_emergencyContact.id == emergencyContact.id || _emergencyContact.isEqual(emergencyContact)) {
+                const arr = new PatchableArray() as PatchableArrayAutoEncoder<EmergencyContact>
+                
+                // Assure we auto correct possible duplicates
+                arr.addDelete(_emergencyContact.id)
+                arr.addDelete(_emergencyContact.id)
+
+                arr.addPut(emergencyContact)
+                patch = patch.patch({ emergencyContacts: arr })
+                changed = true
+            }
+        }
+
+        if (changed) {
+            return patch;
+        }
+        return null;
     }
 
     /**
@@ -406,35 +482,6 @@ export class MemberDetails extends AutoEncoder {
             }
         }
         this.parents.push(parent)
-    }
-
-    /**
-     * @deprecated
-     * This will add or update the parent (possibily partially if not all data is present)
-     */
-    addRecord(record: LegacyRecord) {
-        for (const [index, _record] of this.records.entries()) {
-            if (_record.type === record.type) {
-                this.records[index] = record
-                return
-            }
-        }
-        this.records.push(record)
-    }
-
-    /**
-     * @deprecated
-     */
-    removeRecord(type: LegacyRecordType) {
-        for (let index = this.records.length - 1; index >= 0; index--) {
-            const record = this.records[index];
-
-            if (record.type === type) {
-                this.records.splice(index, 1)
-                // Keep going to fix possible previous errors that caused duplicate types
-                // This is safe because we loop backwards
-            }
-        }
     }
 
     get parentsHaveAccess() {
@@ -531,10 +578,6 @@ export class MemberDetails extends AutoEncoder {
 
         this.reviewTimes.merge(other.reviewTimes)
 
-        for (const record of other.records) {
-            this.addRecord(record)
-        }
-
         if (other.requiresFinancialSupport && (!this.requiresFinancialSupport || this.requiresFinancialSupport.date < other.requiresFinancialSupport.date)) {
             this.requiresFinancialSupport = other.requiresFinancialSupport
         }
@@ -544,198 +587,19 @@ export class MemberDetails extends AutoEncoder {
         }
 
         // Merge answers
-        const newAnswers: RecordAnswer[] = this.recordAnswers.slice()
-        for (const answer of other.recordAnswers) {
-            const existingIndex = newAnswers.findIndex(a => a.settings.id === answer.settings.id)
+        const newAnswers: Map<string, RecordAnswer> = new Map(this.recordAnswers);
+        for (const answer of other.recordAnswers.values()) {
+            const existing = newAnswers.get(answer.settings.id)
 
-            if (existingIndex == -1) {
-                newAnswers.push(answer)
-            } else if (answer.date >= newAnswers[existingIndex].date) {
-                newAnswers.splice(existingIndex, 1, answer)
+            if (!existing) {
+                newAnswers.set(answer.settings.id, answer)
+            } else if (answer.date >= existing.date) {
+                newAnswers.set(answer.settings.id, answer)
             } else {
                 // keep existing, this one is more up-to-date, don't add the other answer
             }
         }
         this.recordAnswers = newAnswers
-    }
-
-    static getBaseFilterDefinitions() {
-        // When you make changes here, make sure the ID's match the those of MemberDetailsWithGroups
-        return [
-            new NumberFilterDefinition<MemberDetails>({
-                id: "member_age", 
-                name: "Leeftijd", 
-                getValue: (details) => {
-                    return details.age ?? 99
-                },
-                floatingPoint: false
-            }),
-             new ChoicesFilterDefinition<MemberDetails>({
-                id: "member_gender", 
-                name: "Geslacht", 
-                choices: [
-                    new ChoicesFilterChoice(Gender.Male, "Man"),
-                    new ChoicesFilterChoice(Gender.Female, "Vrouw"),
-                    new ChoicesFilterChoice(Gender.Other, "Andere"),
-                ], 
-                getValue: (details) => {
-                    return [details.gender]
-                },
-                defaultMode: ChoicesFilterMode.Or
-            })
-        ]
-    }
-
-    upgradeFromLegacy(organizationMeta: OrganizationMetaData) {
-        if (!this.requiresFinancialSupport) {
-            this.requiresFinancialSupport = BooleanStatus.create({ 
-                value: !!this.records.find(r => r.type === LegacyRecordType.FinancialProblems),
-                date: this.reviewTimes.getLastReview("records") ?? new Date()
-            })
-        }
-
-        if (!this.dataPermissions) {
-            this.dataPermissions = BooleanStatus.create({ 
-                value: !!this.records.find(r => r.type === LegacyRecordType.DataPermissions),
-                date: this.reviewTimes.getLastReview("records") ?? new Date()
-            })
-        }
-
-        for (const record of this.records) {
-            // Mi ma migrate
-            const settings = RecordFactory.create(record.type)
-            if (!settings) {
-                continue
-            }
-
-            if (record.type === LegacyRecordType.PicturePermissions) {
-                const answer = RecordChooseOneAnswer.create({
-                    settings,
-                    selectedChoice: RecordChoice.create({
-                        id: "yes",
-                        name: "Ja, ik geef toestemming",
-                    }),
-                    date: new Date(2021, 0, 1), // Always give it the same date
-                    reviewedAt: this.reviewTimes.getLastReview("records") ?? null
-                })
-                this.recordAnswers.push(answer)
-            } else if (record.type === LegacyRecordType.GroupPicturePermissions) {
-                // Do not add if we already have full permission
-                if (this.records.find(r => r.type === LegacyRecordType.PicturePermissions)) {
-                    continue;
-                }
-                const answer = RecordChooseOneAnswer.create({
-                    settings,
-                    selectedChoice: RecordChoice.create({
-                        id: "groups_only",
-                        name: "Ik geef enkel toestemming voor groepsfoto's",
-                        warning: RecordWarning.create({
-                            id: "",
-                            text: "Enkel toestemming voor groepsfoto's",
-                            type: RecordWarningType.Error
-                        })
-                    }),
-                    date: new Date(2021, 0, 1), // Always give it the same date
-                    reviewedAt: this.reviewTimes.getLastReview("records") ?? null
-                })
-                this.recordAnswers.push(answer)
-
-            } else if (settings.type === RecordType.Checkbox) {
-                const answer = RecordCheckboxAnswer.create({
-                    settings,
-                    selected: true,
-                    comments: record.description ? record.description : undefined,
-                    date: new Date(2021, 0, 1), // Always give it the same date
-                    reviewedAt: this.reviewTimes.getLastReview("records") ?? null
-                })
-                this.recordAnswers.push(answer)
-            } else if (settings.type === RecordType.Textarea) {
-                const answer = RecordTextAnswer.create({
-                    settings,
-                    value: record.description ? record.description : null,
-                    date: new Date(2021, 0, 1), // Always give it the same date
-                    reviewedAt: this.reviewTimes.getLastReview("records") ?? null
-                })
-                this.recordAnswers.push(answer)
-            } else {
-                throw new Error("Unsupported type "+settings.type)
-            }
-        }
-
-        // Complete with unselected properties
-        const age = this.age ?? 18
-
-        for (const record of organizationMeta.recordsConfiguration.recordCategories.flatMap(c => c.getAllRecords())) {
-            const answer = this.recordAnswers.find(a => a.settings.id == record.id)
-            if (answer) {
-                continue
-            }
-
-            // Member is older than 18 years, and no permissions for medicines
-            if (record.id === "legacy-type-"+LegacyRecordType.PicturePermissions) {
-                const alternativeAnswer = this.recordAnswers.find(a => a.settings.id == "legacy-type-"+LegacyRecordType.GroupPicturePermissions)
-
-                if (alternativeAnswer) {
-                    continue
-                }
-
-                // No permissions
-                const a = RecordChooseOneAnswer.create({
-                    settings: record,
-                    selectedChoice: RecordChoice.create({
-                        id: "no",
-                        name: "Nee, ik geef geen toestemming",
-                        warning: RecordWarning.create({
-                            id: "",
-                            text: "Geen toestemming voor publicatie foto's",
-                            type: RecordWarningType.Error
-                        })
-                    }),
-                    date: new Date(2021, 0, 1), // Always give it the same date
-                    reviewedAt: this.reviewTimes.getLastReview("records") ?? null
-                })
-                this.recordAnswers.push(a)
-                continue
-            }
-
-             if (record.type !== RecordType.Checkbox) {
-                continue
-            }
-            
-            // Member is older than 18 years, and no permissions for medicines
-            if (record.id === "legacy-type-"+LegacyRecordType.MedicinePermissions && (age ?? 18) >= 18) {
-                // Don't add this property
-                continue
-            }
-
-            const a = RecordCheckboxAnswer.create({
-                settings: record,
-                selected: false,
-                date: new Date(2021, 0, 1), // Always give it the same date
-                reviewedAt: this.reviewTimes.getLastReview("records") ?? null
-            })
-            this.recordAnswers.push(a)
-        }
-
-        // Doctor
-        if (this.doctor) {
-            this.recordAnswers.push(RecordTextAnswer.create({
-                settings: RecordFactory.createDoctorName(),
-                value: this.doctor.name,
-                date: new Date(2021, 0, 1), // Always give it the same date
-                reviewedAt: this.reviewTimes.getLastReview("records") ?? null
-            }))
-            this.recordAnswers.push(RecordTextAnswer.create({
-                settings: RecordFactory.createDoctorPhone(),
-                value: this.doctor.phone,
-                date: new Date(2021, 0, 1), // Always give it the same date
-                reviewedAt: this.reviewTimes.getLastReview("records") ?? null
-            }))
-        }
-
-        // Clear outdated data
-        this.doctor = null
-        this.records = []
     }
 
     getEmailReplacements() {

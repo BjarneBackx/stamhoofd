@@ -12,8 +12,8 @@
         <p v-if="cartItem.product.location && cartItem.product.location.address" class="description" v-text="cartItem.product.location.address" />
         <p v-if="ticket.getIndexDescriptionString(webshop)" class="description" v-text="ticket.getIndexDescriptionString(webshop)" />
 
-        <span slot="right" class="icon qr-code" />
-        <span slot="right" class="icon arrow-right-small gray" />
+        <template #right><span class="icon qr-code" />
+        <span class="icon arrow-right-small gray" /></template>
     </STListItem>
 </template>
 
@@ -23,7 +23,7 @@ import { ComponentWithProperties, NavigationController, NavigationMixin } from "
 import { Checkbox, DetailedTicketView,LoadingView, STList, STListItem, STNavigationBar, STToolbar } from "@stamhoofd/components";
 import { Order, Organization, ProductDateRange, TicketPublic, Webshop, WebshopTicketType } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {

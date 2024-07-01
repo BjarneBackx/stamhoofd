@@ -2,11 +2,11 @@
     <LoadingView v-if="loading" />
     <section v-else class="st-view box-shade">
         <STNavigationBar :large="true">
-            <template slot="left">
+            <template #left>
                 <OrganizationLogo :organization="organization" />
             </template>
 
-            <template slot="right">
+            <template #right>
                 <a v-if="organization.website" class="button text limit-space" :href="organization.website" target="_blank" rel="nofollow noreferrer noopener">
                     <span class="icon external" />
                     <span>Terug naar website</span>
@@ -36,9 +36,9 @@
 <script lang="ts">
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { LoadingView, Logo, OrganizationLogo, STList, STListItem, STNavigationBar, STToolbar } from "@stamhoofd/components";
-import { SessionManager, UrlHelper } from "@stamhoofd/networking";
+import { UrlHelper } from "@stamhoofd/networking";
 import { LoginProviderType } from "@stamhoofd/structures";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
 import { WebshopManager } from "../classes/WebshopManager";
 
@@ -80,11 +80,11 @@ export default class RequiredLoginView extends Mixins(NavigationMixin){
     loading = false
 
     get organization() {
-        return WebshopManager.organization
+        return this.$webshopManager.organization
     }
     
     get webshop() {
-        return WebshopManager.webshop
+        return this.$webshopManager.webshop
     }
 
     mounted() {
@@ -105,7 +105,7 @@ export default class RequiredLoginView extends Mixins(NavigationMixin){
             return
         }
 
-        await SessionManager.currentSession!.startSSO({
+        await this.$context.startSSO({
             webshopId: this.webshop.id,
             providerType: LoginProviderType.SSO
         })

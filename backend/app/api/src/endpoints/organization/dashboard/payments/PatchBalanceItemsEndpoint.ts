@@ -34,7 +34,7 @@ export class PatchBalanceItemsEndpoint extends Endpoint<Params, Query, Body, Res
         const organization = await Context.setOrganizationScope();
         await Context.authenticate()
 
-        if (!Context.auth.hasSomeAccess()) {
+        if (!await Context.auth.hasSomeAccess(organization.id)) {
             throw Context.auth.error()
         }
 
@@ -59,7 +59,7 @@ export class PatchBalanceItemsEndpoint extends Endpoint<Params, Query, Body, Res
                 model.status = put.status === BalanceItemStatus.Hidden ? BalanceItemStatus.Hidden : BalanceItemStatus.Pending;
 
                 if (put.userId) {
-                    model.userId = (await this.validateUserId(put.userId)).id;
+                    model.userId = (await this.validateUserId(model, put.userId)).id;
                 }
 
                 if (put.memberId) {
@@ -77,7 +77,7 @@ export class PatchBalanceItemsEndpoint extends Endpoint<Params, Query, Body, Res
 
                 if (put.registration) {
                     const registration = await Registration.getByID(put.registration.id)
-                    if (!registration || registration.memberId !== model.memberId) {
+                    if (!registration || registration.memberId !== model.memberId || registration.organizationId !== organization.id) {
                         throw new SimpleError({
                             code: 'invalid_field',
                             message: 'Registration not found',
@@ -125,7 +125,7 @@ export class PatchBalanceItemsEndpoint extends Endpoint<Params, Query, Body, Res
 
                 if (patch.registration) {
                     const registration = await Registration.getByID(patch.registration.id)
-                    if (!registration || registration.memberId !== model.memberId) {
+                    if (!registration || registration.memberId !== model.memberId || registration.organizationId !== organization.id) {
                         throw new SimpleError({
                             code: 'invalid_field',
                             message: 'Registration not found',
@@ -186,9 +186,9 @@ export class PatchBalanceItemsEndpoint extends Endpoint<Params, Query, Body, Res
         return member;
     }
 
-    async validateUserId(userId: string) {
+    async validateUserId(balanceItem: BalanceItem, userId: string) {
         const user = await User.getByID(userId);
-        if (!user || !Context.auth.canLinkBalanceItemToUser(user)) {
+        if (!user || !await Context.auth.canLinkBalanceItemToUser(balanceItem, user)) {
             throw new SimpleError({
                 code: 'permission_denied',
                 message: 'No permission to link balanace items to this user',

@@ -1,6 +1,6 @@
 <template>
     <div class="st-view background package-confirm-view">
-        <STNavigationBar title="Betalen" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Betalen" />
 
         <main>
             <h1 class="style-navigation-title">
@@ -73,7 +73,7 @@
             <template v-else-if="proFormaInvoice">
                 <STList>
                     <STListItem v-for="item in proFormaInvoice.meta.items" :key="item.id">
-                        <template slot="left">
+                        <template #left>
                             {{ item.amount }}x
                         </template>
 
@@ -84,8 +84,8 @@
                             {{ item.description }}
                         </p>
 
-                        <template slot="right">
-                            {{ item.price | price }}
+                        <template #right>
+                            {{ formatPrice(item.price) }}
                         </template>
                     </STListItem>
                 </STList>
@@ -95,24 +95,24 @@
                         <STListItem>
                             Prijs excl. BTW
 
-                            <template slot="right">
-                                {{ proFormaInvoice.meta.priceWithoutVAT | price }}
+                            <template #right>
+                                {{ formatPrice(proFormaInvoice.meta.priceWithoutVAT) }}
                             </template>
                         </STListItem>
 
                         <STListItem>
                             BTW ({{ proFormaInvoice.meta.VATPercentage }}%)
         
-                            <template slot="right">
-                                {{ proFormaInvoice.meta.VAT | price }}
+                            <template #right>
+                                {{ formatPrice(proFormaInvoice.meta.VAT) }}
                             </template>
                         </STListItem>
 
                         <STListItem>
                             Te betalen
 
-                            <template slot="right">
-                                {{ proFormaInvoice.meta.priceWithVAT | price }}
+                            <template #right>
+                                {{ formatPrice(proFormaInvoice.meta.priceWithVAT) }}
                             </template> 
                         </STListItem>
                     </STList>
@@ -140,7 +140,7 @@
         </main>
 
         <STToolbar>
-            <template slot="right">
+            <template #right>
                 <LoadingButton :loading="loading">
                     <button class="button primary" type="button" @click="checkout">
                         <span class="icon card" />
@@ -156,13 +156,12 @@
 import { AutoEncoder,AutoEncoderPatchType, Decoder } from "@simonbackx/simple-encoding";
 import { SimpleError } from "@simonbackx/simple-errors";
 import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 import { AddressInput, BackButton, CenteredMessage, Checkbox, CompanyNumberInput, ErrorBox, LoadingButton, PaymentSelectionList, Spinner, STErrorsDefault, STInputBox, STList, STListItem, STNavigationBar, STToolbar, Validator, VATNumberInput } from "@stamhoofd/components";
 import { SessionManager } from "@stamhoofd/networking";
 import { Address, Country, Organization, OrganizationMetaData, OrganizationPatch, PaymentMethod, STInvoice, STInvoiceResponse, STPackage, STPricingType, User, Version } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
 
-import { OrganizationManager } from "../../../../classes/OrganizationManager";
 import PackageSettingsView, { SelectablePackage } from "./PackageSettingsView.vue";
 
 const throttle = (func, limit) => {
@@ -228,8 +227,8 @@ export default class PackageConfirmView extends Mixins(NavigationMixin) {
 
     selectedPaymentMethod: PaymentMethod = PaymentMethod.Unknown
 
-    organizationPatch: AutoEncoderPatchType<Organization> & AutoEncoder = OrganizationPatch.create({ id: OrganizationManager.organization.id })
-    userPatch = User.patch({ id: this.user.id })
+    organizationPatch: AutoEncoderPatchType<Organization> & AutoEncoder = OrganizationPatch.create({})
+    userPatch = User.patch({})
 
     throttledReload = throttle(this.loadProForma, 1000)
 
@@ -250,6 +249,11 @@ export default class PackageConfirmView extends Mixins(NavigationMixin) {
         return !!this.selectedPackages.find(p => p.package.meta.pricingType === STPricingType.PerMember) || !!this.renewPackages.find(p => p.meta.pricingType === STPricingType.PerMember)
     }
 
+    created() {
+        this.userPatch.id = this.$user!.id
+        this.organizationPatch.id = this.$organization.id
+    }
+
     mounted() {
         this.loadProForma().catch(console.error)
     }
@@ -262,7 +266,7 @@ export default class PackageConfirmView extends Mixins(NavigationMixin) {
         const c = this.loadingProFormaCount
 
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "POST",
                 path: "/billing/activate-packages",
                 body: {
@@ -289,7 +293,7 @@ export default class PackageConfirmView extends Mixins(NavigationMixin) {
     }
 
     get user() {
-        return User.create(SessionManager.currentSession!.user!)
+        return User.create(this.$user!)
     }
 
     get patchedUser() {
@@ -297,7 +301,7 @@ export default class PackageConfirmView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization.patch(this.organizationPatch)
+        return this.$organization.patch(this.organizationPatch)
     }
 
     get firstName() {
@@ -460,7 +464,7 @@ export default class PackageConfirmView extends Mixins(NavigationMixin) {
                     field: "terms"
                 })
             }
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "POST",
                 path: "/billing/activate-packages",
                 body: {
@@ -478,7 +482,7 @@ export default class PackageConfirmView extends Mixins(NavigationMixin) {
             } else {
                 // Reload organization
                 try {
-                    await SessionManager.currentSession?.fetchOrganization();
+                    await this.$context.fetchOrganization();
                 } catch (e) {
                     console.error(e)
                 }

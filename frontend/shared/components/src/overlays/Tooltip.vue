@@ -4,7 +4,7 @@
             class="tooltip" 
             :class="usedXPlacement+' '+usedYPlacement+' '+icon"
             :style="{ transformOrigin, top: top !== null ? top + 'px' : undefined, left: left !== null ? (left + 'px') : undefined, right: right !== null ? (right + 'px') : undefined, bottom: bottom !== null ? (bottom + 'px') : undefined, width: usedPreferredWidth !== null ? (usedPreferredWidth + 'px') : undefined, height: usedPreferredHeight !== null ? (usedPreferredHeight + 'px') : undefined }"  
-            @click="$parent.$emit('pop')"
+            @click="hide"
         >
             <span v-if="icon" :class="'icon '+icon" />
             <span>{{ text }}</span>
@@ -13,10 +13,12 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from "vue-property-decorator";
+import { NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Mixins } from "@simonbackx/vue-app-navigation/classes";
+import { Component, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component
-export default class Tooltip extends Vue {
+export default class Tooltip extends Mixins(NavigationMixin) {
     @Prop({
         default: "No tooltip text set",
     })
@@ -185,21 +187,21 @@ export default class Tooltip extends Vue {
         document.addEventListener("wheel", this.hide, { passive: true })
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         document.removeEventListener("touchstart", this.hide)
         document.removeEventListener("pointerdown", this.hide)
         document.removeEventListener("wheel", this.hide)
     }
 
     hide() {
-        this.$parent?.$emit("pop")
+        this.pop({force: true})
     }
 }
 </script>
 
 <style lang="scss">
-@use "~@stamhoofd/scss/base/variables.scss" as *;
-@use '~@stamhoofd/scss/base/text-styles.scss';
+@use "@stamhoofd/scss/base/variables.scss" as *;
+@use '@stamhoofd/scss/base/text-styles.scss';
 
 .tooltip {
     position: fixed;
@@ -241,7 +243,7 @@ export default class Tooltip extends Vue {
     &.show-leave-active {
         transition: opacity 0.2s, transform 0.2s;
     }
-    &.show-enter, &.show-leave-to /* .fade-leave-active below version 2.1.8 */ {
+    &.show-enter-from, &.show-leave-to /* .fade-leave-active below version 2.1.8 */ {
         opacity: 0;
         transform: scale(0.8, 0.8);
     }

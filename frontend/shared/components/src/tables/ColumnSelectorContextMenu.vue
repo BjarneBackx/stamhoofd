@@ -1,7 +1,7 @@
 <template>
-    <ContextMenuView v-bind="$attrs">
-        <ContextMenuItemView v-for="column of sortedColumns" :key="column.id" element-name="label" @click="setColumnEnabled(column, !column.enabled)">
-            <Checkbox slot="left" :checked="column.enabled" :only-line="true" />
+    <ContextMenuView v-bind="$attrs" ref="contextMenuView">
+        <ContextMenuItemView v-for="column of sortedColumns" :key="column.id" :contextMenuView="$refs.contextMenuView" element-name="label" @click="setColumnEnabled(column, !column.enabled)">
+            <template #left><Checkbox :modelValue="column.enabled" :only-line="true" /></template>
             {{ column.name }}
         </ContextMenuItemView>
     </ContextMenuView>
@@ -10,7 +10,7 @@
 <script lang="ts">
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { Checkbox,ContextMenuItemView, ContextMenuLine,ContextMenuView } from "@stamhoofd/components";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import { Column } from "./Column";
 

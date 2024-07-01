@@ -14,7 +14,9 @@
 
         <STList>
             <STListItem element-name="label" :selectable="true">
-                <Checkbox slot="left" v-model="phoneEnabled" />
+                <template #left>
+                    <Checkbox v-model="phoneEnabled" />
+                </template>
                 <p class="style-title-list">
                     {{ $t('shared.inputs.mobile.label') }}
                 </p>
@@ -29,7 +31,9 @@
         </p>
 
         <STList v-model="categories" :draggable="true">
-            <RecordCategoryRow v-for="category in categories" :key="category.id" :category="category" :categories="categories" :selectable="true" :settings="editorSettings" @patch="addCategoriesPatch" />
+            <template #item="{item: category}">
+                <RecordCategoryRow :category="category" :categories="categories" :selectable="true" :settings="editorSettings" @patch="addCategoriesPatch" @edit="editCategory" />
+            </template>
         </STList>
 
         <p>
@@ -42,21 +46,14 @@
 </template>
 
 <script lang="ts">
-import { PatchableArrayAutoEncoder } from "@simonbackx/simple-encoding";
-import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { Checkbox, SaveView, STErrorsDefault, STList, STListItem } from "@stamhoofd/components";
+import { PatchableArray, PatchableArrayAutoEncoder } from "@simonbackx/simple-encoding";
+import { ComponentWithProperties, NavigationController } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
+import { Checkbox, EditRecordCategoryView, RecordCategoryRow, RecordEditorSettings, STErrorsDefault, STList, STListItem, SaveView, checkoutUIFilterBuilders } from "@stamhoofd/components";
 import { UrlHelper } from "@stamhoofd/networking";
-import { Checkout } from "@stamhoofd/structures";
-import { RecordEditorSettings } from "@stamhoofd/structures";
-import { PrivateWebshop, RecordCategory, WebshopMetaData } from "@stamhoofd/structures";
+import { Checkout, PatchAnswers, PrivateWebshop, RecordCategory, WebshopMetaData } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
-
-import EditRecordCategoryQuestionsView from "../../settings/modules/members/records/EditRecordCategoryQuestionsView.vue";
-import EditRecordCategoryView from "../../settings/modules/members/records/EditRecordCategoryView.vue";
-import RecordCategoryRow from "../../settings/modules/members/records/RecordCategoryRow.vue";
 import EditWebshopMixin from './EditWebshopMixin';
-
 
 @Component({
     components: {
@@ -100,44 +97,62 @@ export default class EditWebshopRecordSettings extends Mixins(EditWebshopMixin) 
     get editorSettings() {
         return new RecordEditorSettings({
             dataPermission: false,
-            filterDefinitions: (categories: RecordCategory[]) => Checkout.getFilterDefinitions(this.webshop, categories),
-            filterValueForAnswers: (answers) => Checkout.create({recordAnswers: answers})
+            filterBuilder: (_categories: RecordCategory[]) => {
+                return checkoutUIFilterBuilders[0]
+            },
+            exampleValue: Checkout.create({}),
+            patchExampleValue(checkout, patch: PatchAnswers) {
+                return checkout.patch(
+                    Checkout.patch({
+                        recordAnswers: patch
+                    })
+                )
+            }
         })
     }
 
     addCategory() {
-        const category = RecordCategory.create({})
+        const category = RecordCategory.create({});
+        const arr = new PatchableArray() as PatchableArrayAutoEncoder<RecordCategory>;
+        arr.addPut(category)
 
         this.present({
             components: [
                 new ComponentWithProperties(NavigationController, {
                     root: new ComponentWithProperties(EditRecordCategoryView, {
-                        category,
+                        categoryId: category.id,
+                        rootCategories: [...this.categories, category],
+                        settings: this.editorSettings,
                         isNew: true,
-                        filterDefinitions: this.editorSettings.filterDefinitions(this.categories),
-                        saveHandler: (patch: PatchableArrayAutoEncoder<RecordCategory>, component: NavigationMixin) => {
-                            this.addCategoriesPatch(patch)
-                            component.show({
-                                components: [
-                                    new ComponentWithProperties(EditRecordCategoryQuestionsView, {
-                                        categoryId: category.id,
-                                        rootCategories: this.categories,
-                                        settings: this.editorSettings,
-                                        isNew: false,
-                                        saveHandler: (patch: PatchableArrayAutoEncoder<RecordCategory>) => {
-                                            this.addCategoriesPatch(patch)
-                                        }
-                                    })
-                                ],
-                                replace: 1,
-                                force: true
-                            })
+                        allowChildCategories: true,
+                        saveHandler: (patch: PatchableArrayAutoEncoder<RecordCategory>) => {
+                            this.addCategoriesPatch(arr.patch(patch))
                         }
                     })
                 })
             ],
             modalDisplayStyle: "popup"
-        })
+        });
+    }
+
+    editCategory(category: RecordCategory) {
+        this.present({
+            components: [
+                new ComponentWithProperties(NavigationController, {
+                    root: new ComponentWithProperties(EditRecordCategoryView, {
+                        categoryId: category.id,
+                        rootCategories: this.categories,
+                        settings: this.editorSettings,
+                        isNew: false,
+                        allowChildCategories: true,
+                        saveHandler: (patch: PatchableArrayAutoEncoder<RecordCategory>) => {
+                            this.addCategoriesPatch(patch)
+                        }
+                    })
+                })
+            ],
+            modalDisplayStyle: "popup"
+        });
     }
 
     addCategoriesPatch(patch: PatchableArrayAutoEncoder<RecordCategory>) {

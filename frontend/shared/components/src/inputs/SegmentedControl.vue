@@ -4,7 +4,7 @@
             v-for="(item, index) in items"
             :key="index"
             class="item"
-            :class="{ selected: item == value }"
+            :class="{ selected: item == modelValue }"
             @click="selectItem(index)"
         >
             <div :data-text="labels ? labels[index] : item" />
@@ -25,13 +25,14 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from "vue-property-decorator";
+import { Component, Prop, Vue } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     props: {
         items: Array,
         value: String,
     },
+    emits: ['update:modelValue']
 })
 export default class SegmentedControl extends Vue {
     @Prop({ type: Array })
@@ -41,10 +42,10 @@ export default class SegmentedControl extends Vue {
     public labels!: string[] | null;
 
     @Prop()
-    public value!: any;
+    public modelValue!: any;
 
     get selectedIndex() {
-        return this.items.indexOf(this.value);
+        return this.items.indexOf(this.modelValue);
     }
 
     get pointerTransform() {
@@ -53,14 +54,14 @@ export default class SegmentedControl extends Vue {
     }
 
     selectItem(index) {
-        this.$emit("input", this.items[index]);
+        this.$emit('update:modelValue', this.items[index]);
     }
 }
 </script>
 
 <style lang="scss">
-@use "~@stamhoofd/scss/base/variables.scss" as *;
-@use '~@stamhoofd/scss/base/text-styles.scss';
+@use "@stamhoofd/scss/base/variables.scss" as *;
+@use '@stamhoofd/scss/base/text-styles.scss';
 
 $segmented-control-border-width: 2px;
 $segmented-control-height: 38px;

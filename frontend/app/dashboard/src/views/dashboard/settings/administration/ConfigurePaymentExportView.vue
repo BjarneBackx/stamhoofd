@@ -27,7 +27,9 @@
 
         <STList>
             <STListItem v-for="method in sortedPaymentMethods" :key="method" :selectable="true" element-name="label">
-                <Checkbox slot="left" :checked="getPaymentMethod(method)" @change="setPaymentMethod(method, $event)" />
+                <template #left>
+                    <Checkbox :model-value="getPaymentMethod(method)" @update:model-value="setPaymentMethod(method, $event)" />
+                </template>
                 <h3 class="style-title-list">
                     {{ getMethodName(method) }}
                 </h3>
@@ -41,7 +43,9 @@
 
             <STList>
                 <STListItem v-for="provider in allPaymentProviders" :key="provider" :selectable="true" element-name="label" class="left-center">
-                    <Checkbox slot="left" :checked="getProvider(provider)" @change="setProvider(provider, $event)" />
+                    <template #left>
+                        <Checkbox :model-value="getProvider(provider)" @update:model-value="setProvider(provider, $event)" />
+                    </template>
                     <h3 class="style-title-list">
                         {{ getProviderName(provider) }}
                     </h3>
@@ -54,7 +58,9 @@
             <h2>Tijdzone</h2>
             <STList>
                 <STListItem :selectable="true" element-name="label">
-                    <Checkbox slot="left" v-model="useUTCTimezone" />
+                    <template #left>
+                        <Checkbox v-model="useUTCTimezone" />
+                    </template>
                     <h3 class="style-title-list">
                         Gebruik UTC-tijdzone
                     </h3>
@@ -70,7 +76,9 @@
 
         <STList>
             <STListItem :selectable="true" element-name="label" class="left-center">
-                <Checkbox slot="left" v-model="allWebshopsSelected" />
+                <template #left>
+                    <Checkbox v-model="allWebshopsSelected" />
+                </template>
                 <h3 class="style-title-list">
                     Alle webshops
                 </h3>
@@ -78,7 +86,9 @@
 
             <template v-if="!allWebshopsSelected">
                 <STListItem v-for="webshop in allWebshops" :key="webshop.id" :selectable="true" element-name="label">
-                    <Checkbox slot="left" :checked="getWebshop(webshop.id)" @change="setWebshop(webshop.id, $event)" />
+                    <template #left>
+                        <Checkbox :model-value="getWebshop(webshop.id)" @update:model-value="setWebshop(webshop.id, $event)" />
+                    </template>
                     <h3 class="style-title-list">
                         {{ webshop.meta.name }}
                     </h3>
@@ -91,7 +101,9 @@
 
         <STList>
             <STListItem :selectable="true" element-name="label" class="left-center">
-                <Checkbox slot="left" v-model="allGroupsSelected" />
+                <template #left>
+                    <Checkbox v-model="allGroupsSelected" />
+                </template>
                 <h3 class="style-title-list">
                     Alle inschrijvingsgroepen
                 </h3>
@@ -99,7 +111,9 @@
 
             <template v-if="!allGroupsSelected">
                 <STListItem v-for="group in allGroups" :key="group.id" :selectable="true" element-name="label">
-                    <Checkbox slot="left" :checked="getGroup(group.id)" @change="setGroup(group.id, $event)" />
+                    <template #left>
+                        <Checkbox :model-value="getGroup(group.id)" @update:model-value="setGroup(group.id, $event)" />
+                    </template>
                     <h3 class="style-title-list">
                         {{ group.settings.name }}
                     </h3>
@@ -118,9 +132,9 @@ import { I18nController } from "@stamhoofd/frontend-i18n";
 import { SessionManager } from "@stamhoofd/networking";
 import { BalanceItemPaymentDetailed, Country, PaymentGeneral, PaymentMethod, PaymentMethodHelper, PaymentProvider, StripeAccount } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../../classes/OrganizationManager";
+
 import PaymentExportView from "./PaymentExportView.vue";
 
 class DateRangeSuggestion {
@@ -151,7 +165,6 @@ export default class ConfigurePaymentExportView extends Mixins(NavigationMixin) 
     validator = new Validator()
     saving = false
 
-    OrganizationManager = OrganizationManager
 
     internalStartDate = new Date()
     internalEndDate = new Date()
@@ -268,12 +281,12 @@ export default class ConfigurePaymentExportView extends Mixins(NavigationMixin) 
         return Formatter.dateIso(this.startDate) == Formatter.dateIso(suggestion.startDate) && Formatter.dateIso(this.endDate) == Formatter.dateIso(suggestion.endDate)
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get enableMemberModule() {
@@ -327,7 +340,7 @@ export default class ConfigurePaymentExportView extends Mixins(NavigationMixin) 
     async loadStripeAccounts() {
         try {
             this.loadingStripeAccounts = true
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "GET",
                 path: "/stripe/accounts",
                 decoder: new ArrayDecoder(StripeAccount as Decoder<StripeAccount>),
@@ -509,7 +522,7 @@ export default class ConfigurePaymentExportView extends Mixins(NavigationMixin) 
     async downloadUntil(arr: PaymentGeneral[], params: { afterId?: string, paidSince?: number } = {}) {
         const limit = 100
         
-        const session = SessionManager.currentSession!
+        const session = this.$context
 
         const response = await session.authenticatedServer.request({
             method: "GET",

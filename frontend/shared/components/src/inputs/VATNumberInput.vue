@@ -6,9 +6,12 @@
 
 <script lang="ts">
 import { SimpleError } from '@simonbackx/simple-errors';
-import { ErrorBox, STInputBox, Validator } from "@stamhoofd/components"
+import { Component, Prop, Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 import { Country } from '@stamhoofd/structures';
-import { Component, Prop,Vue, Watch } from "vue-property-decorator";
+
+import { ErrorBox } from "../errors/ErrorBox";
+import { Validator } from "../errors/Validator";
+import STInputBox from "./STInputBox.vue";
 
 @Component({
     components: {
@@ -29,7 +32,7 @@ export default class VATNumberInput extends Vue {
     valid = true;
 
     @Prop({ default: null })
-        value!: string | null
+        modelValue!: string | null
 
     @Prop({ default: true })
         required!: boolean
@@ -42,7 +45,7 @@ export default class VATNumberInput extends Vue {
 
     errorBox: ErrorBox | null = null
 
-    @Watch('value')
+    @Watch('modelValue')
     onValueChanged(val: string | null) {
         if (val === null) {
             return
@@ -57,10 +60,10 @@ export default class VATNumberInput extends Vue {
             })
         }
 
-        this.VATNumberRaw = this.value ?? ""
+        this.VATNumberRaw = this.modelValue ?? ""
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -71,7 +74,7 @@ export default class VATNumberInput extends Vue {
 
         if (!this.required && this.VATNumberRaw.length == 0) {
             this.errorBox = null
-            this.$emit("input", null)
+            this.$emit('update:modelValue', null)
             return true
         }
 
@@ -93,7 +96,7 @@ export default class VATNumberInput extends Vue {
 
         } else {
             this.VATNumberRaw = result.value ?? this.VATNumberRaw
-            this.$emit("input", this.VATNumberRaw)
+            this.$emit('update:modelValue', this.VATNumberRaw)
             this.errorBox = null
             return true
         }

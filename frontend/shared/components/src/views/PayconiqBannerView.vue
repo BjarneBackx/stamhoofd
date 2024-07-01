@@ -11,7 +11,7 @@
 
         <LoadingButton :loading="payment && payment.status == 'Pending'" class="price-loading">
             <p class="price">
-                {{ price | price }}
+                {{ formatPrice(price) }}
             </p>
         </LoadingButton>
 
@@ -26,7 +26,7 @@ import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, EmailInput, LoadingButton, STErrorsDefault,STFloatingFooter, STNavigationBar } from "@stamhoofd/components"
 import { Payment,PaymentStatus } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {
@@ -133,7 +133,7 @@ export default class PayconiqBannerView extends Mixins(NavigationMixin){
             });
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         if (this.timer) {
             clearTimeout(this.timer)
             this.timer = null
@@ -181,7 +181,7 @@ export default class PayconiqBannerView extends Mixins(NavigationMixin){
         .payconiq-logo {
             width: 150px;
             height: 150px;
-            background: url(~@stamhoofd/assets/images/partners/payconiq/app-shadow.svg) no-repeat center center;
+            background: url(@stamhoofd/assets/images/partners/payconiq/app-shadow.svg) no-repeat center center;
             background-size: contain;
         }
 

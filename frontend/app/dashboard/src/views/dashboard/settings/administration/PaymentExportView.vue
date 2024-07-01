@@ -84,10 +84,10 @@
                 </h3>
                 <p v-if="detail.description" class="style-description-small pre-wrap" v-text="detail.description" />
 
-                <template slot="right">
+                <template #right>
                     {{ formatPrice(detail.price) }}
                 </template>
-                <span v-if="detail.filter" slot="right" class="icon arrow-right-small gray" />
+                <template v-if="detail.filter" #right><span class="icon arrow-right-small gray" /></template>
             </STListItem>
         </STList>
 
@@ -98,10 +98,10 @@
                 </h3>
                 <p v-if="detail.description" class="style-description-small pre-wrap" v-text="detail.description" />
 
-                <template slot="right">
+                <template #right>
                     {{ formatPrice(detail.price) }}
                 </template>
-                <span v-if="detail.filter" slot="right" class="icon arrow-right-small gray" />
+                <template v-if="detail.filter" #right><span class="icon arrow-right-small gray" /></template>
             </STListItem>
         </STList>
 
@@ -114,10 +114,10 @@
                 </h3>
                 <p v-if="detail.description" class="style-description-small pre-wrap" v-text="detail.description" />
 
-                <template slot="right">
+                <template #right>
                     {{ formatPrice(detail.price) }}
                 </template>
-                <span v-if="detail.filter" slot="right" class="icon arrow-right-small gray" />
+                <template v-if="detail.filter" #right><span class="icon arrow-right-small gray" /></template>
             </STListItem>
         </STList>
     </SaveView>
@@ -130,7 +130,7 @@ import { SessionManager } from "@stamhoofd/networking";
 import { BalanceItemPaymentDetailed, calculateVATPercentage, PaymentMethod, PaymentMethodHelper, PaymentProvider, StripeAccount } from "@stamhoofd/structures";
 import { PaymentGeneral } from "@stamhoofd/structures";
 import { Formatter, Sorter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 export type PaymentFilter = {
     filterBalanceItems?: (payment: BalanceItemPaymentDetailed) => boolean
@@ -597,7 +597,7 @@ export default class PaymentExportView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return SessionManager.currentSession!.organization!
+        return this.$context.organization!
     }
 
     get count() {

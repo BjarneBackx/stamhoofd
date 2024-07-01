@@ -2,7 +2,7 @@ import { Decoder } from '@simonbackx/simple-encoding';
 import { DecodedRequest, Endpoint, Request, Response } from "@simonbackx/simple-endpoints";
 import { SimpleError, SimpleErrors } from '@simonbackx/simple-errors';
 import { Webshop } from '@stamhoofd/models';
-import { PermissionLevel, PrivateWebshop, WebshopPrivateMetaData } from "@stamhoofd/structures";
+import { PermissionLevel, PermissionsResourceType, PrivateWebshop, ResourcePermissions, Version, WebshopPrivateMetaData } from "@stamhoofd/structures";
 import { Formatter } from '@stamhoofd/utility';
 
 import { Context } from '../../../../helpers/Context';
@@ -37,7 +37,7 @@ export class CreateWebshopEndpoint extends Endpoint<Params, Query, Body, Respons
         const {user} = await Context.authenticate()
 
         // Fast throw first (more in depth checking for patches later)
-        if (!Context.auth.canCreateWebshops()) {
+        if (!await Context.auth.canCreateWebshops(organization.id)) {
             throw Context.auth.error("Je kan geen webshops maken, vraag aan de hoofdbeheerders om jou toegang te geven.")
         }
 
@@ -146,8 +146,24 @@ export class CreateWebshopEndpoint extends Endpoint<Params, Query, Body, Respons
             }
         }
 
+        if (!await Context.auth.canAccessWebshop(webshop, PermissionLevel.Full)) {
+            // Create a temporary permission role for this user
+            const organizationPermissions = user.permissions?.organizationPermissions?.get(organization.id)
+            if (!organizationPermissions) {
+                throw new Error('Unexpected missing permissions')
+            }
+            const resourcePermissions = ResourcePermissions.create({
+                resourceName: webshop.meta.name,
+                level: PermissionLevel.Full
+            })
+            const patch = resourcePermissions.createInsertPatch(PermissionsResourceType.Webshops, webshop.id, organizationPermissions)
+            user.permissions!.organizationPermissions.set(organization.id, organizationPermissions.patch(patch))
+            console.log('Automatically granted author full permissions to resource', 'webshop', webshop.id, 'user', user.id, 'patch', patch.encode({version: Version}))
+            await user.save()
+        }
+
         // Verify if we have full access
-        if (!Context.auth.canAccessWebshop(webshop, PermissionLevel.Full)) {
+        if (!await Context.auth.canAccessWebshop(webshop, PermissionLevel.Full)) {
             throw new SimpleError({
                 code: "missing_permissions",
                 message: "You cannot create a webshop without having full permissions on the created webshop",

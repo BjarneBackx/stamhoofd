@@ -1,5 +1,5 @@
 // Load icon font
-require('@stamhoofd/assets/images/icons/icons.font');
+import 'virtual:vite-svg-2-webfont.css';
 
 import { App as CApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
@@ -11,10 +11,10 @@ import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { HistoryManager } from '@simonbackx/vue-app-navigation';
 import { ViewportHelper, VueGlobalHelper } from '@stamhoofd/components';
 import { I18nController } from '@stamhoofd/frontend-i18n';
-import { AppManager, SessionManager, Storage, UrlHelper } from '@stamhoofd/networking';
+import { AppManager, SessionContext, Storage, UrlHelper } from '@stamhoofd/networking';
 import { RateApp } from 'capacitor-rate-app';
 import Vue from "vue";
-import VueMeta from 'vue-meta';
+import { createApp } from 'vue'
 
 import App from "../../dashboard/src/App.vue";
 import { CapacitorStorage } from './CapacitorStorage';
@@ -22,8 +22,6 @@ import FileOpener from './FileOpenerPlugin';
 import QRScanner from './QRScannerPlugin';
 import { UpdateStatus } from './UpdateStatus';
 import { WrapperHTTPRequest } from './WrapperHTTPRequest';
-
-Vue.use(VueMeta)
 
 const throttle = (func, limit) => {
     let lastFunc;
@@ -130,11 +128,14 @@ document.body.style.userSelect = "none";
 
 // Override XMLHttpRequest in some situation (S&GV) since we don't have domain here
 AppManager.shared.overrideXMLHttpRequest = WrapperHTTPRequest
+document.body.classList.add((AppManager.shared.isNative ? "native-" :  "web-")+AppManager.shared.getOS());
+
+const app = createApp(App);
+VueGlobalHelper.setup(app)
+
 const i18n = I18nController.getI18n()
 I18nController.addUrlPrefix = false
-
-document.body.classList.add((AppManager.shared.isNative ? "native-" :  "web-")+AppManager.shared.getOS());
-VueGlobalHelper.setup()
+app.use(i18n)
 
 CapacitorUpdater.notifyAppReady().catch(console.error);
 
@@ -165,20 +166,18 @@ AppManager.shared.hapticTap = () => {
     Haptics.notification({ type: NotificationType.Success }).catch(console.error);
 }
 
-async function markReviewMoment() {
+async function markReviewMoment($context: SessionContext) {
     // 1. Check if we are signed in.
-    const session = SessionManager.currentSession
-
-    if (!session) {
+    if (!$context) {
         return
     }
 
-    if (!session.organization) {
+    if (!$context.organization) {
         return
     }
     
     // Check if at least one package active (only ask reviews to organizations who bought the app)
-    if ((session.organization.meta.packages.useMembers && !session.organization.meta.packages.isMembersTrial) || (session.organization.meta.packages.useWebshops && !session.organization.meta.packages.isWebshopsTrial)) {
+    if (($context.organization.meta.packages.useMembers && !$context.organization.meta.packages.isMembersTrial) || ($context.organization.meta.packages.useWebshops && !$context.organization.meta.packages.isWebshopsTrial)) {
         // Use a counter, that can only increment once a day
         const counterRaw = await Storage.keyValue.getItem("reviewCounter")
         let counter = counterRaw ? parseInt(counterRaw) : 0
@@ -207,8 +206,8 @@ async function markReviewMoment() {
     }
 }
 
-AppManager.shared.markReviewMoment = () => {
-    markReviewMoment().catch(console.error)
+AppManager.shared.markReviewMoment = ($context: SessionContext) => {
+    markReviewMoment($context).catch(console.error)
 }
 
 
@@ -303,9 +302,4 @@ Storage.keyValue.getItem('next_url_load').then((path) => {
     }
 }).catch(console.error)
 
-const app = new Vue({
-    i18n,
-    render: (h) => h(App),
-}).$mount("#app");
-
-(window as any).app = app;
+app.mount("#app")

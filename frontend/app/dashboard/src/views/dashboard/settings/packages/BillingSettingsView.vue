@@ -1,6 +1,6 @@
 <template>
     <div class="st-view background">
-        <STNavigationBar title="Facturen en betalingen" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Facturen en betalingen" />
 
         <main>
             <h1>
@@ -20,7 +20,7 @@
                         <STInputBox title="Openstaand bedrag">
                             <p class="button style-price-big" @click="openPendingInvoice">
                                 <span>
-                                    {{ status.pendingInvoice ? status.pendingInvoice.meta.priceWithoutVAT : 0 | price }}
+                                    {{ formatPrice(status.pendingInvoice ? status.pendingInvoice.meta.priceWithoutVAT : 0) }}
                                 </span>
                                 <span v-if="status.pendingInvoice && status.pendingInvoice.meta.priceWithoutVAT > 0" class="icon arrow-right" />
                             </p>
@@ -33,7 +33,7 @@
                     <div>
                         <STInputBox title="Jouw tegoed">
                             <p class="button style-price-big" @click="showCreditsHistory">
-                                <span>{{ balance | price }}</span>
+                                <span>{{ formatPrice(balance) }}</span>
                                 <span v-if="status.credits.length > 0" class="icon arrow-right" />
                             </p>
                         </STInputBox>
@@ -72,7 +72,7 @@
                                 Adres
                             </h3>
                             <p class="style-definition-text">
-                                {{ companyAddress.toString() | capitalizeFirstLetter }}
+                                {{ capitalizeFirstLetter(companyAddress.toString()) }}
                             </p>
                         </STListItem>
                         <STListItem v-if="VATNumber">
@@ -111,10 +111,10 @@
                             Factuur {{ invoice.number }}
                         </h3>
                         <p class="style-description">
-                            {{ (invoice.meta.date || invoice.paidAt || invoice.createdAt) | date }}
+                            {{ formatDate((invoice.meta.date || invoice.paidAt || invoice.createdAt)) }}
                         </p>
 
-                        <span slot="right" class="icon download gray" />
+                        <template #right><span class="icon download gray" /></template>
                     </STListItem>
                 </STList>
 
@@ -132,9 +132,9 @@ import { BackButton, CenteredMessage, Checkbox,ErrorBox,LoadingButton, Spinner, 
 import { SessionManager, UrlHelper } from '@stamhoofd/networking';
 import { STBillingStatus, STCredit, STInvoice } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../../classes/OrganizationManager";
+
 import GeneralSettingsView from "../GeneralSettingsView.vue";
 import CreditsView from "./CreditsView.vue";
 import InvoiceDetailsView from "./InvoiceDetailsView.vue";
@@ -174,7 +174,7 @@ export default class BillingSettingsView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get companyName() {
@@ -197,7 +197,7 @@ export default class BillingSettingsView extends Mixins(NavigationMixin) {
         this.loadingStatus = true
 
         try {
-            this.status = await OrganizationManager.loadBillingStatus({
+            this.status = await this.$organizationManager.loadBillingStatus({
                 owner: this
             })
         } catch (e) {
@@ -250,7 +250,7 @@ export default class BillingSettingsView extends Mixins(NavigationMixin) {
     }
 
     get hasFullAccess() {
-        return SessionManager.currentSession?.user?.permissions?.hasFullAccess(this.organization.privateMeta?.roles ?? [], ) ?? false
+        return this.$context.organizationPermissions?.hasFullAccess() ?? false
     }
 
     openGeneralSettings() {

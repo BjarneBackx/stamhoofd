@@ -1,17 +1,19 @@
 <template>
     <LoadingView v-if="loading || !status" />
     <div v-else id="referral-view" class="st-view background">
-        <STNavigationBar title="Verdien tegoed" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Verdien tegoed" />
 
         <main>
             <h1 v-if="!status.invoiceValue">
-                Geef {{status.value | price}}, krijg tot 100 euro tegoed* per vereniging
+                Geef {{ formatPrice(status.value) }}, krijg tot 100 euro tegoed* per vereniging
             </h1>
             <h1 v-else>
-                Jouw doorverwijzingslink van {{status.value | price}}
+                Jouw doorverwijzingslink van {{ formatPrice(status.value) }}
             </h1>
 
-            <p v-if="!status.invoiceValue">Ongetwijfeld ken je nog veel andere verenigingen (of ben je er ook in actief): een sportclub, school, jeugdbeweging... Als je andere verenigingen aanbrengt, en ze minimaal 1 euro besteden ontvang je zelf ook gratis tegoed. Per vereniging die je aanbrengt ontvang je telkens iets meer (zie tabel onderaan). Doe je het dus zorgvuldig en doordacht, dan kan je echt een hoop tegoed verzamelen zonder al te veel moeite.</p>
+            <p v-if="!status.invoiceValue">
+                Ongetwijfeld ken je nog veel andere verenigingen (of ben je er ook in actief): een sportclub, school, jeugdbeweging... Als je andere verenigingen aanbrengt, en ze minimaal 1 euro besteden ontvang je zelf ook gratis tegoed. Per vereniging die je aanbrengt ontvang je telkens iets meer (zie tabel onderaan). Doe je het dus zorgvuldig en doordacht, dan kan je echt een hoop tegoed verzamelen zonder al te veel moeite.
+            </p>
 
             <button class="button text" type="button" @click="showBilling">
                 <span class="icon card" />
@@ -34,13 +36,13 @@
                         <h2 class="style-title-list">
                             Delen op Facebook
                         </h2>
-                        <span slot="left" class="icon share" />
+                        <template #left><span class="icon share" /></template>
                     </STListItem>
                     <STListItem v-if="canShare" :selectable="true" @click="share">
                         <h2 class="style-title-list">
                             Verstuur de link via SMS, e-mail, WhatsApp...
                         </h2>
-                        <span slot="left" class="icon share" />
+                        <template #left><span class="icon share" /></template>
                     </STListItem>
                     <STListItem v-if="!isNative" :selectable="true" @click="downloadQR">
                         <h2 class="style-title-list">
@@ -49,7 +51,7 @@
                         <p class="style-description-small">
                             Als je fysiek bij iemand bent, dan kan die deze QR-code scannen om de link te gebruiken. 
                         </p>
-                        <span slot="left" class="icon qr-code" />
+                        <template #left><span class="icon qr-code" /></template>
                     </STListItem>
                 </STList>
 
@@ -62,16 +64,16 @@
                         <STListItem v-for="n in 9" :key="n">
                             {{ n }}e vereniging
 
-                            <span slot="right" class="style-tag large">€ {{ n * 10 }}</span>
-                            <span v-if="referredCount >= n" slot="left" class="icon star yellow" />
-                            <span v-else slot="left" class="icon star-line light-gray" />
+                            <template #right><span class="style-tag large">€ {{ n * 10 }}</span></template>
+                            <template v-if="referredCount >= n" #left><span class="icon star yellow" /></template>
+                            <template v-else #left><span class="icon star-line light-gray" /></template>
                         </STListItem>
                         <STListItem>
                             10e, 11e, 12e... vereniging
 
-                            <span slot="right" class="style-tag large">€ 100</span>
-                            <span v-if="referredCount >= 10" slot="left" class="icon star yellow" />
-                            <span v-else slot="left" class="icon star-line light-gray" />
+                            <template #right><span class="style-tag large">€ 100</span></template>
+                            <template v-if="referredCount >= 10" #left><span class="icon star yellow" /></template>
+                            <template v-else #left><span class="icon star-line light-gray" /></template>
                         </STListItem>
                     </STList>            
                 </template>    
@@ -82,8 +84,11 @@
 
                 <STList v-if="status.usedCodes.length > 0">
                     <STListItem v-for="used in status.usedCodes" :key="used.id" class="right-description">
-                        <span v-if="used.creditValue !== null" slot="left" class="icon success green" />
-                        <span v-else slot="left" class="icon clock gray" />
+                        <template #left>
+                            <span  v-if="used.creditValue !== null" class="icon success green" />
+                            <span v-else class="icon clock gray" />
+                        </template>
+
                         <h2 class="style-title-list">
                             {{ used.organizationName }}
                         </h2>
@@ -94,12 +99,15 @@
                             Aangerekend in je openstaande saldo.
                         </p>
                         <p v-else-if="!status.invoiceValue" class="style-description">
-                            Registreerde op {{ used.createdAt | date }}. Je ontvangt jouw tegoed zodra deze vereniging 1 euro heeft besteed.
+                            Registreerde op {{ formatDate(used.createdAt) }}. Je ontvangt jouw tegoed zodra deze vereniging 1 euro heeft besteed.
                         </p>
-                         <p v-else class="style-description">
-                            Registreerde op {{ used.createdAt | date }}. Er werd nog niets aangekocht of gefactureerd.
+                        <p v-else class="style-description">
+                            Registreerde op {{ formatDate(used.createdAt) }}. Er werd nog niets aangekocht of gefactureerd.
                         </p>
-                        <span v-if="used.creditValue" slot="right" class="style-tag large success">{{ used.creditValue | price }}</span>
+                        
+                        <template #right>
+                            <span v-if="used.creditValue" class="style-tag large success">{{ formatPrice(used.creditValue) }}</span>
+                        </template>
                     </STListItem>
                 </STList>
                 
@@ -108,7 +116,7 @@
                 </p>
 
                 <hr v-if="!status.invoiceValue">
-                <p class="style-description-small" v-if="!status.invoiceValue">
+                <p v-if="!status.invoiceValue" class="style-description-small">
                     * We betalen het tegoed nooit uit. Je kan het enkel gebruiken om pakketten in Stamhoofd aan te kopen. Je kan je tegoed niet doorgeven aan een andere vereniging. Je kan geen tegoed krijgen voor een vereniging die al Stamhoofd gebruikt of al heeft geregistreerd. Ook als die persoon al een andere vereniging heeft op Stamhoofd kan je er geen tegoed meer voor krijgen. 
                     Tegoed vervalt als het één jaar lang niet gebruikt wordt (de geldigheid wordt telkens verlengd zodra er minstens 1 cent van gebruikt wordt). Je kan het tegoed niet gebruiken voor het betalen van transactiekosten van online betalingen.
                     Meerdere verenigingen zelf aanmaken om zo tegoed te krijgen is niet toegestaan.
@@ -126,9 +134,9 @@ import { BackButton, Checkbox, LoadingView, Spinner, STErrorsDefault, STInputBox
 import { AppManager, SessionManager, UrlHelper } from "@stamhoofd/networking";
 import { OrganizationType, RegisterCodeStatus } from "@stamhoofd/structures";
 import { Formatter, Sorter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
+
 import BillingSettingsView from "./packages/BillingSettingsView.vue";
 
 @Component({
@@ -165,11 +173,11 @@ export default class ReferralView extends Mixins(NavigationMixin) {
     }
 
     get href() {
-        return "https://"+STAMHOOFD.domains.dashboard+"/aansluiten?code="+encodeURIComponent(this.status?.code ?? "")+"&org="+encodeURIComponent(OrganizationManager.organization.name)
+        return "https://"+STAMHOOFD.domains.dashboard+"/aansluiten?code="+encodeURIComponent(this.status?.code ?? "")+"&org="+encodeURIComponent(this.$organization.name)
     }
 
     get isYouth() {
-        return OrganizationManager.organization.meta.type === OrganizationType.Youth
+        return this.$organization.meta.type === OrganizationType.Youth
     }
 
     get referralText() {
@@ -209,7 +217,7 @@ export default class ReferralView extends Mixins(NavigationMixin) {
         this.loading = true;
 
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "GET",
                 path: "/register-code",
                 decoder: RegisterCodeStatus as Decoder<RegisterCodeStatus>
@@ -225,7 +233,7 @@ export default class ReferralView extends Mixins(NavigationMixin) {
     }
     
     mounted() {
-        UrlHelper.setUrl("/settings/referrals");
+        this.setUrl("/referrals");
     }
 
     openFacebookShare() {
@@ -254,7 +262,7 @@ export default class ReferralView extends Mixins(NavigationMixin) {
         this.present(displayedComponent.setDisplayStyle("overlay"));
 
         setTimeout(() => {
-            displayedComponent.vnode?.componentInstance?.$parent?.$emit("pop");
+            (displayedComponent.componentInstance() as any)?.hide?.()
         }, 1000);
     }
 }

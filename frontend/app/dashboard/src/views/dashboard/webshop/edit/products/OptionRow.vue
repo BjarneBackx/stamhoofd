@@ -1,7 +1,9 @@
 <template>
     <STListItem v-long-press="(e) => showContextMenu(e)" :selectable="true" class="right-description right-stack" @click="editOption()" @contextmenu.prevent="showContextMenu">
-        <Radio v-if="!optionMenu.multipleChoice" slot="left" v-model="isFirst" :value="true" :disabled="true" />
-        <Checkbox v-else slot="left" :disabled="true" />
+        <template #left>
+            <Radio v-if="!optionMenu.multipleChoice" v-model="isFirst" :value="true" :disabled="true" />
+            <Checkbox v-else :disabled="true" />
+        </template>
 
         <h3 class="style-title-list">
             {{ option.name || 'Naamloos' }}
@@ -13,8 +15,8 @@
             Nog {{ pluralText(option.remainingStock, 'stuk', 'stuks') }} beschikbaar
         </p>
 
-        <template slot="right">
-            <span>{{ option.price | priceChange }}</span>
+        <template #right>
+            <span>{{ formatPriceChange(option.price) }}</span>
             <span class="button icon drag gray" @click.stop @contextmenu.stop />
             <span class="icon arrow-right-small gray" />
         </template>
@@ -27,7 +29,7 @@ import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-na
 import { CenteredMessage, Checkbox, ContextMenu, ContextMenuItem, LongPressDirective, Radio,STListItem } from "@stamhoofd/components";
 import { Option, OptionMenu } from "@stamhoofd/structures"
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins,Prop } from "vue-property-decorator";
+import { Component, Mixins,Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import EditOptionView from './EditOptionView.vue';
 

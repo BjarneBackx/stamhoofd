@@ -2,12 +2,12 @@ import { SimpleError } from "@simonbackx/simple-errors";
 import { StamhoofdFilter, StamhoofdKeyFilterValue } from "@stamhoofd/structures";
 import { SQL } from "../SQL";
 import { SQLExpression } from "../SQLExpression";
-import { SQLArray, SQLNull, SQLSafeValue, SQLScalarValue, scalarToSQLExpression, scalarToSQLJSONExpression } from "../SQLExpressions";
+import { SQLArray, SQLColumnExpression, SQLNull, SQLSafeValue, SQLScalarValue, scalarToSQLExpression, scalarToSQLJSONExpression } from "../SQLExpressions";
 import { SQLJsonContains, SQLJsonOverlaps, SQLJsonSearch } from "../SQLJsonExpressions";
 import { SQLSelect } from "../SQLSelect";
 import { SQLWhere, SQLWhereAnd, SQLWhereEqual, SQLWhereExists, SQLWhereLike, SQLWhereNot, SQLWhereOr, SQLWhereSign } from "../SQLWhere";
 
-export type SQLFilterCompiler = (filter: StamhoofdKeyFilterValue, filters: SQLFilterDefinitions) => SQLWhere|null;
+export type SQLFilterCompiler = (filter: StamhoofdFilter, filters: SQLFilterDefinitions) => SQLWhere|null;
 export type SQLFilterDefinitions = Record<string, SQLFilterCompiler>
 
 export function andSQLFilterCompiler(filter: StamhoofdFilter, filters: SQLFilterDefinitions): SQLWhere {
@@ -49,7 +49,7 @@ export function createSQLRelationFilterCompiler(baseSelect: InstanceType<typeof 
         const f = filter as any;
 
         if ('$elemMatch' in f) {
-             const w = compileToSQLFilter(f['$elemMatch'], definitions)
+            const w = compileToSQLFilter(f['$elemMatch'], definitions)
             const q = baseSelect.clone().where(w);
             return new SQLWhereExists(q)
         }
@@ -69,7 +69,7 @@ export function createSQLExpressionFilterCompiler(sqlExpression: SQLExpression, 
     const norm = normalizeValue ?? ((v) => v);
     const convertToExpression = isJSONValue ? scalarToSQLJSONExpression : scalarToSQLExpression
 
-    return (filter: StamhoofdKeyFilterValue, filters: SQLFilterDefinitions) => {
+    return (filter: StamhoofdFilter, filters: SQLFilterDefinitions) => {
         if (typeof filter === 'string' || typeof filter === 'number' || typeof filter === 'boolean' || filter === null || filter === undefined) {
             filter = {
                 $eq: filter
@@ -116,6 +116,10 @@ export function createSQLExpressionFilterCompiler(sqlExpression: SQLExpression, 
                     code: 'invalid_filter',
                     message: 'Expected array at $in filter'
                 })
+            }
+
+            if (f.$in.length === 0) {
+                return new SQLWhereEqual(new SQLSafeValue(1), SQLWhereSign.Equal, new SQLSafeValue(0));
             }
 
             const v = f.$in.map(a => norm(a));
@@ -214,12 +218,12 @@ export function createSQLExpressionFilterCompiler(sqlExpression: SQLExpression, 
             );
         }
 
-        throw new Error('Invalid filter')
+        throw new Error('Invalid filter ' + JSON.stringify(f))
     }
 }
 
-export function createSQLColumnFilterCompiler(name: string, normalizeValue?: (v: SQLScalarValue|null) => SQLScalarValue|null): SQLFilterCompiler {
-    const column = SQL.column(name);
+export function createSQLColumnFilterCompiler(name: string | SQLColumnExpression, normalizeValue?: (v: SQLScalarValue|null) => SQLScalarValue|null): SQLFilterCompiler {
+    const column = name instanceof SQLColumnExpression ? name : SQL.column(name);
     return createSQLExpressionFilterCompiler(column, normalizeValue)
 }
 

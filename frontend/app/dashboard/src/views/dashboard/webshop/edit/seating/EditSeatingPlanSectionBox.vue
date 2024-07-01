@@ -129,7 +129,7 @@ import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { ContextMenu, ContextMenuItem, ErrorBox, STErrorsDefault, Validator } from '@stamhoofd/components';
 import { SeatingPlan, SeatingPlanRow, SeatingPlanSeat, SeatingPlanSection, SeatingSizeConfiguration, SeatMarkings, SeatType } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 function getNextPattern(examples: string[]): string {
     if (examples.length === 0) {
@@ -312,7 +312,7 @@ export default class EditSeatingPlanSectionBox extends Mixins(NavigationMixin) {
         window.addEventListener("blur", this.onVisibilityChange);
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }

@@ -1,6 +1,6 @@
 <template>
     <div class="st-view ticket-already-scanned-view">
-        <STNavigationBar title="Ticket al gescand" :pop="canPop" />
+        <STNavigationBar title="Ticket al gescand" />
 
         <main>
             <h1>
@@ -37,12 +37,14 @@
        
 
         <STToolbar>
-            <button slot="right" class="button secundary" @click="viewTicket">
-                Ticket toch bekijken
-            </button>
-            <button slot="right" class="button primary" @click="pop">
-                Terug
-            </button>
+            <template #right>
+                <button class="button secundary" @click="viewTicket">
+                    Ticket toch bekijken
+                </button>
+                <button class="button primary" @click="pop">
+                    Terug
+                </button>
+            </template>
         </STToolbar>
     </div>
 </template>
@@ -52,7 +54,7 @@ import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-na
 import { BackButton, Checkbox,ColorHelper,Spinner,STList, STListItem, STNavigationBar, STToolbar } from "@stamhoofd/components";
 import { PrivateOrder, TicketPrivate, TicketPublicPrivate } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import { WebshopManager } from "../../WebshopManager";
 import ValidTicketView from "./ValidTicketView.vue";

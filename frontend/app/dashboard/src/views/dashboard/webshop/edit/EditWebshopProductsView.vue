@@ -7,13 +7,17 @@
 
         <template v-if="webshop.categories.length > 0">
             <STList v-model="draggableCategories" :draggable="true">
-                <CategoryRow v-for="category in webshop.categories" :key="category.id" :category="category" :webshop="webshop" @patch="addPatch($event)" @move-up="moveCategoryUp(category)" @move-down="moveCategoryDown(category)" />
+                <template #item="{item: category}">
+                    <CategoryRow :category="category" :webshop="webshop" @patch="addPatch($event)" @move-up="moveCategoryUp(category)" @move-down="moveCategoryDown(category)" />
+                </template>
             </STList>
         </template>
 
         <template v-else-if="webshop.products.length > 0">
             <STList v-model="draggableProducts" :draggable="true">
-                <ProductRow v-for="product in webshop.products" :key="product.id" :product="product" :webshop="webshop" @patch="addPatch($event)" @move-up="moveProductUp(product)" @move-down="moveProductDown(product)" />
+                <template #item="{item: product}">
+                    <ProductRow :product="product" :webshop="webshop" @patch="addPatch($event)" @move-up="moveProductUp(product)" @move-down="moveProductDown(product)" />
+                </template>
             </STList>
         </template>
                 
@@ -42,7 +46,9 @@
 
             <STList>
                 <STListItem :selectable="true" element-name="label" class="left-center">
-                    <Checkbox slot="left" v-model="cartEnabled" />
+                    <template #left>
+                        <Checkbox v-model="cartEnabled" />
+                    </template>
                     <h3 class="style-title-list">
                         Winkelmandje gebruiken
                     </h3>
@@ -55,11 +61,11 @@
 <script lang="ts">
 import { AutoEncoderPatchType } from '@simonbackx/simple-encoding';
 import { ComponentWithProperties } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 import { Checkbox, SaveView, STErrorsDefault, STList, STListItem } from "@stamhoofd/components";
 import { UrlHelper } from '@stamhoofd/networking';
 import { Category, PrivateWebshop, Product, ProductType, WebshopMetaData, WebshopTicketType } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins } from "vue-property-decorator";
 
 import CategoryRow from './categories/CategoryRow.vue';
 import EditCategoryView from './categories/EditCategoryView.vue';

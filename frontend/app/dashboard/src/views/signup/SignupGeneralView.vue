@@ -1,9 +1,7 @@
 <template>
     <LoadingView v-if="loadingRegisterCode" />
     <form v-else id="signup-general-view" class="st-view" @submit.prevent="goNext">
-        <STNavigationBar title="Nieuwe vereniging">
-            <button slot="right" type="button" class="button icon close gray" @click="pop" />
-        </STNavigationBar>
+        <STNavigationBar title="Nieuwe vereniging" />
         
         <main>
             <h1>
@@ -87,19 +85,19 @@
                 <hr>
                 <h2>Hoe ken je Stamhoofd?</h2>
 
-                <Checkbox :checked="getBooleanType(AcquisitionType.Recommended)" @change="setBooleanType(AcquisitionType.Recommended, $event)">
+                <Checkbox :model-value="getBooleanType(AcquisitionType.Recommended)" @update:model-value="setBooleanType(AcquisitionType.Recommended, $event)">
                     Op aanraden van andere vereniging / persoon
                 </Checkbox>
-                <Checkbox :checked="getBooleanType(AcquisitionType.Seen)" @change="setBooleanType(AcquisitionType.Seen, $event)">
+                <Checkbox :model-value="getBooleanType(AcquisitionType.Seen)" @update:model-value="setBooleanType(AcquisitionType.Seen, $event)">
                     Gezien bij andere vereniging
                 </Checkbox>
-                <Checkbox :checked="getBooleanType(AcquisitionType.SocialMedia)" @change="setBooleanType(AcquisitionType.SocialMedia, $event)">
+                <Checkbox :model-value="getBooleanType(AcquisitionType.SocialMedia)" @update:model-value="setBooleanType(AcquisitionType.SocialMedia, $event)">
                     Via sociale media
                 </Checkbox>
-                <Checkbox :checked="getBooleanType(AcquisitionType.Search)" @change="setBooleanType(AcquisitionType.Search, $event)">
+                <Checkbox :model-value="getBooleanType(AcquisitionType.Search)" @update:model-value="setBooleanType(AcquisitionType.Search, $event)">
                     Via opzoekwerk (bv. Google)
                 </Checkbox>
-                <Checkbox :checked="getBooleanType(AcquisitionType.Other)" @change="setBooleanType(AcquisitionType.Other, $event)">
+                <Checkbox :model-value="getBooleanType(AcquisitionType.Other)" @update:model-value="setBooleanType(AcquisitionType.Other, $event)">
                     Andere
                 </Checkbox>
 
@@ -127,7 +125,7 @@ import { I18nController } from '@stamhoofd/frontend-i18n';
 import { NetworkManager, Storage, UrlHelper } from '@stamhoofd/networking';
 import { AcquisitionType, Address, Country, Organization, OrganizationMetaData, OrganizationPrivateMetaData, OrganizationType, OrganizationTypeHelper, RecordConfigurationFactory, RegisterCode, UmbrellaOrganization, UmbrellaOrganizationHelper } from "@stamhoofd/structures";
 import { Formatter, Sorter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import SignupAccountView from './SignupAccountView.vue';
 
@@ -156,6 +154,9 @@ import SignupAccountView from './SignupAccountView.vue';
                 }
             ]
         }
+    },
+    navigation: {
+        title: "Sluit jouw vereniging aan | Stamhoofd",
     }
 })
 export default class SignupGeneralView extends Mixins(NavigationMixin) {

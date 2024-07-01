@@ -1,5 +1,5 @@
 import { Factory } from "@simonbackx/simple-database";
-import { NewUser, Permissions } from '@stamhoofd/structures';
+import { NewUser, Permissions, UserPermissions } from '@stamhoofd/structures';
 
 import { Organization } from "../models/Organization";
 import { User } from "../models/User";
@@ -16,6 +16,7 @@ class Options {
      */
     verified?: boolean;
     permissions?: Permissions | null
+    globalPermissions?: Permissions | null
 }
 
 export class UserFactory extends Factory<Options, User> {
@@ -34,13 +35,25 @@ export class UserFactory extends Factory<Options, User> {
 
         const user = await User.register(organization, NewUser.create({
             email,
+            organizationId: organization.id,
             password
         }));
         if (!user) {
             throw new Error("Unexpected failure when creating user in factory");
         }
 
-        user.permissions = this.options.permissions ?? null
+        if (this.options.permissions) {
+            user.permissions = UserPermissions.create({})
+            user.permissions.organizationPermissions.set(organization.id, this.options.permissions)
+        }
+
+        if (this.options.globalPermissions) {
+            if (!user.permissions) {
+                user.permissions = UserPermissions.create({})
+            }
+            user.permissions.globalPermissions = this.options.globalPermissions
+        }
+
         user.firstName = this.options.firstName ?? null;
         user.lastName = this.options.lastName ?? null;
         

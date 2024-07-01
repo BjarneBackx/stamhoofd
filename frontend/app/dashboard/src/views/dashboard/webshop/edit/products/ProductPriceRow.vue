@@ -13,11 +13,11 @@
             Nog {{ pluralText(productPrice.remainingStock, 'stuk', 'stuks') }} beschikbaar
         </p>
 
-        <template slot="right">
+        <template #right>
             <span><template v-if="productPrice.discountPrice">
-                      {{ productPrice.discountPrice | price }} /
+                      {{ formatPrice(productPrice.discountPrice) }} /
                   </template>
-                {{ productPrice.price | price }}</span>
+                {{ formatPrice(productPrice.price) }}</span>
             <span class="button icon drag gray" @click.stop @contextmenu.stop />
             <span class="icon arrow-right-small gray" />
         </template>
@@ -30,7 +30,7 @@ import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-na
 import { CenteredMessage, ContextMenu, ContextMenuItem, LongPressDirective, STListItem } from "@stamhoofd/components";
 import { Product, ProductPrice } from "@stamhoofd/structures"
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins,Prop } from "vue-property-decorator";
+import { Component, Mixins,Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import EditProductPriceView from './EditProductPriceView.vue';
 

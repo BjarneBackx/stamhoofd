@@ -2,14 +2,16 @@
     <LoadingView v-if="!order" />
     <div v-else class="st-view order-view box-shade">
         <STNavigationBar :large="true" :sticky="false">
-            <OrganizationLogo slot="left" :organization="organization" :webshop="webshop" />
-            <button slot="right" class="text button" type="button" @click="pop">
-                Sluiten
-            </button>
+            <OrganizationLogo #left :organization="organization" :webshop="webshop" />
+            <template #right>
+                <button class="text button" type="button" @click="pop">
+                    Sluiten
+                </button>
+            </template>
         </STNavigationBar>
 
         <main>
-            <p class="stamhoofd-header" v-if="!webshop.meta.reduceBranding">
+            <p v-if="!webshop.meta.reduceBranding" class="stamhoofd-header">
                 <a :href="'https://'+$t('shared.domains.marketing')+'?utm_medium=webshop'" target="_blank" class="button text"><span v-if="hasTickets">Verkoop ook tickets via </span><span v-else>Bouw je betaalbare webshop via</span>  <Logo /></a>
             </p>
             <div class="box">
@@ -170,7 +172,9 @@
                                 <span v-else class="icon clock" />
                             </p>
 
-                            <span v-if="order.payments.length > 1" slot="right">{{ payment.price | price }}</span>
+                            <template #right>
+                                <span v-if="order.payments.length > 1">{{ formatPrice(payment.price) }}</span>
+                            </template>
                         </STListItem>
                         <STListItem v-for="a in order.data.fieldAnswers" :key="a.field.id" class="right-description">
                             <h3 class="style-definition-label">
@@ -186,7 +190,7 @@
                                 Geplaatst op
                             </h3>
                             <p class="style-definition-text">
-                                {{ order.validAt | dateTime | capitalizeFirstLetter }}
+                                {{ capitalizeFirstLetter(formatDateTime(order.validAt)) }}
                             </p>
                         </STListItem>
 
@@ -251,7 +255,7 @@
                                 </h3>
 
                                 <p class="style-definition-text">
-                                    {{ order.data.timeSlot.date | date | capitalizeFirstLetter }}<br>{{ order.data.timeSlot.startTime | minutes }} - {{ order.data.timeSlot.endTime | minutes }}
+                                    {{ capitalizeFirstLetter(formatDate(order.data.timeSlot.date)) }}<br>{{ formatMinutes(order.data.timeSlot.startTime) }} - {{ formatMinutes(order.data.timeSlot.endTime) }}
                                 </p>
                             </STListItem>
                         </template>
@@ -261,7 +265,7 @@
                             </h3>
 
                             <p class="style-definition-text">
-                                {{ order.data.deliveryPrice | price }}
+                                {{ formatPrice(order.data.deliveryPrice) }}
                             </p>
                         </STListItem>
                         <STListItem v-if="order.data.administrationFee > 0" class="right-description">
@@ -270,7 +274,7 @@
                             </h3>
 
                             <p class="style-definition-text">
-                                {{ order.data.administrationFee | price }}
+                                {{ formatPrice(order.data.administrationFee) }}
                             </p>
                         </STListItem>
                         <STListItem v-if="order.data.totalPrice || !webshop.isAllFree" class="right-description">
@@ -279,7 +283,7 @@
                             </h3>
 
                             <p class="style-definition-text">
-                                {{ order.data.totalPrice | price }}
+                                {{ formatPrice(order.data.totalPrice) }}
                             </p>
                         </STListItem>
                     </STList>
@@ -289,7 +293,7 @@
                         <h2>
                             {{ category.name }}
                         </h2>
-                        <RecordCategoryAnswersBox :category="category" :answers="recordAnswers" :data-permission="true" />
+                        <ViewRecordCategoryAnswersBox :category="category" :value="order.data" />
                     </div>
 
                     <div v-if="order.data.checkoutMethod && order.data.checkoutMethod.description" class="container">
@@ -311,20 +315,20 @@
                         <hr>
 
                         <p v-for="code of order.data.discountCodes" :key="code.id" class="discount-box icon label">
-                            <span>Kortingscode <span class="style-discount-code">{{code.code}}</span></span>
+                            <span>Kortingscode <span class="style-discount-code">{{ code.code }}</span></span>
                         </p>
 
                         <STList>
-                            <CartItemRow v-for="cartItem of order.data.cart.items" :key="cartItem.id" :cartItem="cartItem" :cart="order.data.cart" :webshop="webshop" :editable="false" :admin="false" />
+                            <CartItemRow v-for="cartItem of order.data.cart.items" :key="cartItem.id" :cart-item="cartItem" :cart="order.data.cart" :webshop="webshop" :editable="false" :admin="false" />
                         </STList>
 
                         <hr>
 
-                        <CheckoutPriceBreakdown :checkout="order.data" />
+                        <PriceBreakdownBox :price-breakdown="order.data.priceBreakown" />
                     </template>
                 </main>
                 <STToolbar v-if="!isCanceled && ((canShare && !hasTickets) || (!isPaid && isTransfer))" :sticky="false">
-                    <template slot="right">
+                    <template #right>
                         <button v-if="canShare && !hasTickets" class="button secundary" type="button" @click="share">
                             <span class="icon share" />
                             <span>Delen</span>
@@ -343,15 +347,13 @@
 <script lang="ts">
 import { ArrayDecoder, Decoder } from '@simonbackx/simple-encoding';
 import { ComponentWithProperties, NavigationController, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { CartItemRow, CenteredMessage, CheckoutPriceBreakdown, DetailedTicketView,ErrorBox, LoadingButton, LoadingView, Logo,OrganizationLogo, Radio, RecordCategoryAnswersBox, Spinner, STErrorsDefault, STList, STListItem, STNavigationBar, STToolbar, Toast, TransferPaymentView } from "@stamhoofd/components";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
+import { CartItemRow, CenteredMessage, PriceBreakdownBox, DetailedTicketView, ErrorBox, LoadingButton, LoadingView, Logo, OrganizationLogo, Radio, STErrorsDefault, STList, STListItem, STNavigationBar, STToolbar, Spinner, Toast, TransferPaymentView, ViewRecordCategoryAnswersBox } from "@stamhoofd/components";
 import { UrlHelper } from '@stamhoofd/networking';
-import { BalanceItemStatus, Payment, RecordCategory } from '@stamhoofd/structures';
-import { CartItem, Order, OrderStatus, OrderStatusHelper, PaymentMethod, PaymentMethodHelper, PaymentStatus, ProductType, TicketOrder, TicketPublic, WebshopTicketType } from '@stamhoofd/structures';
+import { CartItem, Order, OrderStatus, OrderStatusHelper, Payment, PaymentMethod, PaymentMethodHelper, PaymentStatus, ProductType, RecordCategory, TicketOrder, TicketPublic, WebshopTicketType } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
 
 import { CheckoutManager } from '../../classes/CheckoutManager';
-import { WebshopManager } from '../../classes/WebshopManager';
 import TicketListItem from '../products/TicketListItem.vue';
 
 @Component({
@@ -367,10 +369,10 @@ import TicketListItem from '../products/TicketListItem.vue';
         OrganizationLogo,
         Spinner,
         TicketListItem,
-        RecordCategoryAnswersBox,
+        ViewRecordCategoryAnswersBox,
         Logo,
         CartItemRow,
-        CheckoutPriceBreakdown
+        PriceBreakdownBox
     },
     filters: {
         price: Formatter.price.bind(Formatter),
@@ -404,11 +406,11 @@ export default class OrderView extends Mixins(NavigationMixin){
     loadingTickets = false
 
     get organization() {
-        return WebshopManager.organization
+        return this.$webshopManager.organization
     }
 
     get webshop() {
-        return WebshopManager.webshop
+        return this.$webshopManager.webshop
     }
 
     get singleTicket() {
@@ -420,7 +422,7 @@ export default class OrderView extends Mixins(NavigationMixin){
     }
 
     get isPaid() {
-        return this.order && (this.order.balanceItems.every(item => item.status === BalanceItemStatus.Paid))
+        return this.order && (this.order.payment === null || this.order.payment.status === PaymentStatus.Succeeded)
     }
 
     get isTransfer() {
@@ -477,12 +479,8 @@ export default class OrderView extends Mixins(NavigationMixin){
         }
         return RecordCategory.flattenCategoriesForAnswers(
             this.webshop.meta.recordCategories,
-            this.order.data.recordAnswers
+            [...this.order.data.recordAnswers.values()]
         )
-    }
-
-    get recordAnswers() {
-        return this.order?.data.recordAnswers ?? []
     }
 
     formatFreePrice(price: number) {
@@ -494,9 +492,9 @@ export default class OrderView extends Mixins(NavigationMixin){
 
     share() {
         navigator.share({
-            title: "Bestelling "+WebshopManager.webshop.meta.name,
-            text: "Bekijk mijn bestelling bij "+WebshopManager.webshop.meta.name+" via deze link.",
-            url: WebshopManager.webshop.getUrl(this.organization)+"/order/"+this.order!.id,
+            title: "Bestelling "+this.$webshopManager.webshop.meta.name,
+            text: "Bekijk mijn bestelling bij "+this.$webshopManager.webshop.meta.name+" via deze link.",
+            url: this.$webshopManager.webshop.getUrl(this.organization)+"/order/"+this.order!.id,
         }).catch(e => console.error(e))
     }
 
@@ -514,8 +512,8 @@ export default class OrderView extends Mixins(NavigationMixin){
                 root: new ComponentWithProperties(TransferPaymentView, {
                     type: "order",
                     payment,
-                    organization: WebshopManager.organization,
-                    settings: WebshopManager.webshop.meta.transferSettings,
+                    organization: this.$webshopManager.organization,
+                    settings: this.$webshopManager.webshop.meta.transferSettings,
                     isPopup: true
                 })
             }).setDisplayStyle("popup"))
@@ -534,9 +532,9 @@ export default class OrderView extends Mixins(NavigationMixin){
         this.loadingTickets = true
 
         try {
-            const response = await WebshopManager.server.request({
+            const response = await this.$webshopManager.server.request({
                 method: "GET",
-                path: "/webshop/" +WebshopManager.webshop.id + "/tickets",
+                path: "/webshop/" +this.$webshopManager.webshop.id + "/tickets",
                 query: {
                     // Required because we don't need to repeat item information (network + database impact)
                     orderId: this.order.id
@@ -553,10 +551,10 @@ export default class OrderView extends Mixins(NavigationMixin){
 
     mounted() {
         if (this.success) {
-            CheckoutManager.clear()
+            this.$checkoutManager.clear()
 
             // Update stock in background
-            WebshopManager.reload().catch(e => {
+            this.$webshopManager.reload().catch(e => {
                 console.error(e)
             })
         }
@@ -569,10 +567,10 @@ export default class OrderView extends Mixins(NavigationMixin){
         if (this.orderId) {
             UrlHelper.setUrl("/order/"+this.orderId)
 
-            WebshopManager.server
+            this.$webshopManager.server
                 .request({
                     method: "GET",
-                    path: "/webshop/" +WebshopManager.webshop.id + "/order/"+this.orderId,
+                    path: "/webshop/" +this.$webshopManager.webshop.id + "/order/"+this.orderId,
                     decoder: Order as Decoder<Order>,
                 }).then(response => {
                     const order = response.data
@@ -588,10 +586,10 @@ export default class OrderView extends Mixins(NavigationMixin){
             if (!this.paymentId) {
                 throw new Error("Missing payment id or order id")
             }
-            WebshopManager.server
+            this.$webshopManager.server
                 .request({
                     method: "GET",
-                    path: "/webshop/" +WebshopManager.webshop.id + "/payment/"+this.paymentId+"/order",
+                    path: "/webshop/" +this.$webshopManager.webshop.id + "/payment/"+this.paymentId+"/order",
                     decoder: Order as Decoder<Order>,
                 }).then(response => {
                     const order = response.data
@@ -614,7 +612,7 @@ export default class OrderView extends Mixins(NavigationMixin){
             '@stamhoofd/ticket-builder'
         )).TicketBuilder
 
-        const builder = new TicketBuilder(this.publicTickets, this.webshop, WebshopManager.organization, this.order ?? undefined)
+        const builder = new TicketBuilder(this.publicTickets, this.webshop, this.$webshopManager.organization, this.order ?? undefined)
         await builder.download()
     }
 

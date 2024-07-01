@@ -1,7 +1,7 @@
 <template>
     <div ref="errors">
-        <template v-for="error in errors">
-            <STErrorBox :key="error.id">
+        <template v-for="error in errors" :key="error.id">
+            <STErrorBox>
                 {{ getErrorMessage(error) }}
             </STErrorBox>
         </template>
@@ -10,23 +10,25 @@
 
 <script lang="ts">
 import { SimpleError } from '@simonbackx/simple-errors';
-import { Component, Prop, Vue, Watch } from "vue-property-decorator";
+import { Component, Prop, Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 
 import { ErrorBox } from "./ErrorBox"
 import STErrorBox from "./STErrorBox.vue"
+import { Ref, unref } from 'vue';
 
 @Component({
     components: {
         STErrorBox
     }
-})export default class STErrorsDefault extends Vue {
+})
+export default class STErrorsDefault extends Vue {
     @Prop() 
-    errorBox: ErrorBox | null;
+        errorBox!: ErrorBox | Ref<ErrorBox> | null;
     
     errors: SimpleError[] = [];
 
     mounted() {
-        this.onNewErrors(this.errorBox)
+        this.onNewErrors(unref(this.errorBox))
     }
 
     getErrorMessage(error: SimpleError) {
@@ -37,18 +39,17 @@ import STErrorBox from "./STErrorBox.vue"
     }
 
     @Watch('errorBox')
-    onNewErrors(val: ErrorBox | null ) {
+    onNewErrors(val: ErrorBox | Ref<ErrorBox> | null ) {
         if (!val) {
             this.errors = [];
             return;
         }
         // Wait for next tick, to prevent a useless rerender of errors that will get removed by other inputs
         this.$nextTick(() => {
-            const errors = val.remaining
-            console.log("Picked new default errors", errors);
+            const errors = unref(val).remaining
             this.errors = errors.errors
 
-            val.scrollTo(this.errors, this.$refs.errors as HTMLElement)
+            unref(val).scrollTo(this.errors, this.$refs.errors as HTMLElement)
         });
         
     }

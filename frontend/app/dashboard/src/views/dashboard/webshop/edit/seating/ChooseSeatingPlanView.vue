@@ -11,7 +11,9 @@
 
         <STList>
             <STListItem :selectable="true" element-name="label">
-                <Radio slot="left" v-model="selectedPlan" :value="null" />
+                <template #left>
+                    <Radio v-model="selectedPlan" :value="null" />
+                </template>
 
                 <h3 class="style-title-list">
                     Geen zetelselectie
@@ -22,7 +24,9 @@
             </STListItem>
 
             <STListItem v-for="plan in allSeatingPlans" :key="plan.id" :selectable="true" element-name="label">
-                <Radio slot="left" v-model="selectedPlan" :value="plan.id" />
+                <template #left>
+                    <Radio v-model="selectedPlan" :value="plan.id" />
+                </template>
 
                 <h3 class="style-title-list">
                     {{ plan.name }}
@@ -36,7 +40,7 @@
                 </p>
                 
 
-                <template slot="right">
+                <template #right>
                     <button class="button icon edit gray" type="button" @click="editSeatingPlan(plan)" />
                 </template>
             </STListItem>
@@ -56,16 +60,23 @@
         <STList class="illustration-list">    
             <STListItem :selectable="true" class="left-center" element-name="label">
                 <input type="file" multiple="multiple" style="display: none;" accept=".plan" @change="importSeatingPlan">
-                <img slot="left" src="~@stamhoofd/assets/images/illustrations/box-upload.svg">
+                
+                <template #left>
+                    <img src="@stamhoofd/assets/images/illustrations/box-upload.svg">
+                </template>
+                
                 <h2 class="style-title-list">
                     Importeer zaalplan
                 </h2>
                 <p class="style-description">
                     Importeer een zaalplan dat jij of een andere vereniging eerder uit Stamhoofd hebt geëxporteerd. Importeren vanaf andere systemen is niet mogelijk.
                 </p>
-                <LoadingButton slot="right" :loading="importingSeatingPlan">
-                    <span class="icon download gray" />
-                </LoadingButton>
+
+                <template #right>
+                    <LoadingButton :loading="importingSeatingPlan">
+                        <span class="icon download gray" />
+                    </LoadingButton>
+                </template>
             </STListItem>
         </STList>
     </SaveView>
@@ -77,9 +88,9 @@ import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-na
 import { CenteredMessage, ErrorBox, LoadingButton,Radio, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Toast, Validator } from "@stamhoofd/components";
 import { PrivateWebshop, Product, SeatingPlan, SeatingPlanCategory, SeatingPlanRow, SeatingPlanSeat, SeatingPlanSection, SeatType, Version, WebshopMetaData } from "@stamhoofd/structures";
 import { Sorter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from '../../../../../classes/OrganizationManager';
+
 import EditSeatingPlanView from './EditSeatingPlanView.vue';
 
 @Component({
@@ -123,7 +134,7 @@ export default class ChooseSeatingPlanView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     addPatch(patch: AutoEncoderPatchType<Product>) {

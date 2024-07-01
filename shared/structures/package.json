@@ -1,9 +1,15 @@
 {
     "name": "@stamhoofd/structures",
-    "version": "1.0.0",
+    "version": "1.2.0",
     "main": "./dist/index.js",
     "module": "./esm/dist/index.js",
-    "types": "./dist/index.d.ts",
+    "types": "./esm/dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./esm/dist/index.js",
+            "require": "./dist/index.js"
+        }
+    },
     "license": "UNLICENCED",
     "sideEffects": false,
     "files": [

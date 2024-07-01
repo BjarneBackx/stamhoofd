@@ -2,17 +2,21 @@
     <div>
         <STList v-if="locations.length > 0">
             <STListItem v-for="_location in locations" :key="_location.id" element-name="label" :selectable="true" class="left-center location-selection">
-                <Radio slot="left" v-model="selectedLocation" :value="_location" @change="changeSelected" />
+                <template #left>
+                    <Radio v-model="selectedLocation" :value="_location" @change="changeSelected" />
+                </template>
                 <h3 class="style-title-list">
                     {{ _location.name }}
                 </h3>
                 <p v-if="_location.address" class="style-description">
                     {{ _location.address }}
                 </p>
-                <button slot="right" type="button" class="button icon gray edit" @click.stop="doEditLocation(_location)" />
+                <template #right><button type="button" class="button icon gray edit" @click.stop="doEditLocation(_location)" /></template>
             </STListItem>
             <STListItem element-name="label" :selectable="true" class="left-center">
-                <Radio slot="left" v-model="selectedLocation" :value="null" @change="changeSelected" />
+                <template #left>
+                    <Radio v-model="selectedLocation" :value="null" @change="changeSelected" />
+                </template>
                 Een andere locatie
             </STListItem>
         </STList>
@@ -27,7 +31,7 @@ import { SimpleError } from '@simonbackx/simple-errors';
 import { AddressInput,ErrorBox, Radio,STErrorsDefault, STInputBox, STList,STListItem,Validator } from "@stamhoofd/components"
 import { I18nController } from '@stamhoofd/frontend-i18n';
 import { Address, Country, ProductLocation } from "@stamhoofd/structures"
-import { Component, Prop, Vue, Watch } from "vue-property-decorator";
+import { Component, Prop, Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 
 import ProductLocationInput from "./ProductLocationInput.vue"
 
@@ -65,7 +69,7 @@ export default class ProductSelectLocationInput extends Vue {
 
     @Watch('value')
     onValueChanged(val: ProductLocation | null) {
-        if (val === this.selectedLocation ?? this.customLocation ?? null) {
+        if (val === (this.selectedLocation ?? this.customLocation ?? null)) {
             // Not changed
             return
         }
@@ -102,9 +106,9 @@ export default class ProductSelectLocationInput extends Vue {
 
             if (!this.value) {
                 if (this.locations.length > 0) {
-                    this.$emit("input", this.locations[0])
+                    this.$emit('update:modelValue', this.locations[0])
                 } else {
-                    this.$emit("input", ProductLocation.create({
+                    this.$emit('update:modelValue', ProductLocation.create({
                         name: "",
                         address: Address.createDefault(I18nController.shared?.country ?? Country.Belgium)
                     }))
@@ -119,7 +123,7 @@ export default class ProductSelectLocationInput extends Vue {
         }
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -140,12 +144,12 @@ export default class ProductSelectLocationInput extends Vue {
             })
         }
         if (a) {
-            this.$emit("input", a)
+            this.$emit('update:modelValue', a)
         }
     }
 
     doEditLocation(location: ProductLocation) {
-        this.$emit("input", location)
+        this.$emit('update:modelValue', location)
         this.editingLocation = true
         this.selectedLocation = location
         this.customLocation = location
@@ -159,10 +163,10 @@ export default class ProductSelectLocationInput extends Vue {
         if (this.editingLocation && this.selectedLocation && location) {
             this.$emit("modify", { from: this.selectedLocation, to: location })
             this.selectedLocation = location
-            this.$emit("input", location)
+            this.$emit('update:modelValue', location)
             this.editingLocation = true
         } else {
-            this.$emit("input", location)
+            this.$emit('update:modelValue', location)
         }
         this.customLocation = location
     }
@@ -175,7 +179,7 @@ export default class ProductSelectLocationInput extends Vue {
         }
 
         if (this.selectedLocation) {
-            this.$emit("input", this.selectedLocation)
+            this.$emit('update:modelValue', this.selectedLocation)
             this.errorBox = null
             return true
         }
@@ -190,7 +194,7 @@ export default class ProductSelectLocationInput extends Vue {
         }
         
         this.errorBox = null
-        this.$emit("input", this.customLocation)
+        this.$emit('update:modelValue', this.customLocation)
         return true
     }
 }

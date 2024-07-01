@@ -1,7 +1,8 @@
-import { ComponentWithProperties } from "@simonbackx/vue-app-navigation"
+import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation"
 
 import GeneralContextMenuView from "./GeneralContextMenuView.vue"
 import { ModalStackEventBus } from "./ModalStackEventBus"
+import { markRaw } from "vue"
 
 export class ContextMenuItem {
     name: string
@@ -21,7 +22,7 @@ export class ContextMenuItem {
     /**
      * Return true when the context menu should get closed.
      */
-    action: ((this: ContextMenuItem) => boolean) | null = null
+    action: ((this: ContextMenuItem) => unknown|Promise<void>) | null = null
 
     /**
      * Context menu to show when hovered
@@ -29,6 +30,7 @@ export class ContextMenuItem {
     childMenu: ContextMenu | null = null
 
     constructor(settings: Partial<ContextMenuItem>) {
+        markRaw(this)
         Object.assign(this, settings)
     }
 }
@@ -42,6 +44,7 @@ export class ContextMenu {
     items: ContextMenuItem[][]
 
     constructor(items: ContextMenuItem[][]) {
+        markRaw(this)
         this.items = items.filter(i => i.length > 0)
     }
 
@@ -49,7 +52,7 @@ export class ContextMenu {
         return new ComponentWithProperties(GeneralContextMenuView, { menu: this})
     }
 
-    async show(position: { clickEvent?: TouchEvent | MouseEvent, button?: HTMLElement, x?: number, y?: number, xPlacement?: "right" | "left", yPlacement?: "bottom" | "top" , wrapWidth?: number, wrapHeight?: number, yOffset?: number, xOffset?: number }) {
+    async show(position: { component?: NavigationMixin, clickEvent?: TouchEvent | MouseEvent, button?: HTMLElement, x?: number, y?: number, xPlacement?: "right" | "left", yPlacement?: "bottom" | "top" , wrapWidth?: number, wrapHeight?: number, yOffset?: number, xOffset?: number }) {
         if (position.button) {
             const bounds = position.button.getBoundingClientRect()
 
@@ -83,14 +86,24 @@ export class ContextMenu {
             position.x += position.xOffset
         }
 
-        const component = new ComponentWithProperties(GeneralContextMenuView, {
+        const component = position.component;
+        delete position.component
+
+        const menuComponent = new ComponentWithProperties(GeneralContextMenuView, {
             menu: this,
             ...position
         })
-        await ModalStackEventBus.sendEvent("present", {
-            components: [component],
-            modalDisplayStyle: "overlay",
-        })
+        if (component) {
+            component.present({
+                components: [menuComponent],
+                modalDisplayStyle: "overlay",
+            })
+        } else {
+            await ModalStackEventBus.sendEvent("present", {
+                components: [menuComponent],
+                modalDisplayStyle: "overlay",
+            })
+        }
         return this
     }
 }

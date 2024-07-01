@@ -4,7 +4,7 @@
             {{ field.name || 'Naamloos' }}
         </h2>
 
-        <template slot="right">
+        <template #right>
             <button type="button" class="button icon arrow-up gray" @click.stop="moveUp" />
             <button type="button" class="button icon arrow-down gray" @click.stop="moveDown" />
             <span class="icon arrow-right-small gray" />
@@ -18,7 +18,7 @@ import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-na
 import { Checkbox, Radio,STListItem } from "@stamhoofd/components";
 import { WebshopField } from "@stamhoofd/structures"
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins,Prop } from "vue-property-decorator";
+import { Component, Mixins,Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import EditWebshopFieldView from './EditWebshopFieldView.vue';
 

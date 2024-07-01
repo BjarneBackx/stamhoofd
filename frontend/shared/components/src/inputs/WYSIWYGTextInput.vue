@@ -11,10 +11,14 @@
 
                             <input ref="linkInput" v-model="editLink" class="list-input" type="url" placeholder="https://" enterkeyhint="go">
                         </div>
-                        <button slot="right" class="button text" type="submit" @mousedown.prevent>
-                            {{ editLink.length == 0 ? "Sluiten" : "Opslaan" }}
-                        </button>
-                        <button v-if="editor.isActive('link')" slot="right" v-tooltip="'Link verwijderen'" class="button icon trash gray" type="button" @mousedown.prevent @click.stop.prevent="clearLink()" />
+                        <template #right>
+                            <button class="button text" type="submit" @mousedown.prevent>
+                                {{ editLink.length == 0 ? "Sluiten" : "Opslaan" }}
+                            </button>
+                        </template>
+                        <template v-if="editor.isActive('link')" #right>
+                            <button v-tooltip="'Link verwijderen'" class="button icon trash gray" type="button" @mousedown.prevent @click.stop.prevent="clearLink()" />
+                        </template>
                     </STListItem>
                 </STList>
             </form>
@@ -36,18 +40,17 @@
 
 
 <script lang="ts">
+import { Component, Prop, Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 import { RichText } from "@stamhoofd/structures";
-import Heading from '@tiptap/extension-heading';
 import Link from '@tiptap/extension-link';
 import Typography from "@tiptap/extension-typography";
 import Underline from '@tiptap/extension-underline';
 import StarterKit from '@tiptap/starter-kit';
-import { Editor, EditorContent } from '@tiptap/vue-2';
-import { Component, Prop, Vue, Watch } from "vue-property-decorator";
+import { Editor, EditorContent } from '@tiptap/vue-3';
 
 import { ColorHelper } from "../ColorHelper";
 import TooltipDirective from "../directives/Tooltip";
-import {WarningBox} from "../editor/EditorWarningBox";
+import { WarningBox } from "../editor/EditorWarningBox";
 import STList from "../layout/STList.vue";
 import STListItem from "../layout/STListItem.vue";
 import STButtonToolbar from "../navigation/STButtonToolbar.vue";
@@ -76,7 +79,7 @@ function escapeHtml(unsafe: string ): string {
 })
 export default class WYSIWYGTextInput extends Vue {
     @Prop({ required: true })
-        value!: RichText
+        modelValue!: RichText
 
     @Prop({ default: 2 })
         headingStartLevel!: number
@@ -108,16 +111,16 @@ export default class WYSIWYGTextInput extends Vue {
         }
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         this.editor.destroy()
     }
 
     buildEditor() {
-        let content = this.value.html;
+        let content = this.modelValue.html;
 
-        if (!content && this.value.text) {
+        if (!content && this.modelValue.text) {
             // Special conversion operation
-            const splitted = this.value.text.split("\n")
+            const splitted = this.modelValue.text.split("\n")
             for (const split of splitted) (
                 content += `<p>${escapeHtml(split)}</p>`
             )
@@ -149,7 +152,7 @@ export default class WYSIWYGTextInput extends Vue {
                 }
             },
             onUpdate: ({ editor }) => {
-                this.$emit("input", RichText.create({ html: editor.getHTML(), text: editor.getText() }))
+                this.$emit('update:modelValue', RichText.create({ html: editor.getHTML(), text: editor.getText() }))
             },
         })
     }

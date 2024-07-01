@@ -25,7 +25,9 @@
 
         <STList>
             <STListItem :selectable="true" element-name="label">
-                <Checkbox slot="left" v-model="adminOnly" />
+                <template #left>
+                    <Checkbox v-model="adminOnly" />
+                </template>
 
                 <h3 class="style-title-list">
                     Enkel voor beheerders
@@ -55,7 +57,7 @@ import { AutoEncoderPatchType, patchContainsChanges } from '@simonbackx/simple-e
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, Checkbox, ErrorBox, PriceInput, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Validator } from "@stamhoofd/components";
 import { SeatingPlan, SeatingPlanCategory, Version } from "@stamhoofd/structures";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {

@@ -7,31 +7,45 @@
 </template>
 
 <script lang="ts">
-import { ComponentWithProperties, ComponentWithPropertiesInstance,NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { Component, Mixins,Prop } from "vue-property-decorator";
+import { ComponentWithProperties, ComponentWithPropertiesInstance, NavigationMixin } from "@simonbackx/vue-app-navigation";
+import { Component, Mixins, Prop } from '@simonbackx/vue-app-navigation/classes';
 
-import LoadingView from "./LoadingView.vue"
+import LoadingView from "./LoadingView.vue";
 
 @Component({
     components: {
         ComponentWithPropertiesInstance,
         LoadingView
-    },
+    }
 })
 export default class PromiseView extends Mixins(NavigationMixin) {
     @Prop({required: true})
-    promise: () => Promise<ComponentWithProperties>
+        promise!: () => Promise<ComponentWithProperties>
 
     root: ComponentWithProperties | null = null
+    passRoutes = false;
 
-    created() {
+    mounted() {
         this.run()
     }
 
+    customRoutes() {
+        this.passRoutes = true;
+    }
+    
     run() {
         this.promise.call(this).then((value) => {
-            // We need to make a copy, or we risk having the same component twice in the DOM
-            this.root = value.clone()
+            if(!value) {
+                console.error("Promise view did not return a component.")
+                throw new Error('Missing component in promise')
+            }
+            
+            const c = value
+            if (this.passRoutes) {
+                this.passRoutes = false;
+                c.setCheckRoutes()
+            }
+            this.root = c
         }).catch(e => {
             console.error(e)
             console.error("Promise error not caught, defaulting to dismiss behaviour in PromiseView")
@@ -42,6 +56,13 @@ export default class PromiseView extends Mixins(NavigationMixin) {
     reload() {
         this.root = null;
         this.run();
+    }
+
+    returnToHistoryIndex() {
+        if (this.root) {
+            return this.root.returnToHistoryIndex()
+        }
+        return false;
     }
 
     async shouldNavigateAway(): Promise<boolean> {

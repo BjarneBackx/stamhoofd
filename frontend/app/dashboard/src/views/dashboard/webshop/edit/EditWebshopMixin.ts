@@ -1,23 +1,20 @@
 import { AutoEncoderPatchType, Decoder, patchContainsChanges } from '@simonbackx/simple-encoding';
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { CenteredMessage, ErrorBox, GlobalEventBus, Toast,Validator } from "@stamhoofd/components";
-import { SessionManager } from '@stamhoofd/networking';
+import { CenteredMessage, ErrorBox, GlobalEventBus, Toast, Validator } from "@stamhoofd/components";
 import { PrivateWebshop, Version, WebshopPreview, WebshopTicketType } from '@stamhoofd/structures';
-import { Component, Mixins, Prop } from "vue-property-decorator";
-
-import { OrganizationManager } from '../../../../classes/OrganizationManager';
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 import { WebshopManager } from '../WebshopManager';
 
 @Component
 export default class EditWebshopMixin extends Mixins(NavigationMixin) {
     @Prop({ required: false })
-        webshopManager?: WebshopManager
+    webshopManager?: WebshopManager
 
     @Prop({ required: false })
-        initialWebshop?: PrivateWebshop
+    initialWebshop?: PrivateWebshop
 
     @Prop({ required: false })
-        savedHandler?: (webshop: PrivateWebshop) => Promise<void>
+    savedHandler?: (webshop: PrivateWebshop) => Promise<void>
 
     originalWebshop: PrivateWebshop = this.webshopManager?.webshop ?? this.initialWebshop ?? PrivateWebshop.create({})
 
@@ -78,7 +75,7 @@ export default class EditWebshopMixin extends Mixins(NavigationMixin) {
             await this.validate()
 
             if (this.isNew) {
-                const response = await SessionManager.currentSession!.authenticatedServer.request({
+                const response = await this.$context.authenticatedServer.request({
                     method: "POST",
                     path: "/webshop",
                     body: this.webshop,
@@ -93,21 +90,21 @@ export default class EditWebshopMixin extends Mixins(NavigationMixin) {
                 }
 
                 const preview = WebshopPreview.create(response.data)
-                OrganizationManager.organization.webshops.push(preview)
+                this.$organizationManager.organization.webshops.push(preview)
 
                 // Save updated organization to cache
-                OrganizationManager.save().catch(console.error)
+                this.$organizationManager.save().catch(console.error)
 
                 // Save to database
-                const manager = new WebshopManager(preview)
+                const manager = new WebshopManager(this.$context, preview)
                 await manager.storeWebshop(response.data)
                 manager.close()
 
                 // Send system wide notification that we might need an update in data
                 await GlobalEventBus.sendEvent("new-webshop", response.data)
                 new Toast(
-                    response.data.meta.ticketType === WebshopTicketType.Tickets 
-                        ? "Jouw nieuwe ticketverkoop is aangemaakt. Je kan nu tickets of vouchers toevoegen die je wilt verkopen." 
+                    response.data.meta.ticketType === WebshopTicketType.Tickets
+                        ? "Jouw nieuwe ticketverkoop is aangemaakt. Je kan nu tickets of vouchers toevoegen die je wilt verkopen."
                         : "Jouw nieuwe webshop is aangemaakt. Je kan nu de producten toevoegen die je wilt verkopen en andere instellingen wijzigen."
                     , "success green").show()
             } else {
@@ -136,5 +133,5 @@ export default class EditWebshopMixin extends Mixins(NavigationMixin) {
 
         this.saving = false
     }
-  
+
 }

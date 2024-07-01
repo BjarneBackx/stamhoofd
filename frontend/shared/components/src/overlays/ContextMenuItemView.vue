@@ -1,5 +1,5 @@
 <template>
-    <component :is="elementName" class="context-menu-item" type="button" :class="{ isOpen: isOpen, hover: isHovered }" @click.stop="onClick" @mouseover.passive="onMouseOver" @mouseleave.passive="onMouseLeave">
+    <component :is="elementName" class="context-menu-item" type="button" :class="[{ isOpen: isOpen, hover: isHovered }, $props.class]" @click.stop="onClick" @mouseover.passive="onMouseOver" @mouseleave.passive="onMouseLeave">
         <div class="left">
             <slot name="left" />
         </div>
@@ -14,9 +14,12 @@
 
 <script lang="ts">
 import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { Component, Mixins,Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
+import ContextMenuView from "./ContextMenuView.vue";
 
-@Component
+@Component({
+    inheritAttrs: false
+})
 export default class ContextMenuItemView extends Mixins(NavigationMixin) {
     clicked = false;
     isHovered = false
@@ -24,23 +27,29 @@ export default class ContextMenuItemView extends Mixins(NavigationMixin) {
     @Prop({ default: 'button' })
     elementName!: string;
 
+    @Prop({ default: '' })
+    class!: string;
+
     @Prop({ default: null })
     childContextMenu!: ComponentWithProperties | null;
 
+    @Prop({required: true})
+    contextMenuView!: InstanceType<typeof ContextMenuView>;
+
     get isOpen() {
-        return (this.$parent as any).childMenu && (this.$parent as any).childMenu === this.childContextMenu
+        return (this.contextMenuView)?.childMenu && (this.contextMenuView).childMenu === this.childContextMenu
     }
 
     onMouseOver() {
-        (this.$parent as any).onHoverItem(this)
+        (this.contextMenuView).onHoverItem(this)
     }
 
     onMouseLeave() {
-        (this.$parent as any).onMouseLeaveItem(this)
+        (this.contextMenuView).onMouseLeaveItem(this)
     }
 
     onClick(event) {
-        (this.$parent as any).onClickItem(this, event)
+        (this.contextMenuView).onClickItem(this, event)
         
     }
 }

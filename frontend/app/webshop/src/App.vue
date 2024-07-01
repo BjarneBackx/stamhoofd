@@ -10,19 +10,17 @@
 import { Decoder } from '@simonbackx/simple-encoding';
 import { isSimpleError, isSimpleErrors } from '@simonbackx/simple-errors';
 import { ComponentWithProperties, HistoryManager, ModalStackComponent, NavigationController, PushOptions } from "@simonbackx/vue-app-navigation";
-import { AuthenticatedView, CenteredMessage, CenteredMessageView, ColorHelper, ErrorBox, LoadingView, ModalStackEventBus, PromiseView, Toast, ToastBox } from '@stamhoofd/components';
+import { Component, Vue } from "@simonbackx/vue-app-navigation/classes";
+import { CenteredMessage, CenteredMessageView, ColorHelper, ErrorBox, LoadingView, ModalStackEventBus, PromiseView, Toast, ToastBox } from '@stamhoofd/components';
 import { I18nController } from '@stamhoofd/frontend-i18n';
-import { NetworkManager, Session, SessionManager, UrlHelper } from '@stamhoofd/networking';
-import { DarkMode, GetWebshopFromDomainResult, WebshopAuthType } from '@stamhoofd/structures';
+import { NetworkManager, SessionContext, SessionManager, UrlHelper } from '@stamhoofd/networking';
+import { DarkMode, GetWebshopFromDomainResult } from '@stamhoofd/structures';
 import { GoogleTranslateHelper } from '@stamhoofd/utility';
-import { Component, Vue } from "vue-property-decorator";
 
-import { WebshopManager } from './classes/WebshopManager';
+import { getWebshopRootView } from './getRootView';
 import ChooseWebshopView from './views/ChooseWebshopView.vue';
 import InvalidWebshopView from './views/errors/InvalidWebshopView.vue';
 import PrerenderRedirectView from './views/errors/PrerenderRedirectView.vue';
-import RequiredLoginView from './views/RequiredLoginView.vue';
-import WebshopView from './views/WebshopView.vue';
 
 @Component({
     components: {
@@ -36,17 +34,10 @@ export default class App extends Vue {
             // get organization
             try {
                 // Check if we are on a global domain, and ignore /shops prefixes if needed
-                let prefix: string | null = null
-                const initialPath = UrlHelper.shared.getParts()
                 const hostname = window.location.hostname
 
-                if (Object.values(STAMHOOFD.domains.marketing).includes(hostname) && initialPath.length > 0 && initialPath[0] === STAMHOOFD.domains.webshopPrefix) {
-                    console.info("Currently on our main domain, using fixed prefix:", STAMHOOFD.domains.webshopPrefix)
-                    prefix = STAMHOOFD.domains.webshopPrefix
-                }
-
                 // Ignore this fixed prefix in our next lookup
-                UrlHelper.fixedPrefix = prefix
+                UrlHelper.fixedPrefix = null
 
                 const ignorePath = ["checkout", "order", "cart", "payment", "tickets", "code"];
                 const path = UrlHelper.shared.getParts()
@@ -96,7 +87,6 @@ export default class App extends Vue {
                 }
 
                 I18nController.skipUrlPrefixForLocale = "nl-"+response.data.organization.address.country
-                await I18nController.loadDefault("webshop", response.data.organization.address.country, "nl", response.data.organization.address.country)
 
                 // Set color
                 if (response.data.webshop?.meta.color) {
@@ -107,11 +97,13 @@ export default class App extends Vue {
                 ColorHelper.setDarkMode(response.data.webshop?.meta.darkMode ?? DarkMode.Off)
 
                 // Set session
-                const session = new Session(response.data.organization.id)
+                const session = new SessionContext(response.data.organization)
                 await session.loadFromStorage()       
-                session.setOrganization(response.data.organization)
+
+                await I18nController.loadDefault(session, response.data.organization.address.country, "nl", response.data.organization.address.country)
+
                 await session.checkSSO()
-                await SessionManager.setCurrentSession(session)
+                await SessionManager.prepareSessionForUsage(session)
 
                 if (!response.data.webshop) {
                     return new ComponentWithProperties(NavigationController, { 
@@ -122,33 +114,18 @@ export default class App extends Vue {
                     })
                 }
 
-                WebshopManager.organization = response.data.organization
-                WebshopManager.webshop = response.data.webshop
-                document.title = WebshopManager.webshop.meta.name +" - "+WebshopManager.organization.name
+                const organization = response.data.organization
+                const webshop = response.data.webshop
 
-                // Do we need to require login?
-                if (response.data.webshop.meta.authType === WebshopAuthType.Required) {
-                    return new ComponentWithProperties(AuthenticatedView, {
-                        root: new ComponentWithProperties(NavigationController, { 
-                            root: new ComponentWithProperties(WebshopView, {}) 
-                        }),
-                        loginRoot: new ComponentWithProperties(ModalStackComponent, {
-                            root: new ComponentWithProperties(NavigationController, { 
-                                root: new ComponentWithProperties(RequiredLoginView, {}) 
-                            })
-                        })
-                    });
-                }
+                document.title = webshop.meta.name +" - "+organization.name
 
-                return new ComponentWithProperties(NavigationController, { 
-                    root: new ComponentWithProperties(WebshopView, {}) 
-                })
+                return await getWebshopRootView(session, webshop)
             } catch (e) {
                 console.log(e)
                 // Check if we have an organization on this domain
                 if (!I18nController.shared) {
                     try {
-                        await I18nController.loadDefault("webshop", undefined, "nl")
+                        await I18nController.loadDefault(null, undefined, "nl")
                     } catch (e) {
                         console.error(e)
                     }
@@ -222,9 +199,9 @@ export default class App extends Vue {
 
 <style lang="scss">
 // We need to include the component styling of vue-app-navigation first
-@use "~@stamhoofd/scss/main";
-@import "~@simonbackx/vue-app-navigation/dist/main.css";
-@import "~@stamhoofd/scss/base/dark-modus";
+@use "@stamhoofd/scss/main";
+@import "@simonbackx/vue-app-navigation/dist/main.css";
+@import "@stamhoofd/scss/base/dark-modus";
 
 body {
     --st-sheet-width: 450px;

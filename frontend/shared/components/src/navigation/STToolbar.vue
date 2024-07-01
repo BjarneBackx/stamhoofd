@@ -1,5 +1,5 @@
 <template>
-    <div class="st-toolbar" :class="{ sticky }">
+    <div class="st-toolbar sticky">
         <div>
             <div>
                 <slot name="left" />
@@ -11,22 +11,15 @@
     </div>
 </template>
 
-<script lang="ts">
-import { Component, Prop, Vue } from "vue-property-decorator";
+<script lang="ts" setup>
+import { useHideTabBar } from '../containers/TabBarController.vue';
 
-@Component
-export default class STToolbar extends Vue {
-    /**
-     * Set sticky to false if a user is required to scroll down before completing a flow (this removes the unneeded CTA in the middle of the flow).
-     */
-    @Prop({ default: true })
-        sticky!: boolean
-}
+useHideTabBar();
 </script>
 
 <style lang="scss">
-@use "~@stamhoofd/scss/base/variables.scss" as *;
-@use '~@stamhoofd/scss/base/text-styles.scss';
+@use "@stamhoofd/scss/base/variables.scss" as *;
+@use '@stamhoofd/scss/base/text-styles.scss';
 
 .st-toolbar {
     margin: 0;
@@ -41,11 +34,6 @@ export default class STToolbar extends Vue {
     .box > & {
         margin-left: calc(-1 * var(--st-horizontal-padding, 20px));
         margin-right: calc(-1 * var(--st-horizontal-padding, 20px));
-    }
-
-    &.sticky {
-        position: sticky;
-        z-index: 10;
     }
 
     > div {
@@ -73,7 +61,7 @@ export default class STToolbar extends Vue {
             min-width: 0;
         }
 
-        > div > .button, > div > .loading-button  {
+        > div:last-child > .button, > div:last-child > .loading-button  {
             margin-left: 10px;
         }
 

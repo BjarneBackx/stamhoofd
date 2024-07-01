@@ -1,6 +1,6 @@
 <template>
     <div class="st-view background">
-        <STNavigationBar title="Webshop archief" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Webshop archief" />
 
         <main>
             <h1>
@@ -12,7 +12,7 @@
                 <STListItem v-for="webshop in webshops" :key="webshop.id" :selectable="true" @click="openWebshop(webshop)">
                     {{ webshop.meta.name }}
 
-                    <template slot="right">
+                    <template #right>
                         <span class="icon arrow-right-small gray" />
                     </template>
                 </STListItem>
@@ -27,9 +27,9 @@ import { BackButton, LoadComponent, STErrorsDefault, STInputBox, STList, STListI
 import { UrlHelper } from '@stamhoofd/networking';
 import { WebshopPreview, WebshopStatus } from "@stamhoofd/structures";
 import { Sorter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from '../../../classes/OrganizationManager';
+
 
 @Component({
     components: {
@@ -49,7 +49,7 @@ export default class WebshopArchiveView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get webshops() {

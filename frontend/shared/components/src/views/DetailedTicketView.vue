@@ -1,8 +1,10 @@
 <template>
     <div class="st-view detailed-ticket-view">
-        <STNavigationBar :title="name" :pop="canPop" :dismiss="canDismiss && allowDismiss" :sticky="false" :large="logo">
-            <OrganizationLogo v-if="logo" slot="left" :organization="organization" />
-            <button v-if="canShare" slot="right" class="button icon share navigation" type="button" @click="share" />
+        <STNavigationBar :title="name" :disableDismiss="!allowDismiss" :sticky="false" :large="logo">
+            <template #left>
+                <OrganizationLogo v-if="logo" :organization="organization" />
+            </template>
+            <template v-if="canShare" #right><button class="button icon share navigation" type="button" @click="share" /></template>
         </STNavigationBar>
         <main>
             <figure class="qr-box">
@@ -82,10 +84,10 @@
         </main>
 
         <STToolbar>
-            <button slot="right" class="button primary" type="button" @click="download">
+            <template #right><button class="button primary" type="button" @click="download">
                 <span class="icon download" />
                 <span>Opslaan</span>
-            </button>
+            </button></template>
         </STToolbar>
     </div>
 </template>
@@ -96,7 +98,7 @@ import { ComponentWithProperties, NavigationMixin } from '@simonbackx/vue-app-na
 import { ImageComponent, OrganizationLogo, ShowSeatsView, STErrorsDefault, STList, STListItem, STNavigationBar, STToolbar } from '@stamhoofd/components';
 import { Order, Organization, ProductDateRange, TicketPublic, Webshop, WebshopTicketType } from '@stamhoofd/structures';
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Mixins, Prop } from 'vue-property-decorator';
+import { Component, Mixins, Prop } from '@simonbackx/vue-app-navigation/classes';
 
 
 @Component({
@@ -218,7 +220,7 @@ export default class DetailedTicketView extends Mixins(NavigationMixin){
         }, 3000)
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         clearInterval(this.timer);
     }
 

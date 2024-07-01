@@ -1,8 +1,6 @@
 <template>
     <div id="dns-records-view" class="st-view">
-        <STNavigationBar title="Gelukt!">
-            <button v-if="canDismiss" slot="right" class="button icon close gray" @click="dismiss" />
-        </STNavigationBar>
+        <STNavigationBar title="Gelukt!" />
 
         <main>
             <h1>
@@ -18,7 +16,7 @@
         </main>
 
         <STToolbar>
-            <template slot="right">
+            <template #right>
                 <button class="button primary" @click="dismiss">
                     Sluiten
                 </button>
@@ -30,9 +28,9 @@
 <script lang="ts">
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { BackButton, Checkbox,LoadingButton, STErrorsDefault,STInputBox, STNavigationBar, STToolbar, TooltipDirective } from "@stamhoofd/components";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager"
+
 
 @Component({
     components: {
@@ -50,7 +48,7 @@ import { OrganizationManager } from "../../../classes/OrganizationManager"
 })
 export default class DNSRecordsDoneView extends Mixins(NavigationMixin) {
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get enableMemberModule() {
@@ -58,11 +56,11 @@ export default class DNSRecordsDoneView extends Mixins(NavigationMixin) {
     }
 
     get registerDomain() {
-        return OrganizationManager.organization.registerDomain ?? "?"
+        return this.$organization.registerDomain ?? "?"
     }
    
     get mailDomain() {
-        return OrganizationManager.organization.privateMeta?.mailDomain ?? "?"
+        return this.$organization.privateMeta?.mailDomain ?? "?"
     }
 
 }

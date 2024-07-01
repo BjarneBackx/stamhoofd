@@ -1,9 +1,9 @@
 <template>
     <LoadingView v-if="loading" />
     <div v-else id="documents-view" class="st-view background">
-        <STNavigationBar title="Documenten" :dismiss="canDismiss" :pop="canPop" />
+        <STNavigationBar title="Documenten" />
 
-        <main>
+        <main class="center">
             <h1 class="style-navigation-title">
                 Documenten
             </h1>
@@ -25,8 +25,8 @@
                         Aangemaakt op {{ formatDate(template.createdAt) }}
                     </p>
 
-                    <span v-if="template.status === 'Draft'" slot="right" class="style-tag">Klad</span>
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right><span v-if="template.status === 'Draft'" class="style-tag">Klad</span>
+                    <span class="icon arrow-right-small gray" /></template>
                 </STListItem>
             </STList>
 
@@ -48,9 +48,9 @@ import { LoadingView,STList, STListItem, STNavigationBar, Toast, TooltipDirectiv
 import { SessionManager, UrlHelper } from "@stamhoofd/networking";
 import { DocumentTemplatePrivate } from "@stamhoofd/structures";
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
+
 import DocumentTemplateOverview from "./DocumentTemplateOverview.vue";
 import EditDocumentTemplateView from "./EditDocumentTemplateView.vue";
 
@@ -77,14 +77,14 @@ export default class DocumentTemplatesView extends Mixins(NavigationMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     activated() {
         this.loadTemplates().catch(console.error)
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
@@ -94,7 +94,7 @@ export default class DocumentTemplatesView extends Mixins(NavigationMixin) {
 
     async loadTemplates() {
         try {
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 method: "GET",
                 path: "/organization/document-templates",
                 decoder: new ArrayDecoder(DocumentTemplatePrivate as Decoder<DocumentTemplatePrivate>),

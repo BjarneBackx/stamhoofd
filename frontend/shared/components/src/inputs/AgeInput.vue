@@ -27,45 +27,47 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop,Vue, Watch } from "vue-property-decorator";
+import { Component, Prop,Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 
-@Component
+@Component({
+    emits: ['update:modelValue']
+})
 export default class AgeInput extends Vue {
     @Prop({ default: 0 })
-    min!: number
+        min!: number
 
     @Prop({ default: false })
-    nullable!: boolean
+        nullable!: boolean
 
     @Prop({ default: 99 })
-    max!: number | null
+        max!: number | null
 
     @Prop({ default: null })
-    year!: number | null
+        year!: number | null
 
     valueString = "";
     valid = true;
 
     /** Price in cents */
     @Prop({ default: null })
-    value!: number | null
+        modelValue!: number | null
 
     @Prop({ default: "" })
-    placeholder!: string
+        placeholder!: string
 
     get internalValue() {
-        return this.value
+        return this.modelValue
     }
 
     set internalValue(val: number | null) {
-        this.$emit("input", val)
+        this.$emit('update:modelValue', val)
     }
 
     get descriptionText() {
-        if (!this.value) {
+        if (!this.modelValue) {
             return ""
         }
-        return "(geboren in "+((this.year ?? new Date().getFullYear()) - this.value)+")"
+        return "(geboren in "+((this.year ?? new Date().getFullYear()) - this.modelValue)+")"
     }
 
     mounted() {
@@ -140,7 +142,7 @@ export default class AgeInput extends Vue {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang="scss">
-@use "~@stamhoofd/scss/base/variables.scss" as *;
+@use "@stamhoofd/scss/base/variables.scss" as *;
 
 .age-input {
     position: relative;

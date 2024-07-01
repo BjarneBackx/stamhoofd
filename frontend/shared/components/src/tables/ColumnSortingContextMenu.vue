@@ -1,8 +1,8 @@
 <template>
-    <ContextMenuView v-bind="$attrs">
-        <ContextMenuItemView v-for="column of sortedColumns" :key="column.id" @click="setSortByColumn(column)">
-            <span v-if="getSortByColumn(column)" slot="left" :class="'icon '+getSortDirectionIcon()" />
-            <span v-else slot="left" class="icon" />
+    <ContextMenuView v-bind="$attrs" ref="contextMenuView">
+        <ContextMenuItemView v-for="column of sortedColumns" :key="column.id" @click="setSortByColumn(column)" :contextMenuView="$refs.contextMenuView">
+            <template v-if="getSortByColumn(column)" #left><span :class="'icon '+getSortDirectionIcon()" /></template>
+            <template v-else #left><span class="icon" /></template>
             {{ column.name }}
         </ContextMenuItemView>
     </ContextMenuView>
@@ -11,9 +11,10 @@
 <script lang="ts">
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { Checkbox,ContextMenuItemView, ContextMenuLine, ContextMenuView, TableView } from "@stamhoofd/components";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 import { Column } from "./Column";
+import { SortItemDirection } from "@stamhoofd/structures";
 
 @Component({
     components: {
@@ -28,23 +29,32 @@ export default class ColumnSortingContextMenu extends Mixins(NavigationMixin) {
     columns: Column<any, any>[];
 
     @Prop({ required: true })
-    table: TableView<any>;
+    setSort: (column: Column<any, any>, direction: SortItemDirection) => void
+    
+    @Prop({ required: true })
+    sortBy: Column<any, any>;
+
+    @Prop({ required: true })
+    sortDirection: SortItemDirection
 
     setSortByColumn(column: Column<any, any>) {
-        console.log("Toggle sort by column", column)
-        this.table.toggleSort(column)
+        if (this.sortBy.id === column.id) {
+            this.setSort(column, this.sortDirection === SortItemDirection.ASC ? SortItemDirection.DESC : SortItemDirection.ASC)
+        } else {
+            this.setSort(column, this.sortDirection)
+        }
     }
 
     getSortByColumn(column: Column<any, any>) {
-        return this.table.sortBy.id === column.id ? true : false
+        return this.sortBy.id === column.id ? true : false
     }
 
     getSortDirectionIcon() {
-        return this.table.sortDirection === "ASC" ? "arrow-up-small" : "arrow-down-small"
+        return this.sortDirection === "ASC" ? "arrow-up-small" : "arrow-down-small"
     }
 
     get sortedColumns() {
-        return this.columns.slice().sort((a, b) => a.index - b.index)
+        return this.columns.filter(c => c.allowSorting).sort((a, b) => a.index - b.index)
     }
 
 }

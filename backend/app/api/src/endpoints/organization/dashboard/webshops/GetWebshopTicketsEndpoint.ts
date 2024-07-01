@@ -8,7 +8,7 @@ import { Context } from "../../../../helpers/Context";
 type Params = { id: string };
 type Query = WebshopTicketsQuery
 type Body = undefined
-type ResponseBody = PaginatedResponse<TicketPrivate, Query>
+type ResponseBody = PaginatedResponse<TicketPrivate[], Query>
 
 export class GetWebshopTicketsEndpoint extends Endpoint<Params, Query, Body, ResponseBody> {
     queryDecoder = WebshopTicketsQuery as Decoder<WebshopTicketsQuery>
@@ -27,16 +27,16 @@ export class GetWebshopTicketsEndpoint extends Endpoint<Params, Query, Body, Res
     }
 
     async handle(request: DecodedRequest<Params, Query, Body>) {
-        await Context.setOrganizationScope();
+        const organization = await Context.setOrganizationScope();
         await Context.authenticate()
 
         // Fast throw first (more in depth checking for patches later)
-        if (!Context.auth.hasSomeAccess()) {
+        if (!await Context.auth.hasSomeAccess(organization.id)) {
             throw Context.auth.error()
         }
 
         const webshop = await Webshop.getByID(request.params.id)
-        if (!webshop || !Context.auth.canAccessWebshopTickets(webshop, PermissionLevel.Read)) {
+        if (!webshop || !await Context.auth.canAccessWebshopTickets(webshop, PermissionLevel.Read)) {
             throw Context.auth.notFoundOrNoAccess("Je hebt geen toegang tot de tickets van deze webshop")
         }
         

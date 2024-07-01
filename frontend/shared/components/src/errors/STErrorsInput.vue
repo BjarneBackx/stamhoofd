@@ -2,8 +2,8 @@
     <div ref="errors" :class="{'input-errors': errors.length > 0}">
         <slot />
         <div>
-            <template v-for="error in errors">
-                <STErrorBox :key="error.id">
+            <template v-for="error in errors" :key="error.id">
+                <STErrorBox>
                     {{ error.human || error.message }}
                 </STErrorBox>
             </template>
@@ -13,7 +13,7 @@
 
 <script lang="ts">
 import { SimpleError, SimpleErrors } from '@simonbackx/simple-errors';
-import { Component, Prop, Vue, Watch } from "vue-property-decorator";
+import { Component, Prop, Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 
 import { ErrorBox } from "./ErrorBox"
 import STErrorBox from "./STErrorBox.vue"
@@ -23,7 +23,7 @@ import STErrorBox from "./STErrorBox.vue"
         STErrorBox
     }
 })
-export default class STErrorsDefault extends Vue {
+export default class STErrorsInput extends Vue {
     @Prop({ default: "" }) errorFields: string;
     @Prop({ default: null }) errorBox: ErrorBox | null;
     errors: SimpleError[] = [];

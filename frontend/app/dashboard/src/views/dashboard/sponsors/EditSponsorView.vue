@@ -19,7 +19,7 @@
             >
         </STInputBox>
 
-        <UrlInput v-model="url" :title="$t('shared.inputs.url.labelOptional')" :validator="validator" :required="false" />
+        <UrlInput v-model="url" :title="$t('shared.website.optional')" :validator="validator" :required="false" />
 
         <p class="style-description-small">
             Op plaatsen waar technisch mogelijk, kan men op het logo klikken om de website te bezoeken.
@@ -27,7 +27,9 @@
 
         <STList>
             <STListItem element-name="label" :selectable="true">
-                <Checkbox slot="left" v-model="onTickets" />
+                <template #left>
+                    <Checkbox v-model="onTickets" />
+                </template>
 
                 <h3 class="style-title-list">
                     Toon op tickets
@@ -80,7 +82,7 @@ import { SimpleError } from '@simonbackx/simple-errors';
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, Checkbox, ErrorBox, ImageComponent,NumberInput, PriceInput, SaveView, STErrorsDefault, STInputBox, STList, STListItem, UploadButton,UrlInput,Validator } from "@stamhoofd/components";
 import { Image,ResolutionRequest, Sponsor, Version } from '@stamhoofd/structures';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {

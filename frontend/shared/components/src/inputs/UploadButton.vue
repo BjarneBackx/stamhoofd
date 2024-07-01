@@ -16,12 +16,13 @@
 import { SimpleError } from "@simonbackx/simple-errors";
 import { Request } from "@simonbackx/simple-networking";
 import { NavigationMixin } from '@simonbackx/vue-app-navigation';
-import { STInputBox, Toast, Validator } from "@stamhoofd/components"
-import { SessionManager } from '@stamhoofd/networking';
 import { Image, ResolutionRequest, Version } from "@stamhoofd/structures";
-import { Component, Mixins,Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
+import { Validator } from "../errors/Validator";
 import LoadingButton from "../navigation/LoadingButton.vue";
+import { Toast } from "../overlays/Toast";
+import STInputBox from "./STInputBox.vue";
 
 @Component({
     components: {
@@ -47,7 +48,7 @@ export default class UploadButton extends Mixins(NavigationMixin) {
 
     uploading = false
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
@@ -80,7 +81,7 @@ export default class UploadButton extends Mixins(NavigationMixin) {
         this.uploading = true;
         //this.errorBox = null;
 
-        SessionManager.currentSession!.authenticatedServer
+        this.$context.authenticatedServer
             .request({
                 method: "POST",
                 path: "/upload-image",
@@ -91,7 +92,7 @@ export default class UploadButton extends Mixins(NavigationMixin) {
                 owner: this
             })
             .then(response => {
-                this.$emit("input", response.data)
+                this.$emit('update:modelValue', response.data)
             })
             .catch(e => {
                 console.error(e);

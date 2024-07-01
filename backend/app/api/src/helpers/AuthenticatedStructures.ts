@@ -1,6 +1,6 @@
 import { SimpleError } from "@simonbackx/simple-errors";
-import { Group, Organization, Payment, Webshop } from "@stamhoofd/models";
-import { Group as GroupStruct, Organization as OrganizationStruct, PaymentGeneral, PermissionLevel, PrivateWebshop, Webshop as WebshopStruct,WebshopPreview } from '@stamhoofd/structures';
+import { Group, MemberResponsibilityRecord, MemberWithRegistrations, Organization, OrganizationRegistrationPeriod, Payment, RegistrationPeriod, User, Webshop } from "@stamhoofd/models";
+import { OrganizationRegistrationPeriod as OrganizationRegistrationPeriodStruct, MemberResponsibilityRecord as MemberResponsibilityRecordStruct, User as UserStruct, Group as GroupStruct, MembersBlob, Organization as OrganizationStruct, PaymentGeneral, PermissionLevel, PrivateWebshop, Webshop as WebshopStruct,WebshopPreview, MemberWithRegistrationsBlob } from '@stamhoofd/structures';
 
 import { Context } from "./Context";
 
@@ -24,7 +24,7 @@ export class AuthenticatedStructures {
         }
 
         const {balanceItemPayments, balanceItems} = await Payment.loadBalanceItems(payments)
-        const {registrations, orders, members} = await Payment.loadBalanceItemRelations(balanceItems);
+        const {registrations, orders, members, groups} = await Payment.loadBalanceItemRelations(balanceItems);
 
         if (checkPermissions) {
             // Note: permission checking is moved here for performacne to avoid loading the data multiple times
@@ -45,29 +45,53 @@ export class AuthenticatedStructures {
             balanceItems,
             registrations,
             orders,
-            members
+            members,
+            groups
         }, includeSettlements)
     }
 
-    static group(group: Group) {
-        if (!Context.optionalAuth?.canAccessGroup(group)) {
+    static async group(group: Group) {
+        if (!await Context.optionalAuth?.canAccessGroup(group)) {
             return group.getStructure()
         }
         return group.getPrivateStructure()
     }
 
-    static webshop(webshop: Webshop) {
-        if (Context.optionalAuth?.canAccessWebshop(webshop)) {
+    static async webshop(webshop: Webshop) {
+        if (await Context.optionalAuth?.canAccessWebshop(webshop)) {
             return PrivateWebshop.create(webshop)
         }
         return WebshopStruct.create(webshop)
     }
 
     static async organization(organization: Organization): Promise<OrganizationStruct> {
-        if (Context.optionalAuth?.canAccessPrivateOrganizationData(organization)) {
-            const groups = await Group.getAll(organization.id)
+        if (await Context.optionalAuth?.canAccessPrivateOrganizationData(organization)) {
+            const groups = await Group.getAll(organization.id, organization.periodId)
             const webshops = await Webshop.where({ organizationId: organization.id }, { select: Webshop.selectColumnsWithout(undefined, "products", "categories")})
-            
+            const webshopStructures: WebshopPreview[] = [] 
+
+            for (const w of webshops) {
+                if (!await Context.auth.canAccessWebshop(w)) {
+                    continue
+                }
+                webshopStructures.push(WebshopPreview.create(w))
+            }
+
+            const oPeriods = await OrganizationRegistrationPeriod.where({ periodId: organization.periodId }, {limit: 1})
+            let oPeriod = oPeriods[0];
+            const period = (await RegistrationPeriod.getByID(organization.periodId))!
+
+            if (!oPeriod) {
+                const organizationPeriod = new OrganizationRegistrationPeriod();
+                organizationPeriod.organizationId = organization.id;
+                organizationPeriod.periodId = period.id
+                organizationPeriod.settings.categories = organization.meta.categories
+                organizationPeriod.settings.rootCategoryId = organization.meta.rootCategoryId
+                await organizationPeriod.save();
+
+                oPeriod = organizationPeriod
+            }
+
             return OrganizationStruct.create({
                 id: organization.id,
                 name: organization.name,
@@ -76,17 +100,59 @@ export class AuthenticatedStructures {
                 registerDomain: organization.registerDomain,
                 uri: organization.uri,
                 website: organization.website,
-                groups: groups.map(g => this.group(g)).sort(GroupStruct.defaultSort),
                 privateMeta: organization.privateMeta,
-                webshops: webshops.flatMap(w => {
-                    if (!Context.auth.canAccessWebshop(w)) {
-                        return []
-                    }
-                    return [WebshopPreview.create(w)]
-                })
+                webshops: webshopStructures,
+                createdAt: organization.createdAt,
+                period: oPeriod.getStructure(period, groups)
             })
         }
         
         return await organization.getStructure()
+    }
+
+    static async adminOrganizations(organizations: Organization[]): Promise<OrganizationStruct[]> {
+        const structs: OrganizationStruct[] = [];
+        const admins = await User.getAdmins(organizations.map(o => o.id))
+
+        for (const organization of organizations) {
+            const base = await organization.getStructure({emptyGroups: true})
+            base.admins = admins.filter(a => a.permissions?.organizationPermissions.has(organization.id)).map(a => UserStruct.create({...a, hasAccount: a.hasAccount()}))
+            structs.push(base)
+        }
+        
+        return structs
+    }
+
+    static async membersBlob(members: MemberWithRegistrations[], includeContextOrganization = false): Promise<MembersBlob> {
+        const organizations = new Map<string, Organization>()
+        const memberBlobs: MemberWithRegistrationsBlob[] = []
+        for (const member of members) {
+            for (const registration of member.registrations) {
+                if (includeContextOrganization || registration.organizationId !== Context.auth.organization?.id) {
+                    const found = organizations.get(registration.id);
+                    if (!found) {
+                        const organization = await Context.auth.getOrganization(registration.organizationId)
+                        organizations.set(organization.id, organization)
+                    }
+                }
+            }
+
+            const blob = member.getStructureWithRegistrations()
+            memberBlobs.push(
+                await Context.auth.filterMemberData(member, blob)
+            )
+        }
+
+        // Load responsibilities
+        const responsibilities = await MemberResponsibilityRecord.where({ memberId: { sign: 'IN', value: members.map(m => m.id) } })
+
+        for (const blob of memberBlobs) {
+            blob.responsibilities = responsibilities.filter(r => r.memberId == blob.id).map(r => MemberResponsibilityRecordStruct.create(r))
+        }
+
+        return MembersBlob.create({
+            members: memberBlobs,
+            organizations: await Promise.all([...organizations.values()].map(o => this.organization(o)))
+        })
     }
 }

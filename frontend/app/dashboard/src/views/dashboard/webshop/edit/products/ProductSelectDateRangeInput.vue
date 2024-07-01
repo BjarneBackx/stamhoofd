@@ -2,14 +2,18 @@
     <div>
         <STList v-if="dateRanges.length > 0">
             <STListItem v-for="_dateRange in dateRanges" :key="_dateRange.id" element-name="label" :selectable="true" class="left-center dateRange-selection">
-                <Radio slot="left" v-model="selectedDateRange" :value="_dateRange" @change="changeSelected" />
+                <template #left>
+                    <Radio v-model="selectedDateRange" :value="_dateRange" @change="changeSelected" />
+                </template>
                 <h3>
                     {{ formatDate(_dateRange) }}
                 </h3>
-                <button slot="right" type="button" class="button icon gray edit" @click.stop="doEditDateRange(_dateRange)" />
+                <template #right><button type="button" class="button icon gray edit" @click.stop="doEditDateRange(_dateRange)" /></template>
             </STListItem>
             <STListItem element-name="label" :selectable="true" class="left-center">
-                <Radio slot="left" v-model="selectedDateRange" :value="null" @change="changeSelected" />
+                <template #left>
+                    <Radio v-model="selectedDateRange" :value="null" @change="changeSelected" />
+                </template>
                 Een andere datum/tijdstip
             </STListItem>
         </STList>
@@ -24,7 +28,7 @@ import { SimpleError } from '@simonbackx/simple-errors';
 import { AddressInput,ErrorBox, Radio,STErrorsDefault, STInputBox, STList,STListItem,Validator } from "@stamhoofd/components"
 import { ProductDateRange } from "@stamhoofd/structures"
 import { Formatter } from '@stamhoofd/utility';
-import { Component, Prop, Vue, Watch } from "vue-property-decorator";
+import { Component, Prop, Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 
 import ProductDateRangeInput from "./ProductDateRangeInput.vue"
 
@@ -65,7 +69,7 @@ export default class ProductSelectDateRangeInput extends Vue {
 
     @Watch('value')
     onValueChanged(val: ProductDateRange | null) {
-        if (val === this.selectedDateRange ?? this.customDateRange ?? null) {
+        if (val === (this.selectedDateRange ?? this.customDateRange ?? null)) {
             // Not changed
             return
         }
@@ -106,9 +110,9 @@ export default class ProductSelectDateRangeInput extends Vue {
 
             if (!this.value) {
                 if (this.dateRanges.length > 0) {
-                    this.$emit("input", this.dateRanges[0])
+                    this.$emit('update:modelValue', this.dateRanges[0])
                 } else {
-                    this.$emit("input", ProductDateRange.create({
+                    this.$emit('update:modelValue', ProductDateRange.create({
                         startDate: new Date(),
                         endDate: new Date(),
                     }))
@@ -123,7 +127,7 @@ export default class ProductSelectDateRangeInput extends Vue {
         }
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -145,12 +149,12 @@ export default class ProductSelectDateRangeInput extends Vue {
             })
         }
         if (a) {
-            this.$emit("input", a)
+            this.$emit('update:modelValue', a)
         }
     }
 
     doEditDateRange(dateRange: ProductDateRange) {
-        this.$emit("input", dateRange)
+        this.$emit('update:modelValue', dateRange)
         this.editingDateRange = true
         this.selectedDateRange = dateRange
         this.customDateRange = dateRange
@@ -164,10 +168,10 @@ export default class ProductSelectDateRangeInput extends Vue {
         if (this.editingDateRange && this.selectedDateRange && dateRange) {
             this.$emit("modify", { from: this.selectedDateRange, to: dateRange })
             this.selectedDateRange = dateRange
-            this.$emit("input", dateRange)
+            this.$emit('update:modelValue', dateRange)
             this.editingDateRange = true
         } else {
-            this.$emit("input", dateRange)
+            this.$emit('update:modelValue', dateRange)
         }
         this.customDateRange = dateRange
     }
@@ -180,7 +184,7 @@ export default class ProductSelectDateRangeInput extends Vue {
         }
 
         if (this.selectedDateRange) {
-            this.$emit("input", this.selectedDateRange)
+            this.$emit('update:modelValue', this.selectedDateRange)
             this.errorBox = null
             return true
         }
@@ -195,7 +199,7 @@ export default class ProductSelectDateRangeInput extends Vue {
         }
         
         this.errorBox = null
-        this.$emit("input", this.customDateRange)
+        this.$emit('update:modelValue', this.customDateRange)
         return true
     }
 }

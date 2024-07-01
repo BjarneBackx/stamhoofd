@@ -30,7 +30,7 @@ import { Server } from '@simonbackx/simple-networking';
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { LoadingButton,LoadingView, Spinner, STList, STListItem, STNavigationBar, STToolbar } from "@stamhoofd/components"
 import { Payment, PaymentStatus } from '@stamhoofd/structures';
-import { Component, Mixins,  Prop } from "vue-property-decorator";
+import { Component, Mixins,  Prop } from "@simonbackx/vue-app-navigation/classes";
 
 @Component({
     components: {
@@ -125,7 +125,7 @@ export default class PaymentPendingView extends Mixins(NavigationMixin){
             })
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         if (this.timer) {
             clearTimeout(this.timer)
             this.timer = null

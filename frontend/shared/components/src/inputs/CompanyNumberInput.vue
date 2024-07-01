@@ -6,9 +6,12 @@
 
 <script lang="ts">
 import { SimpleError } from '@simonbackx/simple-errors';
-import { ErrorBox, STInputBox, Validator } from "@stamhoofd/components"
+import { Component, Prop, Vue, Watch } from "@simonbackx/vue-app-navigation/classes";
 import { Country } from '@stamhoofd/structures';
-import { Component, Prop,Vue, Watch } from "vue-property-decorator";
+
+import { ErrorBox } from "../errors/ErrorBox";
+import { Validator } from "../errors/Validator";
+import STInputBox from "./STInputBox.vue";
 
 @Component({
     components: {
@@ -17,10 +20,10 @@ import { Component, Prop,Vue, Watch } from "vue-property-decorator";
 })
 export default class CompanyNumberInput extends Vue {
     @Prop({ required: true }) 
-    country!: Country;
+        country!: Country;
 
     @Prop({ default: "" })
-    title: string;
+        title: string;
 
     get calculatedTitle() {
         if (this.title) {
@@ -33,26 +36,26 @@ export default class CompanyNumberInput extends Vue {
     }
 
     @Prop({ default: null }) 
-    validator: Validator | null
+        validator: Validator | null
     
     companyNumberRaw = "";
     valid = true;
 
     @Prop({ default: null })
-    value!: string | null
+        modelValue!: string | null
 
     @Prop({ default: true })
-    required!: boolean
+        required!: boolean
 
     @Prop({ default: "Vul jouw BTW-nummer hier in" })
-    placeholder!: string
+        placeholder!: string
 
     @Prop({ default: "vat number" })
-    autocomplete!: string
+        autocomplete!: string
 
     errorBox: ErrorBox | null = null
 
-    @Watch('value')
+    @Watch('modelValue')
     onValueChanged(val: string | null) {
         if (val === null) {
             return
@@ -67,10 +70,10 @@ export default class CompanyNumberInput extends Vue {
             })
         }
 
-        this.companyNumberRaw = this.value ?? ""
+        this.companyNumberRaw = this.modelValue ?? ""
     }
 
-    destroyed() {
+    unmounted() {
         if (this.validator) {
             this.validator.removeValidation(this)
         }
@@ -81,7 +84,7 @@ export default class CompanyNumberInput extends Vue {
 
         if (!this.required && this.companyNumberRaw.length == 0) {
             this.errorBox = null
-            this.$emit("input", null)
+            this.$emit('update:modelValue', null)
             return true
         }
 
@@ -94,7 +97,7 @@ export default class CompanyNumberInput extends Vue {
             return false
 
         } else {
-            this.$emit("input", this.companyNumberRaw)
+            this.$emit('update:modelValue', this.companyNumberRaw)
             this.errorBox = null
             return true
         }

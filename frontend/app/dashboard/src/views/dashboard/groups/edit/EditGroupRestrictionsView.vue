@@ -51,87 +51,92 @@
             <STListItem v-for="id of patchedGroup.settings.requireGroupIds" :key="id">
                 {{ getGroupName(id) }}
 
-                <button slot="right" class="button text only-icon-smartphone" type="button" @click="removeRequireGroupId(id)">
-                    <span class="icon trash" />
-                    <span>Verwijderen</span>
-                </button>
+                <template #right>
+                    <button class="button text only-icon-smartphone" type="button" @click="removeRequireGroupId(id)">
+                        <span class="icon trash" />
+                        <span>Verwijderen</span>
+                    </button>
+                </template>
             </STListItem>
         </STList>
         <p v-else class="info-box">
             Geen verplichte andere inschrijvingen
         </p>
 
-        <hr>
-        <h2 class="style-with-button">
-            <div>Verplicht vorige inschrijvingsperiode ingeschreven bij...</div>
-            <div>
-                <button v-if="patchedGroup.settings.requirePreviousGroupIds.length == 0" type="button" class="button text only-icon-smartphone" @click="editRequirePreviousGroups">
-                    <span class="icon add" />
-                    <span>Toevoegen</span>
-                </button>
-                <button v-else class="button text only-icon-smartphone" type="button" @click="editRequirePreviousGroups">
-                    <span class="icon edit" />
-                    <span>Wijzigen</span>
-                </button>
-            </div>
-        </h2>
-        <p>Leden kunnen enkel zelf inschrijven voor deze inschrijvingsgroep als ze de vorige inschrijvingsperiode ingeschreven waren voor één van de volgende inschrijvingsgroepen.</p>
+        <template v-if="false">
+            <hr>
+            <h2 class="style-with-button">
+                <div>Verplicht vorige inschrijvingsperiode ingeschreven bij...</div>
+                <div>
+                    <button v-if="patchedGroup.settings.requirePreviousGroupIds.length == 0" type="button" class="button text only-icon-smartphone" @click="editRequirePreviousGroups">
+                        <span class="icon add" />
+                        <span>Toevoegen</span>
+                    </button>
+                    <button v-else class="button text only-icon-smartphone" type="button" @click="editRequirePreviousGroups">
+                        <span class="icon edit" />
+                        <span>Wijzigen</span>
+                    </button>
+                </div>
+            </h2>
+            <p>Leden kunnen enkel zelf inschrijven voor deze inschrijvingsgroep als ze de vorige inschrijvingsperiode ingeschreven waren voor één van de volgende inschrijvingsgroepen.</p>
 
-        <STList v-if="patchedGroup.settings.requirePreviousGroupIds.length > 0">
-            <STListItem v-for="id of patchedGroup.settings.requirePreviousGroupIds" :key="id">
-                {{ getGroupName(id) }}
+            <STList v-if="patchedGroup.settings.requirePreviousGroupIds.length > 0">
+                <STListItem v-for="id of patchedGroup.settings.requirePreviousGroupIds" :key="id">
+                    {{ getGroupName(id) }}
 
-                <button slot="right" class="button text only-icon-smartphone" type="button" @click="removeRequirePreviousGroupId(id)">
-                    <span class="icon trash" />
-                    <span>Verwijderen</span>
-                </button>
-            </STListItem>
-        </STList>
-        <p v-else class="info-box">
-            Geen verplichte vorige inschrijvingen noodzakelijk
-        </p>
+                    <template #right>
+                        <button class="button text only-icon-smartphone" type="button" @click="removeRequirePreviousGroupId(id)">
+                            <span class="icon trash" />
+                            <span>Verwijderen</span>
+                        </button>
+                    </template>
+                </STListItem>
+            </STList>
+            <p v-else class="info-box">
+                Geen verplichte vorige inschrijvingen noodzakelijk
+            </p>
 
-        <hr>
-        <h2 class="style-with-button">
-            <div>Verhinder inschrijven als vorige keer ingeschreven bij...</div>
-            <div>
-                <button v-if="patchedGroup.settings.preventPreviousGroupIds.length == 0" type="button" class="button text only-icon-smartphone" @click="editPreventPreviousGroups">
-                    <span class="icon add" />
-                    <span>Toevoegen</span>
-                </button>
-                <button v-else class="button text only-icon-smartphone" type="button" @click="editPreventPreviousGroups">
-                    <span class="icon edit" />
-                    <span>Wijzigen</span>
-                </button>
-            </div>
-        </h2>
-        <p>Leden kunnen niet inschrijven voor deze inschrijvingsgroep als ze de vorige inschrijvingsperiode ingeschreven waren voor één van de volgende inschrijvingsgroepen.</p>
+            <hr>
+            <h2 class="style-with-button">
+                <div>Verhinder inschrijven als vorige keer ingeschreven bij...</div>
+                <div>
+                    <button v-if="patchedGroup.settings.preventPreviousGroupIds.length == 0" type="button" class="button text only-icon-smartphone" @click="editPreventPreviousGroups">
+                        <span class="icon add" />
+                        <span>Toevoegen</span>
+                    </button>
+                    <button v-else class="button text only-icon-smartphone" type="button" @click="editPreventPreviousGroups">
+                        <span class="icon edit" />
+                        <span>Wijzigen</span>
+                    </button>
+                </div>
+            </h2>
+            <p>Leden kunnen niet inschrijven voor deze inschrijvingsgroep als ze de vorige inschrijvingsperiode ingeschreven waren voor één van de volgende inschrijvingsgroepen.</p>
 
-        <STList v-if="patchedGroup.settings.preventPreviousGroupIds.length > 0">
-            <STListItem v-for="id of patchedGroup.settings.preventPreviousGroupIds" :key="id">
-                {{ getGroupName(id) }}
+            <STList v-if="patchedGroup.settings.preventPreviousGroupIds.length > 0">
+                <STListItem v-for="id of patchedGroup.settings.preventPreviousGroupIds" :key="id">
+                    {{ getGroupName(id) }}
 
-                <button slot="right" class="button text only-icon-smartphone" type="button" @click="removePreventPreviousGroupId(id)">
-                    <span class="icon trash" />
-                    <span>Verwijderen</span>
-                </button>
-            </STListItem>
-        </STList>
-        <p v-else class="info-box">
-            Geen vorige inschrijvingsgroepen die uitgesloten worden
-        </p>
+                    <template #right>
+                        <button class="button text only-icon-smartphone" type="button" @click="removePreventPreviousGroupId(id)">
+                            <span class="icon trash" />
+                            <span>Verwijderen</span>
+                        </button>
+                    </template>
+                </STListItem>
+            </STList>
+            <p v-else class="info-box">
+                Geen vorige inschrijvingsgroepen die uitgesloten worden
+            </p>
+        </template>
     </SaveView>
 </template>
 
 <script lang="ts">
 import { ComponentWithProperties } from "@simonbackx/vue-app-navigation";
-import { AgeInput, Checkbox, DateSelection, PriceInput, Radio, RadioGroup, SaveView, SegmentedControl, Slider, STErrorsDefault, STInputBox, STList, STListItem, TimeInput, UploadButton } from "@stamhoofd/components";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
+import { AgeInput, Checkbox, DateSelection, PriceInput, Radio, RadioGroup, STErrorsDefault, STInputBox, STList, STListItem, SaveView, SegmentedControl, Slider, TimeInput, UploadButton } from "@stamhoofd/components";
 import { Country, GroupGenderType, GroupSettings } from '@stamhoofd/structures';
-import { Component, Mixins } from "vue-property-decorator";
 
-import { OrganizationManager } from '../../../../classes/OrganizationManager';
-import GroupPermissionRow from "../../admins/GroupPermissionRow.vue";
-import EditGroupPriceBox from "../EditGroupPriceBox.vue";
 import SelectGroupsView from '../SelectGroupsView.vue';
 import EditGroupMixin from './EditGroupMixin';
 
@@ -149,9 +154,7 @@ import EditGroupMixin from './EditGroupMixin';
         AgeInput,
         Slider,
         TimeInput,
-        EditGroupPriceBox,
         STList,
-        GroupPermissionRow,
         UploadButton,
         STListItem
     },
@@ -166,14 +169,14 @@ export default class EditGroupRestrictionsView extends Mixins(EditGroupMixin) {
     }
 
     isPropertyEnabled(name: "emailAddress" | "birthDay" | "phone" | "address" | "gender") {
-        return !!OrganizationManager.organization.meta.recordsConfiguration[name]
+        return !!this.$organization.meta.recordsConfiguration[name] || this.$platform.config.recordsConfiguration[name]
     }
 
     getGroupName(id: string) {
         const group = this.patchedOrganization.groups.find(g => g.id === id)
         if (!group) {
             // Search deleted groups (in non patched one)
-            const deleted = OrganizationManager.organization.groups.find(g => g.id === id)
+            const deleted = this.$organization.groups.find(g => g.id === id)
             if (deleted) {
                 return deleted.settings.name +" (verwijderd)"
             }

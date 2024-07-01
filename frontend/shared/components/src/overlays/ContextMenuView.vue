@@ -1,6 +1,6 @@
 <template>
     <transition appear name="show">
-        <div class="context-menu-container" :class="{ hasParent: !!parentMenu, disableDismiss: !autoDismiss }" @click="pop" @contextmenu.prevent>
+        <div v-if="!hide" class="context-menu-container" :class="{ hasParent: !!parentMenu, disableDismiss: !autoDismiss }" @click="pop" @contextmenu.prevent>
             <div
                 ref="context"
                 class="context-menu"
@@ -17,9 +17,9 @@
 </template>
 
 <script lang="ts">
-import { ComponentWithProperties, ModalStackComponent } from "@simonbackx/vue-app-navigation";
-import { Component, Prop, Vue } from "vue-property-decorator";
+import { ComponentWithProperties, injectHooks, usePop } from "@simonbackx/vue-app-navigation";
 
+import { Component, Prop, VueComponent } from "@simonbackx/vue-app-navigation/classes";
 import { ViewportHelper } from "../ViewportHelper";
 import ContextMenuItemView from "./ContextMenuItemView.vue";
 
@@ -34,8 +34,9 @@ function triangleContains(ax, ay, bx, by, cx, cy, x, y) {
 }
 
 @Component({
+    inheritAttrs: false
 })
-export default class ContextMenuView extends Vue {
+export default class ContextMenuView extends VueComponent {
     @Prop({
         default: 0,
     })
@@ -48,6 +49,7 @@ export default class ContextMenuView extends Vue {
 
     usedPreferredHeight: number | null = null;
     usedPreferredWidth: number | null = this.preferredWidth;
+    hide = false
 
     @Prop({
         default: 0,
@@ -104,6 +106,16 @@ export default class ContextMenuView extends Vue {
     isPopped = false
 
     disableHoverChildMenus = false
+
+    created(this: any) {
+        // we cannot use setup in mixins, but we want to avoid having to duplicate the 'use' hooks logic.
+        // so this is a workaround
+        const definitions: any = {
+            parentPop: usePop()
+        };
+
+        injectHooks(this, definitions);
+    }
 
     mounted() {
         // Calculate position
@@ -229,7 +241,7 @@ export default class ContextMenuView extends Vue {
         }
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         this.popChildMenu()
         window.removeEventListener("touchmove", this.onTouchMove);
         window.removeEventListener("touchend", this.onTouchUp);
@@ -239,10 +251,10 @@ export default class ContextMenuView extends Vue {
 
     popChildMenu() {
         if (this.childMenu) {
-            const instance =  this.childMenu.componentInstance() as any
+            const instance = this.childMenu.componentInstance() as any
 
             if (instance) {
-                instance.$children[0].pop(false)
+                instance.pop(false)
             }
         }
         this.childMenu = null
@@ -484,10 +496,13 @@ export default class ContextMenuView extends Vue {
     }
 
     shouldIgnoreHover() {
-        return this.isPopped || (this.childMenu && this.ignoreHover)
+        return this.isPopped || (
+            this.childMenu && (
+                this.ignoreHover
+            )
+        )
     }
     
-
     onMouseMove(event) {
         if (!this.childMenu) {
             // Wait for timer to end
@@ -606,13 +621,18 @@ export default class ContextMenuView extends Vue {
     }
 
     pop(popParents = false) {
-        if (this.isPopped) {
+        if (this.isPopped || this.hide) {
             // Ignore
             return
         }
         this.isPopped = true
-        this.popChildMenu()
-        this.$parent?.$parent?.$emit("pop");
+        this.popChildMenu();
+
+        // Trigger hide animation
+        this.hide = true;
+        setTimeout(() => {
+            (this as any).parentPop({force: true})
+        }, 200);
 
         if (popParents && this.parentMenu) {
             this.parentMenu.pop(true)
@@ -627,32 +647,8 @@ export default class ContextMenuView extends Vue {
         document.removeEventListener("keydown", this.onKey);
     }
 
-    get isFocused() {
-        const popups = this.modalStackComponent?.stackComponent?.components ?? []
-        if (popups.length > 0 && !popups[popups.length - 1].componentInstance()?.$el?.contains(this.$el)) {
-            return false
-        }
-        return true
-    }
-
-    get modalStackComponent(): ModalStackComponent | null {
-        let start: any = this.$parent;
-        while (start) {
-            if (start instanceof ModalStackComponent) {
-                return start;
-            }
-
-            start = start.$parent;
-        }
-        return null;
-    }
-
     onKey(event) {
         if (event.defaultPrevented || event.repeat) {
-            return;
-        }
-
-        if (!this.isFocused) {
             return;
         }
 
@@ -667,8 +663,8 @@ export default class ContextMenuView extends Vue {
 </script>
 
 <style lang="scss">
-@use "~@stamhoofd/scss/base/variables.scss" as *;
-@use '~@stamhoofd/scss/base/text-styles.scss';
+@use "@stamhoofd/scss/base/variables.scss" as *;
+@use '@stamhoofd/scss/base/text-styles.scss';
 
 .context-menu-container {
     position: fixed;
@@ -725,7 +721,7 @@ export default class ContextMenuView extends Vue {
         transition: opacity 0.2s;
     }
 
-    &.show-enter /* .fade-leave-active below version 2.1.8 */ {
+    &.show-enter-from /* .fade-leave-active below version 2.1.8 */ {
         // Instant appearing context menu! (only leave animation)
         opacity: 0;
 

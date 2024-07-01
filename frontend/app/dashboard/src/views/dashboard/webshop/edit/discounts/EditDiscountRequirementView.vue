@@ -9,7 +9,7 @@
         
         <STErrorsDefault :error-box="errorBox" />
 
-        <ProductSelectorBox :productSelector="productSelector" @patch="patchProductSelector" :webshop="webshop" :validator="validator" />
+        <ProductSelectorBox :product-selector="productSelector" :webshop="webshop" :validator="validator" @patch="patchProductSelector" />
 
         <STInputBox title="Aantal" error-fields="amount" :error-box="errorBox" class="max">
             <NumberInput
@@ -38,9 +38,9 @@ import { AutoEncoderPatchType, PatchableArray, PatchableArrayAutoEncoder, patchC
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { CenteredMessage, Checkbox, ErrorBox, NumberInput, PermyriadInput, PriceInput, SaveView, STErrorsDefault, STInputBox, STList, STListItem, Validator } from "@stamhoofd/components";
 import { DiscountRequirement, PrivateWebshop, ProductSelector, Version } from '@stamhoofd/structures';
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from '../../../../../classes/OrganizationManager';
+
 import ProductSelectorBox from './ProductSelectorBox.vue';
 
 @Component({
@@ -84,7 +84,7 @@ export default class EditDiscountRequirementView extends Mixins(NavigationMixin)
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get productSelector() {
@@ -127,7 +127,7 @@ export default class EditDiscountRequirementView extends Mixins(NavigationMixin)
             return
         }
 
-       const p: PatchableArrayAutoEncoder<DiscountRequirement> = new PatchableArray()
+        const p: PatchableArrayAutoEncoder<DiscountRequirement> = new PatchableArray()
         p.addDelete(this.discountRequirement.id)
         this.saveHandler(p)
         this.pop({ force: true })

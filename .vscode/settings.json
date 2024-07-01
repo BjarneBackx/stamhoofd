@@ -1,5 +1,4 @@
 {
-    "editor.formatOnSave": false,
     "javascript.format.enable": false,
     "search.exclude": {
         "**/dist": true,
@@ -11,6 +10,7 @@
         "**/yarn-error.log": true,
         "LICENSE": true,
         ".yarn/releases": true,
+        "**.tsbuildinfo": true
     },
     "eslint.options": {
         "extensions": [
@@ -19,12 +19,11 @@
             ".vue"
         ]
     },
-    "vetur.validation.template": false,
-    "vetur.format.enable": false,
     "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": "explicit"
+        "source.fixAll.eslint": "never"
     },
-    "editor.formatOnPaste": true,
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false,
     "eslint.format.enable": true,
     "eslint.validate": [
         "typescript",
@@ -34,16 +33,12 @@
     "eslint.workingDirectories": [
         "./backend/app/*",
         "./backend/shared/*",
-        "./frontend",
+        "./frontend/app/*",
+        "./frontend/shared/*",
         "./devops",
         "./shared/*"
     ],
-    "vetur.format.defaultFormatter.html": "none",
-    "vetur.format.defaultFormatter.js": "none",
-    "vetur.format.defaultFormatter.ts": "none",
     "search.useIgnoreFiles": false,
-    "vetur.trace.server": "messages",
-
     "i18n-ally.autoDetection": false,
     "i18n-ally.localesPaths": [
         "shared/locales/src"
@@ -51,6 +46,20 @@
     "i18n-ally.sourceLanguage": "nl",
     "i18n-ally.displayLanguage": "nl",
     "i18n-ally.keepFulfilled": false,
-    "i18n-ally.keystyle": "nested",
-    "typescript.tsdk": "node_modules/typescript/lib"
+    "i18n-ally.extract.autoDetect": false,
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "codeQL.githubDatabase.update": "never",
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+    "[vue]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "editor.codeLens": false,
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "typescript.preferences.importModuleSpecifier": "project-relative",
+    "i18n-ally.keystyle": "flat"
 }

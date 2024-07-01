@@ -1,6 +1,6 @@
 <template>
     <div class="st-view">
-        <STNavigationBar title="Inschrijvingsgroep" :pop="canPop" :dismiss="canDismiss" />
+        <STNavigationBar title="Inschrijvingsgroep" />
 
         <main>
             <h1>Kies een inschrijvingsgroep</h1>
@@ -13,7 +13,7 @@
                         <h2 class="style-title-list">
                             {{ group.settings.name }}
                         </h2>
-                        <span slot="right" class="icon arrow-right-small gray" />
+                        <template #right><span class="icon arrow-right-small gray" /></template>
                     </STListItem>
                 </STList>
             </div>
@@ -26,7 +26,7 @@
                     <h2 class="style-title-list">
                         {{ group.settings.name }}
                     </h2>
-                    <span slot="right" class="icon arrow-right-small gray" />
+                    <template #right><span class="icon arrow-right-small gray" /></template>
                 </STListItem>
             </STList>
             <p v-else class="info-box">
@@ -41,9 +41,9 @@ import { Request } from "@simonbackx/simple-networking";
 import { ComponentWithProperties, NavigationMixin } from "@simonbackx/vue-app-navigation";
 import { BackButton, Spinner, STList, STListItem, STNavigationBar, STToolbar, Toast } from "@stamhoofd/components";
 import { DocumentTemplateGroup, Group, RecordCategory } from "@stamhoofd/structures";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
+
 import ChooseDocumentTemplateCycle from "./ChooseDocumentTemplateCycle.vue";
 
 @Component({
@@ -67,7 +67,7 @@ export default class ChooseDocumentTemplateGroup extends Mixins(NavigationMixin)
     loadingGroups = true
 
     get categoryTree() {
-        return OrganizationManager.organization.getCategoryTree({maxDepth: 1, admin: true, smartCombine: true})
+        return this.$organization.getCategoryTree({maxDepth: 1, admin: true, smartCombine: true})
     }
 
     selectGroup(group: Group) {
@@ -93,14 +93,14 @@ export default class ChooseDocumentTemplateGroup extends Mixins(NavigationMixin)
         this.load().catch(console.error)
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         // Cancel all requests
         Request.cancelAll(this)
     }
 
     async load() {
         try {
-            this.archivedGroups = await OrganizationManager.loadArchivedGroups({owner: this})
+            this.archivedGroups = await this.$organizationManager.loadArchivedGroups({owner: this})
         } catch (e) {
             Toast.fromError(e).show()
         }

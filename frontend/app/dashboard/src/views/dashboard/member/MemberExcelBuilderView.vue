@@ -1,6 +1,6 @@
 <template>
     <div class="st-view">
-        <STNavigationBar title="Exporteren naar Excel" :dismiss="canDismiss" />
+        <STNavigationBar title="Exporteren naar Excel" />
 
         <main>
             <h1>
@@ -27,7 +27,9 @@
 
                 <STList>
                     <STListItem v-for="(property, i) of group.properties" :key="i" :selectable="true" element-name="label">
-                        <Checkbox slot="left" v-model="property.selected" />
+                        <template #left>
+                            <Checkbox v-model="property.selected" />
+                        </template>
                         <h3 class="style-title-list">
                             {{ property.name }}
                         </h3>
@@ -60,10 +62,10 @@ import { BackButton, Checkbox, ErrorBox, LoadingButton, SegmentedControl, STErro
 import { AppManager } from "@stamhoofd/networking";
 import { Address, Gender, Group, MemberWithRegistrations, ParentTypeHelper, RecordAddressAnswer, RecordCategory, RecordCheckboxAnswer, RecordChooseOneAnswer, RecordMultipleChoiceAnswer, RecordSettings, RecordTextAnswer, RecordType } from '@stamhoofd/structures';
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins, Prop } from "vue-property-decorator";
+import { Component, Mixins, Prop } from "@simonbackx/vue-app-navigation/classes";
 import XLSX from "xlsx";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
+
 
 type RowValue = (string | number | Date | {value: string | number | Date, format: null | string});
 
@@ -193,13 +195,13 @@ export default class MemberExcelBuilderView extends Mixins(NavigationMixin) {
                 name: this.$i18n.t("shared.inputs.mobile.label").toString(),
                 getValues: (member: MemberWithRegistrations) => [member.details.phone ?? ""],
                 width: 20,
-                description: OrganizationManager.organization.meta.recordsConfiguration.parents === null ? undefined : "Nummer van lid zelf, niet van een ouder"
+                description: this.$organization.meta.recordsConfiguration.parents === null ? undefined : "Nummer van lid zelf, niet van een ouder"
             }),
             new ExcelMemberProperty({
                 name: "E-mailadres",
                 getValues: (member: MemberWithRegistrations) => [member.details.email ?? ""],
                 width: 30,
-                description: OrganizationManager.organization.meta.recordsConfiguration.parents === null ? undefined : "E-mailadres van lid zelf, niet van een ouder"
+                description: this.$organization.meta.recordsConfiguration.parents === null ? undefined : "E-mailadres van lid zelf, niet van een ouder"
             }),
         ]),
         new ExcelMemberPropertyGroup("Betaling", undefined, [
@@ -238,7 +240,7 @@ export default class MemberExcelBuilderView extends Mixins(NavigationMixin) {
                 getValues: (member: MemberWithRegistrations) => {
                     const registrations = member.filterRegistrations({waitingList: false, cycleOffset: this.cycleOffset})
                     const groups = registrations.map(r =>{
-                        return  OrganizationManager.organization.groups.find(g => g.id === r.groupId)
+                        return  this.$organization.groups.find(g => g.id === r.groupId)
                     }).filter(g => g !== undefined) as Group[]
                     return [Formatter.joinLast(groups.map(g => g.settings.name), ', ', ' en ')]
                 },
@@ -251,21 +253,21 @@ export default class MemberExcelBuilderView extends Mixins(NavigationMixin) {
                     getValues: (member: MemberWithRegistrations) => {
                         const registrations = member.filterRegistrations({waitingList: true, cycleOffset: this.cycleOffset})
                         const groups = registrations.map(r =>{
-                            return  OrganizationManager.organization.groups.find(g => g.id === r.groupId)
+                            return  this.$organization.groups.find(g => g.id === r.groupId)
                         }).filter(g => g !== undefined) as Group[]
                         return [Formatter.joinLast(groups.map(g => g.settings.name), ', ', ' en ')]
                     },
                     width: 50
                 })
             ] : []),
-            ...(OrganizationManager.organization.getCategoryTree({admin: true}).getAllCategories().map(category => {
+            ...(this.$organization.getCategoryTree({admin: true}).getAllCategories().map(category => {
                 return new ExcelMemberProperty({
                     name: category.settings.name,
                     description: `Opsomming van alle inschrijvingen in de categorie ${category.settings.name}`,
                     getValues: (member: MemberWithRegistrations) => {
                         const registrations = member.filterRegistrations({groups: category.getAllGroups(), cycleOffset: this.cycleOffset})
                         const groups = registrations.map(r =>{
-                            return  OrganizationManager.organization.groups.find(g => g.id === r.groupId)
+                            return  this.$organization.groups.find(g => g.id === r.groupId)
                         }).filter(g => g !== undefined) as Group[]
                         return [Formatter.joinLast(groups.map(g => g.settings.name), ', ', ' en ')]
                     },
@@ -288,7 +290,7 @@ export default class MemberExcelBuilderView extends Mixins(NavigationMixin) {
                 })
             ] : [])
         ]),
-        new ExcelMemberPropertyGroup("Adres 1", OrganizationManager.organization.meta.recordsConfiguration.parents === null ? "Adres van het lid zelf" : "Adres van het lid zelf, of van de eerste ouder", [
+        new ExcelMemberPropertyGroup("Adres 1", this.$organization.meta.recordsConfiguration.parents === null ? "Adres van het lid zelf" : "Adres van het lid zelf, of van de eerste ouder", [
             new ExcelMemberProperty({
                 name: "Straat",
                 getValues: (member: MemberWithRegistrations) => [this.firstAddress(member)?.street ?? ""],
@@ -315,7 +317,7 @@ export default class MemberExcelBuilderView extends Mixins(NavigationMixin) {
                 width: 10,
             }),
         ]),
-        ...(OrganizationManager.organization.meta.recordsConfiguration.parents !== null ?  [
+        ...(this.$organization.meta.recordsConfiguration.parents !== null ?  [
             new ExcelMemberPropertyGroup("Ouders",  "In Stamhoofd kan je meer dan twee ouders toevoegen, waaronder ook stiefouders/plusouders.", [
                 new ExcelMemberProperty({
                     name: "Benaming ouder 1",
@@ -439,7 +441,7 @@ export default class MemberExcelBuilderView extends Mixins(NavigationMixin) {
             ]),
         ] : []),
 
-        ...(OrganizationManager.organization.meta.recordsConfiguration.emergencyContacts !== null ?  [
+        ...(this.$organization.meta.recordsConfiguration.emergencyContacts !== null ?  [
             new ExcelMemberPropertyGroup("Noodcontact", undefined, [
                 new ExcelMemberProperty({
                     name: "Noodcontact titel",
@@ -508,7 +510,7 @@ export default class MemberExcelBuilderView extends Mixins(NavigationMixin) {
 
     get recordCategories(): RecordCategory[] {
         // TODO: only show the record categories that are relevant for the given member (as soon as we implement filters)
-        return OrganizationManager.organization.meta.recordsConfiguration.recordCategories.flatMap(category => {
+        return this.$organization.meta.recordsConfiguration.recordCategories.flatMap(category => {
             if (category.childCategories.length > 0) {
                 return category.childCategories
             }

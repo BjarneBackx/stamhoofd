@@ -24,7 +24,7 @@
             </div>
 
             <div>
-                <UrlInput v-model="website" :title="$t('shared.inputs.url.labelOptional')" :placeholder="$t('dashboard.inputs.website.placeholder')" :validator="validator" :required="false" />
+                <UrlInput v-model="website" :title="$t('shared.website.optional')" :placeholder="$t('dashboard.inputs.website.placeholder')" :validator="validator" :required="false" />
 
                 <p class="style-description-small">
                     De link naar de website van jouw vereniging.
@@ -76,12 +76,11 @@
 import { AutoEncoder, AutoEncoderPatchType, patchContainsChanges } from '@simonbackx/simple-encoding';
 import { SimpleError, SimpleErrors } from '@simonbackx/simple-errors';
 import { NavigationMixin } from "@simonbackx/vue-app-navigation";
-import { AddressInput, BackButton, CenteredMessage, Checkbox, CompanyNumberInput, DateSelection, ErrorBox, LoadingButton, Radio, RadioGroup, SaveView, STErrorsDefault, STInputBox, STNavigationBar, STToolbar, Toast, UrlInput,Validator, VATNumberInput } from "@stamhoofd/components";
-import { UrlHelper } from '@stamhoofd/networking';
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
+import { AddressInput, BackButton, CenteredMessage, Checkbox, CompanyNumberInput, DateSelection, ErrorBox, LoadingButton, Radio, RadioGroup, SaveView, STErrorsDefault, STInputBox, STNavigationBar, STToolbar, Toast, UrlInput, Validator,VATNumberInput } from "@stamhoofd/components";
 import { Address, Country, Organization, OrganizationMetaData, OrganizationPatch, Version } from "@stamhoofd/structures";
-import { Component, Mixins } from "vue-property-decorator";
 
-import { OrganizationManager } from "../../../classes/OrganizationManager";
+
 
 @Component({
     components: {
@@ -106,15 +105,19 @@ export default class GeneralSettingsView extends Mixins(NavigationMixin) {
     errorBox: ErrorBox | null = null
     validator = new Validator()
     saving = false
-    temp_organization = OrganizationManager.organization
     showDomainSettings = true
     loadingMollie = false
-    selectedPrivacyType = this.temp_organization.meta.privacyPolicyUrl ? "website" : (this.temp_organization.meta.privacyPolicyFile ? "file" : "none")
+    selectedPrivacyType = "none"
 
-    organizationPatch: AutoEncoderPatchType<Organization> & AutoEncoder = OrganizationPatch.create({ id: OrganizationManager.organization.id })
+    organizationPatch: AutoEncoderPatchType<Organization> & AutoEncoder = OrganizationPatch.create({})
+    
+    created() {
+        this.organizationPatch.id = this.$organization.id
+        this.selectedPrivacyType = this.$organization.meta.privacyPolicyUrl ? "website" : (this.$organization.meta.privacyPolicyFile ? "file" : "none")
+    }
 
     get organization() {
-        return OrganizationManager.organization.patch(this.organizationPatch)
+        return this.$organization.patch(this.organizationPatch)
     }
    
     get name() {
@@ -122,7 +125,7 @@ export default class GeneralSettingsView extends Mixins(NavigationMixin) {
     }
 
     set name(name: string) {
-        this.$set(this.organizationPatch, "name", name)
+        this.organizationPatch = this.organizationPatch.patch({ name })
     }
 
     get website() {
@@ -130,7 +133,7 @@ export default class GeneralSettingsView extends Mixins(NavigationMixin) {
     }
 
     set website(website: string|null) {
-        this.$set(this.organizationPatch, "website", website)
+        this.organizationPatch = this.organizationPatch.patch({ website })
     }
 
     get address() {
@@ -138,7 +141,7 @@ export default class GeneralSettingsView extends Mixins(NavigationMixin) {
     }
 
     set address(address: Address) {
-        this.$set(this.organizationPatch, "address", address)
+        this.organizationPatch = this.organizationPatch.patch({ address })
     }
 
     get companyAddress() {
@@ -252,8 +255,8 @@ export default class GeneralSettingsView extends Mixins(NavigationMixin) {
         this.saving = true
 
         try {
-            await OrganizationManager.patch(this.organizationPatch)
-            this.organizationPatch = OrganizationPatch.create({ id: OrganizationManager.organization.id })
+            await this.$organizationManager.patch(this.organizationPatch)
+            this.organizationPatch = OrganizationPatch.create({ id: this.$organization.id })
             new Toast('De wijzigingen zijn opgeslagen', "success green").show()
             this.dismiss({ force: true })
         } catch (e) {
@@ -264,7 +267,7 @@ export default class GeneralSettingsView extends Mixins(NavigationMixin) {
     }
 
     get hasChanges() {
-        return patchContainsChanges(this.organizationPatch, OrganizationManager.organization, { version: Version })
+        return patchContainsChanges(this.organizationPatch, this.$organization, { version: Version })
     }
 
     async shouldNavigateAway() {
@@ -275,7 +278,7 @@ export default class GeneralSettingsView extends Mixins(NavigationMixin) {
     }
 
     mounted() {
-        UrlHelper.setUrl("/settings/general")
+        this.setUrl("/general")
     }
 }
 </script>

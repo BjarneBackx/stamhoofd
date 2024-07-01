@@ -16,7 +16,7 @@
         <STErrorsDefault :error-box="errorBox" />
 
         <STInputBox title="Domeinnaam">
-            <Dropdown v-model="selectedDomain" @change="onChangeSelectedDomain">
+            <Dropdown v-model="selectedDomain" @update:model-value="onChangeSelectedDomain">
                 <option :value="null">
                     {{ defaultDomain }}
                 </option>
@@ -74,10 +74,10 @@
 
         <template v-else-if="selectedDomain !== null">
             <STInputBox title="Jouw webshop link" error-fields="domainUri" :error-box="errorBox" class="max">
-                <button slot="right" type="button" class="button text" @click="copyLink">
+                <template #right><button type="button" class="button text" @click="copyLink">
                     <span class="icon copy" />
                     <span>Kopiëren</span>
-                </button>
+                </button></template>
                 <PrefixInput v-model="domainUri" placeholder="bv. wafelbak" :prefix="domainUri ? webshop.domain+'/' : webshop.domain" :focus-prefix="webshop.domain+'/'" :fade-prefix="!!domainUri" @blur="resetCache" />
             </STInputBox>
             <p class="style-description-small">
@@ -87,10 +87,10 @@
 
         <template v-else>
             <STInputBox title="Jouw webshop link" error-fields="uri" :error-box="errorBox" class="max custom-bottom-box" :class="{'input-success': isAvailable && !checkingAvailability && availabilityCheckerCount > 0, 'input-errors': !isAvailable && !checkingAvailability && availabilityCheckerCount > 0}">
-                <button slot="right" type="button" class="button text" @click="copyLink">
+                <template #right><button type="button" class="button text" @click="copyLink">
                     <span class="icon copy" />
                     <span>Kopiëren</span>
-                </button>
+                </button></template>
                 <PrefixInput v-model="uri" placeholder="bv. wafelbak" :prefix="defaultDomain+'/'" @blur="updateUri" />
             </STInputBox>
 
@@ -125,9 +125,9 @@ import { Dropdown, PrefixInput, SaveView, Spinner, STErrorsDefault, STInputBox, 
 import { SessionManager, UrlHelper } from '@stamhoofd/networking';
 import { DNSRecordStatus, PrivateWebshop, WebshopUriAvailabilityResponse } from '@stamhoofd/structures';
 import { Formatter } from "@stamhoofd/utility";
-import { Component, Mixins } from "vue-property-decorator";
+import { Component, Mixins } from "@simonbackx/vue-app-navigation/classes";
 
-import { OrganizationManager } from "../../../../classes/OrganizationManager";
+
 import EditWebshopMixin from "./EditWebshopMixin";
 import WebshopDNSRecordsView from "./WebshopDNSRecordsView.vue";
 
@@ -262,7 +262,7 @@ export default class EditWebshopLinkView extends Mixins(EditWebshopMixin) {
     }
 
     get organization() {
-        return OrganizationManager.organization
+        return this.$organization
     }
 
     get viewTitle() {
@@ -270,11 +270,11 @@ export default class EditWebshopLinkView extends Mixins(EditWebshopMixin) {
     }
 
     get legacyUrl() {
-        return this.webshop.getLegacyUrl(OrganizationManager.organization)
+        return this.webshop.getLegacyUrl(this.$organization)
     }
 
     get defaultUrl() {
-        return this.webshop.getDefaultUrl(OrganizationManager.organization)
+        return this.webshop.getDefaultUrl(this.$organization)
     }
 
     updateUri(){
@@ -290,7 +290,7 @@ export default class EditWebshopLinkView extends Mixins(EditWebshopMixin) {
         this.cachedCustomUrl = null
     }
 
-    beforeDestroy() {
+    beforeUnmount() {
         Request.cancelAll(this)
     }
 
@@ -309,7 +309,7 @@ export default class EditWebshopLinkView extends Mixins(EditWebshopMixin) {
 
         try {
             this.errorBox = null
-            const response = await SessionManager.currentSession!.authenticatedServer.request({
+            const response = await this.$context.authenticatedServer.request({
                 path: "/webshop/"+this.webshop.id+"/check-uri",
                 method: "GET",
                 query: {
@@ -351,11 +351,11 @@ export default class EditWebshopLinkView extends Mixins(EditWebshopMixin) {
     }
 
     get defaultDomain() {
-        return this.webshop.getDefaultDomain(OrganizationManager.organization)
+        return this.webshop.getDefaultDomain(this.$organization)
     }
 
     get url() {
-        return "https://"+this.webshop.getUrl(SessionManager.currentSession!.organization!)
+        return "https://"+this.webshop.getUrl(this.$organization)
     }
 
     get customUrl() {
@@ -481,7 +481,7 @@ export default class EditWebshopLinkView extends Mixins(EditWebshopMixin) {
         this.present(displayedComponent.setDisplayStyle("overlay"));
 
         setTimeout(() => {
-            displayedComponent.vnode?.componentInstance?.$parent?.$emit("pop");
+            (displayedComponent.componentInstance() as any)?.hide?.()
         }, 1000);
     }
 
