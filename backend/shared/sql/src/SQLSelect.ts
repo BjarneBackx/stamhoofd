@@ -1,9 +1,9 @@
+import { Database, SQLResultNamespacedRow } from "@simonbackx/simple-database";
 import { SQLExpression, SQLExpressionOptions, SQLQuery, joinSQLQuery, normalizeSQLQuery } from "./SQLExpression";
+import { SQLAlias, SQLCount, SQLSelectAs, SQLSum } from "./SQLExpressions";
+import { SQLJoin } from './SQLJoin';
 import { SQLOrderBy, addOrderByHelpers } from "./SQLOrderBy";
 import { SQLWhere, addWhereHelpers } from "./SQLWhere";
-import {Database, SQLResultNamespacedRow} from "@simonbackx/simple-database"
-import {SQLJoin} from './SQLJoin'
-import { SQLAlias, SQLCount, SQLSelectAs, SQLSum, SQLWildcardSelectExpression } from "./SQLExpressions";
 
 class SelectBase implements SQLExpression {
     _columns: SQLExpression[]
@@ -101,7 +101,7 @@ class SelectBase implements SQLExpression {
     async fetch(): Promise<SQLResultNamespacedRow[]> {
         const {query, params} = normalizeSQLQuery(this.getSQL())
 
-        console.log(query, params);
+        // console.log(query, params);
         const [rows] = await Database.select(query, params, {nestTables: true});
 
         // Now map aggregated queries to the correct namespace

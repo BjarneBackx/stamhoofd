@@ -39,7 +39,7 @@ export class MemberUserSyncerStatic {
 
     async onDeleteMember(member: MemberWithRegistrations) {
         for (const u of member.users) {
-            console.log("Unlinking user "+u.email+" from deleted member "+member.id)
+            // console.log("Unlinking user "+u.email+" from deleted member "+member.id)
             await this.unlinkUser(u, member)
         }
     }
@@ -109,7 +109,7 @@ export class MemberUserSyncerStatic {
     }
 
     async unlinkUser(user: User, member: MemberWithRegistrations) {
-        console.log("Removing access for "+ user.id +" to member "+member.id)
+        // console.log("Removing access for "+ user.id +" to member "+member.id)
         await Member.users.reverse("members").unlink(user, member)
 
         if (user.memberId === member.id) {
@@ -130,7 +130,7 @@ export class MemberUserSyncerStatic {
         let user = member.users.find(u => u.email.toLocaleLowerCase() === email.toLocaleLowerCase()) ?? await User.getForAuthentication(member.organizationId, email, {allowWithoutAccount: true})
 
         if (user) {
-            console.log("Giving an existing user access to a member: " + user.id + ' - ' + member.id)
+            // console.log("Giving an existing user access to a member: " + user.id + ' - ' + member.id)
             if (!asParent) {
                 if (user.memberId && user.memberId !== member.id) {
                     console.error('Found conflicting user with multiple members', user.id, 'members', user.memberId, 'to', member.id)
@@ -207,7 +207,7 @@ export class MemberUserSyncerStatic {
                 await user.save()
             }
 
-            console.log("Created new (placeholder) user that has access to a member: "+user.id)
+            // console.log("Created new (placeholder) user that has access to a member: "+user.id)
         }
 
         // Update model relation to correct response
